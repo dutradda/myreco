@@ -24,8 +24,8 @@
 from tests.integration.fixtures_models import (
     SQLAlchemyRedisModelBase, StoresModel, UsersModel,
     GrantsModel, URIsModel, MethodsModel)
-from myreco.base.http_api import HttpAPI
-from myreco.base.models.base import get_model_schema
+from falconswagger.http_api import HttpAPI
+from falconswagger.models.base import get_model_schema
 from fakeredis import FakeStrictRedis
 from unittest import mock
 from base64 import b64encode

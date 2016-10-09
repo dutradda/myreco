@@ -21,7 +21,7 @@
 # SOFTWARE.
 
 
-from myreco.base.models.base import build_validator, get_module_path
+from falconswagger.models.base import build_validator, get_module_path
 import inspect
 
 

@@ -21,9 +21,9 @@
 # SOFTWARE.
 
 
-from myreco.base.models.base import get_model_schema
+from falconswagger.models.base import get_model_schema
 from myreco.domain.engines.types.base import EngineTypeChooser
-from myreco.exceptions import ModelBaseError
+from falconswagger.exceptions import ModelBaseError
 from types import MethodType, FunctionType
 from jsonschema import ValidationError
 import sqlalchemy as sa

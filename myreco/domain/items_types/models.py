@@ -21,9 +21,9 @@
 # SOFTWARE.
 
 
-from myreco.base.models.redis import RedisModelBuilder
-from myreco.base.models.base import get_model_schema
-from myreco.base.hooks import before_operation, AuthorizationHook
+from falconswagger.models.redis import RedisModelBuilder
+from falconswagger.models.base import get_model_schema
+from falconswagger.hooks import before_operation, AuthorizationHook
 import sqlalchemy as sa
 import json
 

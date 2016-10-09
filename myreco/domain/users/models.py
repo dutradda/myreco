@@ -21,8 +21,8 @@
 # SOFTWARE.
 
 
-from myreco.base.models.base import get_model_schema
-from myreco.base.hooks import AuthorizationHook, before_operation
+from falconswagger.models.base import get_model_schema
+from falconswagger.hooks import AuthorizationHook, before_operation
 from base64 import b64decode
 import sqlalchemy as sa
 

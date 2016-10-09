@@ -21,7 +21,7 @@
 # SOFTWARE.
 
 
-from myreco.base.models.base import get_model_schema
+from falconswagger.models.base import get_model_schema
 from myreco.domain.engines.types.base import (
     EngineRecommenderMixin,
     EngineDataImporterBigqueryMixin,

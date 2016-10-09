@@ -22,7 +22,7 @@
 
 
 from tests.integration.fixtures_models import SQLAlchemyRedisModelBase, StoresModel, UsersModel
-from myreco.base.http_api import HttpAPI
+from falconswagger.http_api import HttpAPI
 from base64 import b64encode
 from fakeredis import FakeStrictRedis
 import pytest

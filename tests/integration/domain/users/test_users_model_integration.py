@@ -22,8 +22,8 @@
 
 
 from tests.integration.fixtures_models import UsersModel, SQLAlchemyRedisModelBase
-from myreco.base.hooks import AuthorizationHook, before_operation
-from myreco.base.http_api import HttpAPI
+from falconswagger.hooks import AuthorizationHook, before_operation
+from falconswagger.http_api import HttpAPI
 from base64 import b64encode
 from unittest import mock
 import pytest

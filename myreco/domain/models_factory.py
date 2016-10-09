@@ -31,7 +31,7 @@ from myreco.domain.engines_managers.models import (EnginesManagersVariablesModel
     EnginesManagersModelBase, build_engines_managers_fallbacks_table)
 from myreco.domain.engines.models import EnginesModelBase, EnginesTypesNamesModelBase
 from myreco.domain.items_types.models import ItemsTypesModelBase
-from myreco.base.models.sqlalchemy_redis import SQLAlchemyRedisModelBuilder
+from falconswagger.models.sqlalchemy_redis import SQLAlchemyRedisModelBuilder
 
 
 class ModelsFactory(object):
