@@ -22,7 +22,6 @@
 
 
 from tests.integration.fixtures_models import UsersModel, SQLAlchemyRedisModelBase
-from falconswagger.hooks import authorization_hook, before_operation
 from falconswagger.http_api import HttpAPI
 from base64 import b64encode
 from unittest import mock
@@ -36,7 +35,6 @@ def model_base():
     return SQLAlchemyRedisModelBase
 
 
-@before_operation(authorization_hook)
 class model(SQLAlchemyRedisModelBase):
     __tablename__ = 'test'
     id = sa.Column(sa.Integer, primary_key=True)
@@ -47,6 +45,12 @@ class model(SQLAlchemyRedisModelBase):
 
     __schema__ = {
         '/test': {
+            'parameters': [{
+                'name': 'Authorization',
+                'in': 'header',
+                'required': True,
+                'type': 'string'
+            }],
             'post': {
                 'operationId': 'do_nothing',
                 'responses': {'201': {'description': 'Created'}}
@@ -58,6 +62,11 @@ class model(SQLAlchemyRedisModelBase):
                 'in': 'path',
                 'required': True,
                 'type': 'integer'
+            },{
+                'name': 'Authorization',
+                'in': 'header',
+                'required': True,
+                'type': 'string'
             }],
             'post': {
                 'operationId': 'do_nothing',

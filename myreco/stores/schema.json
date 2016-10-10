@@ -1,5 +1,11 @@
 {
     "/stores/": {
+        "parameters": [{
+            "name": "Authorization",
+            "in": "header",
+            "required": true,
+            "type": "string"
+        }],
         "post": {
             "operationId": "post_by_body",
             "parameters": [{
@@ -17,6 +23,11 @@
     },
     "/stores/{id}/": {
         "parameters": [{
+            "name": "Authorization",
+            "in": "header",
+            "required": true,
+            "type": "string"
+        },{
             "name": "id",
             "in": "path",
             "type": "integer",

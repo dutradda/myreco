@@ -1,5 +1,11 @@
 {
     "/placements/": {
+        "parameters": [{
+            "name": "Authorization",
+            "in": "header",
+            "required": true,
+            "type": "string"
+        }],
         "post": {
             "operationId": "post_by_body",
             "parameters": [{
@@ -17,6 +23,11 @@
     },
     "/placements/{small_hash}/": {
         "parameters": [{
+            "name": "Authorization",
+            "in": "header",
+            "required": true,
+            "type": "string"
+        },{
             "name": "small_hash",
             "in": "path",
             "type": "string",

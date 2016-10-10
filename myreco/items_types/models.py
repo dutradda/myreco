@@ -68,6 +68,5 @@ class ItemsModelsBuilder(object):
         for model_type in models_types:
             model = RedisModelBuilder(
                 model_type['name'], model_type['id_names'], model_type['schema'])
-            model = before_operation(authorization_hook)(model)
             models.add(model)
         return models

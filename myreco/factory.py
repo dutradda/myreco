@@ -32,7 +32,6 @@ from myreco.engines_managers.models import (EnginesManagersVariablesModelBase,
 from myreco.engines.models import EnginesModelBase, EnginesTypesNamesModelBase
 from myreco.items_types.models import ItemsTypesModelBase
 from falconswagger.models.sqlalchemy_redis import SQLAlchemyRedisModelBuilder
-from falconswagger.hooks import authorization_hook, before_operation
 
 
 class ModelsFactory(object):
@@ -98,9 +97,7 @@ class ModelsFactory(object):
 
 	def make_engines_model(self, attributes=None):
 		attributes = self._init_attributes(attributes, self._commons_models_attrs)
-		EnginesModel = self.meta_class('EnginesModel', (EnginesModelBase, self.base_model), attributes)
-		EnginesModel = before_operation(authorization_hook)(EnginesModel)
-		return EnginesModel
+		return self.meta_class('EnginesModel', (EnginesModelBase, self.base_model), attributes)
 
 	def make_engines_types_names_model(self, attributes=None):
 		attributes = self._init_attributes(attributes, self._commons_models_attrs)
@@ -109,10 +106,8 @@ class ModelsFactory(object):
 
 	def make_engines_managers_model(self, attributes=None):
 		attributes = self._init_attributes(attributes, self._commons_models_attrs)
-		EnginesManagersModel = self.meta_class(
+		return self.meta_class(
 			'EnginesManagersModel', (EnginesManagersModelBase, self.base_model), attributes)
-		EnginesManagersModel = before_operation(authorization_hook)(EnginesManagersModel)
-		return EnginesManagersModel
 
 	def make_engines_managers_variables_model(self, attributes=None):
 		attributes = self._init_attributes(attributes, self._commons_models_attrs)
@@ -122,10 +117,8 @@ class ModelsFactory(object):
 
 	def make_items_types_model(self, attributes=None):
 		attributes = self._init_attributes(attributes, self._commons_models_attrs)
-		ItemsTypesModel = self.meta_class(
+		return self.meta_class(
 			'ItemsTypesModel', (ItemsTypesModelBase, self.base_model), attributes)
-		ItemsTypesModel = before_operation(authorization_hook)(ItemsTypesModel)
-		return ItemsTypesModel
 
 	def make_placements_model(self, attributes=None, placement_with_recommender=True):
 		attributes = self._init_attributes(attributes, self._commons_models_attrs)
@@ -133,21 +126,8 @@ class ModelsFactory(object):
 			bases_classes = (PlacementsModelBase, PlacementsModelRecommenderMixin, self.base_model)
 		else:
 			bases_classes = (PlacementsModelBase, self.base_model)
-		PlacementsModel = self.meta_class(
+		return self.meta_class(
 			'PlacementsModel', bases_classes, attributes)
-
-		PlacementsModel.post_by_body = \
-		    before_operation(authorization_hook)(PlacementsModel.post_by_body)
-		PlacementsModel.get_by_body = \
-		    before_operation(authorization_hook)(PlacementsModel.get_by_body)
-		PlacementsModel.patch_by_uri_template = \
-		    before_operation(authorization_hook)(PlacementsModel.patch_by_uri_template)
-		PlacementsModel.delete_by_uri_template = \
-		    before_operation(authorization_hook)(PlacementsModel.delete_by_uri_template)
-		PlacementsModel.get_by_uri_template = \
-		    before_operation(authorization_hook)(PlacementsModel.get_by_uri_template)
-		return PlacementsModel
-
 
 	def make_variations_model(self, attributes=None):
 		attributes = self._init_attributes(attributes, self._commons_models_attrs)
@@ -161,10 +141,8 @@ class ModelsFactory(object):
 
 	def make_stores_model(self, attributes=None):
 		attributes = self._init_attributes(attributes, self._commons_models_attrs)
-		StoresModel = self.meta_class(
+		return self.meta_class(
 			'StoresModel', (StoresModelBase, self.base_model), attributes)
-		StoresModel = before_operation(authorization_hook)(StoresModel)
-		return StoresModel
 
 	def make_uris_model(self, attributes=None):
 		attributes = self._init_attributes(attributes, self._commons_models_attrs)
@@ -173,10 +151,8 @@ class ModelsFactory(object):
 
 	def make_users_model(self, attributes=None):
 		attributes = self._init_attributes(attributes, self._commons_models_attrs)
-		UsersModel = self.meta_class(
+		return self.meta_class(
 			'UsersModel', (UsersModelBase, self.base_model), attributes)
-		UsersModel = before_operation(authorization_hook)(UsersModel)
-		return UsersModel
 
 	def make_methods_model(self, attributes=None):
 		attributes = self._init_attributes(attributes, self._commons_models_attrs)
@@ -190,7 +166,5 @@ class ModelsFactory(object):
 
 	def make_variables_model(self, attributes=None):
 		attributes = self._init_attributes(attributes, self._commons_models_attrs)
-		VariablesModel = self.meta_class(
+		return self.meta_class(
 			'VariablesModel', (VariablesModelBase, self.base_model), attributes)
-		VariablesModel = before_operation(authorization_hook)(VariablesModel)
-		return VariablesModel

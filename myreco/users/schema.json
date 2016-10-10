@@ -1,5 +1,11 @@
 {
     "/users/": {
+        "parameters": [{
+            "name": "Authorization",
+            "in": "header",
+            "required": true,
+            "type": "string"
+        }],
         "post": {
             "operationId": "post_by_body",
             "parameters": [{
@@ -80,6 +86,11 @@
     },
     "/users/{email}/": {
         "parameters": [{
+            "name": "Authorization",
+            "in": "header",
+            "required": true,
+            "type": "string"
+        },{
             "name": "email",
             "in": "path",
             "type": "string",
