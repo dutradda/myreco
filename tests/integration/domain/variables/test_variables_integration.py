@@ -87,6 +87,15 @@ class TestVariablesModelPost(object):
             }
         }
 
+    def test_post_with_invalid_grant(self, client):
+        body = [{
+            'name': 'test',
+            'store_id': 1
+        }]
+        resp = client.post('/variables/', headers={'Authorization': 'invalid'}, body=json.dumps(body))
+        assert resp.status_code == 401
+        assert json.loads(resp.body) ==  {'error': 'Invalid authorization'}
+
     def test_post(self, client, headers):
         body = [{
             'name': 'test',

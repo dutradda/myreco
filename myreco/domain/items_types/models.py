@@ -23,12 +23,10 @@
 
 from falconswagger.models.redis import RedisModelBuilder
 from falconswagger.models.base import get_model_schema
-from falconswagger.hooks import before_operation, AuthorizationHook
 import sqlalchemy as sa
 import json
 
 
-@before_operation(AuthorizationHook())
 class ItemsTypesModelBase(sa.ext.declarative.AbstractConcreteBase):
     __tablename__ = 'items_types'
     __schema__ = get_model_schema(__file__)
@@ -69,5 +67,6 @@ class ItemsModelsBuilder(object):
         for model_type in models_types:
             model = RedisModelBuilder(
                 model_type['name'], model_type['id_names'], model_type['schema'])
+            model = before_operation(authorization_hook)(model)
             models.add(model)
         return models

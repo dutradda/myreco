@@ -23,8 +23,8 @@
 
 from falconswagger.models.base import get_model_schema
 from falconswagger.json_builder import JsonBuilder
-from myreco.domain.engines.types.base import EngineTypeChooser
 from falconswagger.exceptions import ModelBaseError
+from myreco.domain.engines.types.base import EngineTypeChooser
 from falcon.errors import HTTPNotFound
 import sqlalchemy as sa
 import hashlib

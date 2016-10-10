@@ -99,6 +99,16 @@ class TestItemsTypesModelPost(object):
         assert resp.status_code == 201
         assert json.loads(resp.body) ==  body
 
+    def test_post_with_invalid_grant(self, client):
+        body = [{
+            'name': 'test',
+            'id_names': ['test'],
+            'schema': {'properties': {'id': {'type': 'integer'}}}
+        }]
+        resp = client.post('/items_types/', headers={'Authorization': 'invalid'}, body=json.dumps(body))
+        assert resp.status_code == 401
+        assert json.loads(resp.body) ==  {'error': 'Invalid authorization'}
+
 
 class TestItemsTypesModelGet(object):
 

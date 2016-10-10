@@ -101,6 +101,18 @@ class TestEnginesModelPost(object):
             }
         }
 
+    def test_post_with_invalid_grant(self, client):
+        body = [{
+            'name': 'Seven Days Top Seller',
+            'configuration': {"days_interval": 7},
+            'store_id': 1,
+            'type_name_id': 1,
+            'item_type_id': 1
+        }]
+        resp = client.post('/engines/', headers={'Authorization': 'invalid'},body=json.dumps(body))
+        assert resp.status_code == 401
+        assert json.loads(resp.body) ==  {'error': 'Invalid authorization'}
+
     def test_post(self, client, headers):
         body = [{
             'name': 'Seven Days Top Seller',

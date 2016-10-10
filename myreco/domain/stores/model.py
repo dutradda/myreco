@@ -22,11 +22,9 @@
 
 
 from falconswagger.models.base import get_model_schema
-from falconswagger.hooks import before_operation, AuthorizationHook
 import sqlalchemy as sa
 
 
-@before_operation(AuthorizationHook())
 class StoresModelBase(sa.ext.declarative.AbstractConcreteBase):
     __tablename__ = 'stores'
     __schema__ = get_model_schema(__file__)

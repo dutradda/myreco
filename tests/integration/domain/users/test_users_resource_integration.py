@@ -227,6 +227,21 @@ class TestUsersResourcePost(object):
             }
         }
 
+    def test_post_with_invalid_grant(self, client):
+        body = [{
+            'name': 'test2',
+            'email': 'test2',
+            'password': 'test',
+            'grants': [{
+                'uri_id': 2,
+                'method_id': 2,
+                '_operation': 'insert'
+            }]
+        }]
+        resp = client.post('/users', headers={'Authorization': 'invalid'}, body=json.dumps(body))
+        assert resp.status_code == 401
+        assert json.loads(resp.body) ==  {'error': 'Invalid authorization'}
+
 
 class TestUsersResourcePutInsert(object):
     def test_put_with_ambiguous_ids(self, client, headers, root_path):

@@ -22,9 +22,9 @@
 
 
 from falconswagger.models.base import get_model_schema
-from falconswagger.hooks import AuthorizationHook, before_operation
 from base64 import b64decode
 import sqlalchemy as sa
+import binascii
 
 
 class GrantsModelBase(sa.ext.declarative.AbstractConcreteBase):
@@ -92,9 +92,13 @@ class UsersModelBase(sa.ext.declarative.AbstractConcreteBase):
 
     @classmethod
     def authorize(cls, session, authorization, uri_template, path, method):
-        authorization = b64decode(authorization).decode()
+        try:
+            authorization = b64decode(authorization).decode()
+        except binascii.Error:
+            return None
+
         if not ':' in authorization:
-            return
+            return None
 
         user = cls.get(session, {'id': authorization})
         user = user[0] if user else user
@@ -187,9 +191,6 @@ class UsersModelBase(sa.ext.declarative.AbstractConcreteBase):
         insts = cls._to_list(insts)
         for inst in insts:
             inst.id = '{}:{}'.format(inst.email, inst.password)
-
-
-UsersModelBase = before_operation(AuthorizationHook())(UsersModelBase)
 
 
 def build_users_grants_table(metadata, **kwargs):

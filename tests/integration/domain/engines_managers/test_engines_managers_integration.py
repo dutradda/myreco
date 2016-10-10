@@ -551,6 +551,20 @@ class TestEnginesManagersModelPost(object):
             'engine_id': 1
         }]
 
+    def test_post_with_invalid_grant(self, client):
+        body = [{
+            'store_id': 1,
+            'engine_id': 1,
+            'engine_variables': [{
+                '_operation': 'insert',
+                'variable_id': 1,
+                'inside_engine_name': 'item_id'
+            }]
+        }]
+        resp = client.post('/engines_managers/', headers={'Authorization': 'invalid'}, body=json.dumps(body))
+        assert resp.status_code == 401
+        assert json.loads(resp.body) ==  {'error': 'Invalid authorization'}
+
 
 class TestEnginesManagersModelGet(object):
 

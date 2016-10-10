@@ -22,7 +22,7 @@
 
 
 from tests.integration.fixtures_models import UsersModel, SQLAlchemyRedisModelBase
-from falconswagger.hooks import AuthorizationHook, before_operation
+from falconswagger.hooks import authorization_hook, before_operation
 from falconswagger.http_api import HttpAPI
 from base64 import b64encode
 from unittest import mock
@@ -36,7 +36,7 @@ def model_base():
     return SQLAlchemyRedisModelBase
 
 
-@before_operation(AuthorizationHook())
+@before_operation(authorization_hook)
 class model(SQLAlchemyRedisModelBase):
     __tablename__ = 'test'
     id = sa.Column(sa.Integer, primary_key=True)
@@ -72,7 +72,7 @@ def app(session):
     return HttpAPI([model], session.bind)
 
 
-class TestUsersModelIntegrationWithAuthorizationHook(object):
+class TestUsersModelIntegrationWithauthorization_hook(object):
     def test_user_authorized_without_uri_and_methods(self, client, session):
         user = {
             'name': 'test',
