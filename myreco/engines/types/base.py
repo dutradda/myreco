@@ -57,9 +57,9 @@ class EngineDataImporterBigqueryMixin(object):
         pass
 
 
-from myreco.domain.engines.types.neighborhood.engine import NeighborhoodEngine
-from myreco.domain.engines.types.top_seller.engine import TopSellerEngine
-from myreco.domain.engines.types.visual_similarity.engine import VisualSimilarityEngine
+from myreco.engines.types.neighborhood.engine import NeighborhoodEngine
+from myreco.engines.types.top_seller.engine import TopSellerEngine
+from myreco.engines.types.visual_similarity.engine import VisualSimilarityEngine
 
 
 class EngineTypeChooser(object):

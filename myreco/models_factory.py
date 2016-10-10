@@ -21,16 +21,16 @@
 # SOFTWARE.
 
 
-from myreco.domain.users.models import (GrantsModelBase, URIsModelBase, MethodsModelBase,
+from myreco.users.models import (GrantsModelBase, URIsModelBase, MethodsModelBase,
     UsersModelBase, build_users_grants_table, build_users_stores_table)
-from myreco.domain.stores.model import StoresModelBase
-from myreco.domain.variables.model import VariablesModelBase
-from myreco.domain.placements.models import (PlacementsModelBase, VariationsModelBase,
+from myreco.stores.model import StoresModelBase
+from myreco.variables.model import VariablesModelBase
+from myreco.placements.models import (PlacementsModelBase, VariationsModelBase,
     ABTestUsersModelBase, build_variations_engines_managers_table)
-from myreco.domain.engines_managers.models import (EnginesManagersVariablesModelBase,
+from myreco.engines_managers.models import (EnginesManagersVariablesModelBase,
     EnginesManagersModelBase, build_engines_managers_fallbacks_table)
-from myreco.domain.engines.models import EnginesModelBase, EnginesTypesNamesModelBase
-from myreco.domain.items_types.models import ItemsTypesModelBase
+from myreco.engines.models import EnginesModelBase, EnginesTypesNamesModelBase
+from myreco.items_types.models import ItemsTypesModelBase
 from falconswagger.models.sqlalchemy_redis import SQLAlchemyRedisModelBuilder
 from falconswagger.hooks import authorization_hook, before_operation
 

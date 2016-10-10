@@ -22,14 +22,14 @@
 
 
 from falconswagger.models.base import get_model_schema
-from myreco.domain.engines.types.base import (
+from myreco.engines.types.base import (
     EngineRecommenderMixin,
     EngineDataImporterBigqueryMixin,
     EngineType)
 
 
-class NeighborhoodEngine(
+class TopSellerEngine(
+        EngineType,
         EngineRecommenderMixin,
-        EngineDataImporterBigqueryMixin,
-        EngineType):
+        EngineDataImporterBigqueryMixin):
     __configuration_schema__ = get_model_schema(__file__)

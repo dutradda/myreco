@@ -596,7 +596,7 @@ class TestPlacementsGetRecomendations(object):
         resp = client.get('/placements/123/recommendations', headers=headers)
         assert resp.status_code == 404
 
-    @mock.patch('myreco.domain.placements.models.EngineTypeChooser')
+    @mock.patch('myreco.placements.models.EngineTypeChooser')
     def test_get_recommendations(self, engine_chooser, client, headers):
         engine_chooser()().get_recommendations.return_value = [1, 2, 3]
         body = [{

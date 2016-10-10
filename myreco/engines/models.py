@@ -23,7 +23,7 @@
 
 from falconswagger.models.base import get_model_schema
 from falconswagger.exceptions import ModelBaseError
-from myreco.domain.engines.types.base import EngineTypeChooser
+from myreco.engines.types.base import EngineTypeChooser
 from types import MethodType, FunctionType
 from jsonschema import ValidationError
 import sqlalchemy as sa

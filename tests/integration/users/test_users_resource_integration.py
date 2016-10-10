@@ -214,7 +214,7 @@ class TestUsersResourcePost(object):
         assert resp.status_code == 400
         result = json.loads(resp.body)
         message = result['error'].pop('message')
-        expected_schema = get_model_schema(root_path + '/../myreco/domain/users/models.py')
+        expected_schema = get_model_schema(root_path + '/../myreco/users/models.py')
 
         assert message == \
                 "{'method_id': 1, 'test': 1} is not valid under any of the given schemas" \
@@ -256,7 +256,7 @@ class TestUsersResourcePutInsert(object):
             }]
         }
         resp = client.put('/users/test2', body=json.dumps(user), headers=headers)
-        expected_schema = get_model_schema(root_path + '/../myreco/domain/users/models.py')
+        expected_schema = get_model_schema(root_path + '/../myreco/users/models.py')
         expected_schema = {
             'definitions': expected_schema['definitions'],
             '$ref': '#/definitions/schema_with_grants'
@@ -945,7 +945,7 @@ class TestUsersResourceDeleteGet(object):
 class TestUsersResourceSchemas(object):
     def test_get_put_schemas(self, client, headers, root_path):
         resp = client.get('/users/_schema/', headers=headers)
-        expected_schema = get_model_schema(root_path + '/../myreco/domain/users/models.py')
+        expected_schema = get_model_schema(root_path + '/../myreco/users/models.py')
 
         assert resp.status_code == 200
         assert json.loads(resp.body) == expected_schema
