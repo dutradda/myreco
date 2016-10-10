@@ -25,8 +25,8 @@ from myreco.users.models import (GrantsModelBase, URIsModelBase, MethodsModelBas
     UsersModelBase, build_users_grants_table, build_users_stores_table)
 from myreco.stores.model import StoresModelBase
 from myreco.variables.model import VariablesModelBase
-from myreco.placements.models import (PlacementsModelBase, VariationsModelBase,
-    ABTestUsersModelBase, build_variations_engines_managers_table)
+from myreco.placements.models import (PlacementsModelBase, PlacementsModelRecommenderMixin,
+	VariationsModelBase, ABTestUsersModelBase, build_variations_engines_managers_table)
 from myreco.engines_managers.models import (EnginesManagersVariablesModelBase,
     EnginesManagersModelBase, build_engines_managers_fallbacks_table)
 from myreco.engines.models import EnginesModelBase, EnginesTypesNamesModelBase
@@ -53,7 +53,7 @@ class ModelsFactory(object):
 			attrs.update(update)
 		return attrs
 
-	def make_all_models(self):
+	def make_all_models(self, placement_with_recommender=True):
 		self.make_all_tables()
 		return {
 			'engines': self.make_engines_model(),
@@ -61,7 +61,7 @@ class ModelsFactory(object):
 			'engines_managers': self.make_engines_managers_model(),
 			'engines_managers_variables': self.make_engines_managers_variables_model(),
 			'items_types': self.make_items_types_model(),
-			'placements': self.make_placements_model(),
+			'placements': self.make_placements_model(placement_with_recommender=True),
 			'variations': self.make_variations_model(),
 			'ab_test_users': self.make_ab_test_users_model(),
 			'stores': self.make_stores_model(),
@@ -127,10 +127,14 @@ class ModelsFactory(object):
 		ItemsTypesModel = before_operation(authorization_hook)(ItemsTypesModel)
 		return ItemsTypesModel
 
-	def make_placements_model(self, attributes=None):
+	def make_placements_model(self, attributes=None, placement_with_recommender=True):
 		attributes = self._init_attributes(attributes, self._commons_models_attrs)
+		if placement_with_recommender:
+			bases_classes = (PlacementsModelBase, PlacementsModelRecommenderMixin, self.base_model)
+		else:
+			bases_classes = (PlacementsModelBase, self.base_model)
 		PlacementsModel = self.meta_class(
-			'PlacementsModel', (PlacementsModelBase, self.base_model), attributes)
+			'PlacementsModel', bases_classes, attributes)
 
 		PlacementsModel.post_by_body = \
 		    before_operation(authorization_hook)(PlacementsModel.post_by_body)

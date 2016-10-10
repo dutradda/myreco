@@ -64,6 +64,9 @@ class PlacementsModelBase(sa.ext.declarative.AbstractConcreteBase):
 
         super().__setattr__(name, value)
 
+
+class PlacementsModelRecommenderMixin(sa.ext.declarative.AbstractConcreteBase):
+
     @classmethod
     def get_recommendations(cls, req, resp):
         placement = cls._get_placement(req, resp)
