@@ -97,6 +97,8 @@ class UsersModelBase(AbstractConcreteBase):
             authorization = b64decode(authorization).decode()
         except binascii.Error:
             return None
+        except UnicodeDecodeError:
+            return None
 
         if not ':' in authorization:
             return None
