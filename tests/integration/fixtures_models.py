@@ -35,7 +35,7 @@ from myreco.factory import ModelsFactory
 
 
 table_args = {'mysql_engine':'innodb'}
-factory = ModelsFactory(commons_models_attributes={'__table_args__': table_args},
+factory = ModelsFactory('myreco', commons_models_attributes={'__table_args__': table_args},
     					commons_tables_attributes=table_args)
 models = factory.make_all_models()
 

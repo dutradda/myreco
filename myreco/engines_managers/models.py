@@ -71,7 +71,7 @@ class EnginesManagersModelBase(AbstractConcreteBase):
 
     @declared_attr
     def engine_variables(cls):
-        return sa.orm.relationship('EnginesManagersVariablesModel', uselist=True)
+        return sa.orm.relationship('EnginesManagersVariablesModel', uselist=True, passive_deletes=True)
 
     @declared_attr
     def fallbacks(cls):

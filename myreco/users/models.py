@@ -68,7 +68,6 @@ class MethodsModelBase(AbstractConcreteBase):
 class UsersModelBase(AbstractConcreteBase):
     __tablename__ = 'users'
     __schema__ = get_model_schema(__file__)
-    __realm__= 'myreco'
 
     id = sa.Column(sa.String(255), primary_key=True)
     name = sa.Column(sa.String(255), unique=True, nullable=False)
