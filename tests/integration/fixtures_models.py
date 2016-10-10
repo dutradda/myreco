@@ -31,7 +31,7 @@ from myreco.engines_managers.models import (EnginesManagersVariablesModelBase,
     EnginesManagersModelBase, build_engines_managers_fallbacks_table)
 from myreco.engines.models import EnginesModelBase, EnginesTypesNamesModelBase
 from myreco.items_types.models import ItemsTypesModelBase
-from myreco.models_factory import ModelsFactory
+from myreco.factory import ModelsFactory
 
 
 table_args = {'mysql_engine':'innodb'}
