@@ -22,16 +22,17 @@
 
 
 from falconswagger.models.base import get_model_schema
+from sqlalchemy.ext.declarative import AbstractConcreteBase, declared_attr
 import sqlalchemy as sa
 
 
-class VariablesModelBase(sa.ext.declarative.AbstractConcreteBase):
+class VariablesModelBase(AbstractConcreteBase):
     __tablename__ = 'variables'
     __schema__ = get_model_schema(__file__)
 
     id = sa.Column(sa.Integer, primary_key=True)
     name = sa.Column(sa.String(255), unique=True, nullable=False)
 
-    @sa.ext.declarative.declared_attr
+    @declared_attr
     def store_id(cls):
     	return sa.Column(sa.ForeignKey('stores.id'), nullable=False)

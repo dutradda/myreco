@@ -22,33 +22,34 @@
 
 
 from falconswagger.models.base import get_model_schema
+from sqlalchemy.ext.declarative import AbstractConcreteBase, declared_attr
 from base64 import b64decode
 import sqlalchemy as sa
 import binascii
 
 
-class GrantsModelBase(sa.ext.declarative.AbstractConcreteBase):
+class GrantsModelBase(AbstractConcreteBase):
     __tablename__ = 'grants'
     __use_redis__ = False
 
-    @sa.ext.declarative.declared_attr
+    @declared_attr
     def uri_id(cls):
         return sa.Column(sa.ForeignKey('uris.id'), primary_key=True)
 
-    @sa.ext.declarative.declared_attr
+    @declared_attr
     def method_id(cls):
         return sa.Column(sa.ForeignKey('methods.id'), primary_key=True)
 
-    @sa.ext.declarative.declared_attr
+    @declared_attr
     def uri(cls):
         return sa.orm.relationship('URIsModel')
 
-    @sa.ext.declarative.declared_attr
+    @declared_attr
     def method(cls):
         return sa.orm.relationship('MethodsModel')
 
 
-class URIsModelBase(sa.ext.declarative.AbstractConcreteBase):
+class URIsModelBase(AbstractConcreteBase):
     __tablename__ = 'uris'
     __use_redis__ = False
 
@@ -56,7 +57,7 @@ class URIsModelBase(sa.ext.declarative.AbstractConcreteBase):
     uri = sa.Column(sa.String(255), unique=True, nullable=False)
 
 
-class MethodsModelBase(sa.ext.declarative.AbstractConcreteBase):
+class MethodsModelBase(AbstractConcreteBase):
     __tablename__ = 'methods'
     __use_redis__ = False
 
@@ -64,7 +65,7 @@ class MethodsModelBase(sa.ext.declarative.AbstractConcreteBase):
     method = sa.Column(sa.String(10), unique=True, nullable=False)
 
 
-class UsersModelBase(sa.ext.declarative.AbstractConcreteBase):
+class UsersModelBase(AbstractConcreteBase):
     __tablename__ = 'users'
     __schema__ = get_model_schema(__file__)
     __realm__= 'myreco'
@@ -75,7 +76,7 @@ class UsersModelBase(sa.ext.declarative.AbstractConcreteBase):
     password = sa.Column(sa.String(255), nullable=False)
     admin = sa.Column(sa.Boolean, default=False)
 
-    @sa.ext.declarative.declared_attr
+    @declared_attr
     def grants(cls):
         grants_primaryjoin = 'UsersModel.id == users_grants.c.user_id'
         grants_secondaryjoin = 'and_('\
@@ -86,7 +87,7 @@ class UsersModelBase(sa.ext.declarative.AbstractConcreteBase):
             'GrantsModel', uselist=True, secondary='users_grants',
             primaryjoin=grants_primaryjoin, secondaryjoin=grants_secondaryjoin)
 
-    @sa.ext.declarative.declared_attr
+    @declared_attr
     def stores(cls):
         return sa.orm.relationship('StoresModel', uselist=True, secondary='users_stores')
 

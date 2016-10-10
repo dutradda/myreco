@@ -26,12 +26,13 @@ from falconswagger.json_builder import JsonBuilder
 from falconswagger.exceptions import ModelBaseError
 from myreco.engines.types.base import EngineTypeChooser
 from falcon.errors import HTTPNotFound
+from sqlalchemy.ext.declarative import AbstractConcreteBase, declared_attr
 import sqlalchemy as sa
 import hashlib
 import json
 
 
-class PlacementsModelBase(sa.ext.declarative.AbstractConcreteBase):
+class PlacementsModelBase(AbstractConcreteBase):
     __tablename__ = 'placements'
     __schema__ = get_model_schema(__file__)
 
@@ -40,11 +41,11 @@ class PlacementsModelBase(sa.ext.declarative.AbstractConcreteBase):
     name = sa.Column(sa.String(255), unique=True, nullable=False)
     ab_testing = sa.Column(sa.Boolean, default=False)
 
-    @sa.ext.declarative.declared_attr
+    @declared_attr
     def store_id(cls):
         return sa.Column(sa.ForeignKey('stores.id'), primary_key=True)
 
-    @sa.ext.declarative.declared_attr
+    @declared_attr
     def variations(cls):
         return sa.orm.relationship('VariationsModel', uselist=True, passive_deletes=True)
 
@@ -65,7 +66,7 @@ class PlacementsModelBase(sa.ext.declarative.AbstractConcreteBase):
         super().__setattr__(name, value)
 
 
-class PlacementsModelRecommenderMixin(sa.ext.declarative.AbstractConcreteBase):
+class PlacementsModelRecommenderMixin(AbstractConcreteBase):
 
     @classmethod
     def get_recommendations(cls, req, resp):
@@ -112,30 +113,30 @@ class PlacementsModelRecommenderMixin(sa.ext.declarative.AbstractConcreteBase):
                 return var['schema']
 
 
-class VariationsModelBase(sa.ext.declarative.AbstractConcreteBase):
+class VariationsModelBase(AbstractConcreteBase):
     __tablename__ = 'variations'
     __use_redis__ = False
 
     id = sa.Column(sa.Integer, primary_key=True)
     weight = sa.Column(sa.Float)
 
-    @sa.ext.declarative.declared_attr
+    @declared_attr
     def placement_hash(cls):
         return sa.Column(sa.ForeignKey('placements.hash', ondelete='CASCADE', onupdate='CASCADE'), nullable=False)
 
-    @sa.ext.declarative.declared_attr
+    @declared_attr
     def engines_managers(cls):
         return sa.orm.relationship('EnginesManagersModel',
                 uselist=True, secondary='variations_engines_managers')
 
 
-class ABTestUsersModelBase(sa.ext.declarative.AbstractConcreteBase):
+class ABTestUsersModelBase(AbstractConcreteBase):
     __tablename__ = 'ab_test_users'
     __use_redis__ = False
 
     id = sa.Column(sa.Integer, primary_key=True)
 
-    @sa.ext.declarative.declared_attr
+    @declared_attr
     def variation_id(cls):
         return sa.Column(sa.ForeignKey('variations.id'), nullable=False)
 

@@ -26,11 +26,12 @@ from falconswagger.exceptions import ModelBaseError
 from myreco.engines.types.base import EngineTypeChooser
 from types import MethodType, FunctionType
 from jsonschema import ValidationError
+from sqlalchemy.ext.declarative import AbstractConcreteBase, declared_attr
 import sqlalchemy as sa
 import json
 
 
-class EnginesModelBase(sa.ext.declarative.AbstractConcreteBase):
+class EnginesModelBase(AbstractConcreteBase):
     __tablename__ = 'engines'
     __schema__ = get_model_schema(__file__)
 
@@ -38,27 +39,27 @@ class EnginesModelBase(sa.ext.declarative.AbstractConcreteBase):
     name = sa.Column(sa.String(255), unique=True, nullable=False)
     configuration_json = sa.Column(sa.Text, nullable=False)
 
-    @sa.ext.declarative.declared_attr
+    @declared_attr
     def store_id(cls):
         return sa.Column(sa.ForeignKey('stores.id'), nullable=False)
 
-    @sa.ext.declarative.declared_attr
+    @declared_attr
     def type_name_id(cls):
         return sa.Column(sa.ForeignKey('engines_types_names.id'), nullable=False)
 
-    @sa.ext.declarative.declared_attr
+    @declared_attr
     def item_type_id(cls):
         return sa.Column(sa.ForeignKey('items_types.id'), nullable=False)
 
-    @sa.ext.declarative.declared_attr
+    @declared_attr
     def type_name(cls):
         return sa.orm.relationship('EnginesTypesNamesModel')
 
-    @sa.ext.declarative.declared_attr
+    @declared_attr
     def item_type(cls):
         return sa.orm.relationship('ItemsTypesModel')
 
-    @sa.ext.declarative.declared_attr
+    @declared_attr
     def store(cls):
         return sa.orm.relationship('StoresModel')
 
@@ -102,7 +103,7 @@ class EnginesModelBase(sa.ext.declarative.AbstractConcreteBase):
         dict_inst['variables'] = self.type_.get_variables(self)
 
 
-class EnginesTypesNamesModelBase(sa.ext.declarative.AbstractConcreteBase):
+class EnginesTypesNamesModelBase(AbstractConcreteBase):
     __tablename__ = 'engines_types_names'
     __use_redis__ = False
 

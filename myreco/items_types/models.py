@@ -23,11 +23,12 @@
 
 from falconswagger.models.redis import RedisModelBuilder
 from falconswagger.models.base import get_model_schema
+from sqlalchemy.ext.declarative import AbstractConcreteBase
 import sqlalchemy as sa
 import json
 
 
-class ItemsTypesModelBase(sa.ext.declarative.AbstractConcreteBase):
+class ItemsTypesModelBase(AbstractConcreteBase):
     __tablename__ = 'items_types'
     __schema__ = get_model_schema(__file__)
 
