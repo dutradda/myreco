@@ -36,18 +36,15 @@ class EnginesManagersVariablesModelBase(AbstractConcreteBase):
     is_filter = sa.Column(sa.Boolean, default=False)
     override = sa.Column(sa.Boolean, default=False)
     override_value_json = sa.Column(sa.Text)
-
-    @declared_attr
-    def inside_engine_name(cls):
-        return sa.Column(sa.String(255), nullable=False)
+    inside_engine_name = sa.Column(sa.String(255), nullable=False)
 
     @declared_attr
     def variable_id(cls):
-        return sa.Column(sa.ForeignKey('variables.id', ondelete='CASCADE', onupdate='CASCADE'))
+        return sa.Column(sa.ForeignKey('variables.id', ondelete='CASCADE', onupdate='CASCADE'), nullable=False)
 
     @declared_attr
     def engine_manager_id(cls):
-        return sa.Column(sa.ForeignKey('engines_managers.id', ondelete='CASCADE', onupdate='CASCADE'))
+        return sa.Column(sa.ForeignKey('engines_managers.id', ondelete='CASCADE', onupdate='CASCADE'), nullable=False)
 
     @declared_attr
     def variable(cls):
@@ -81,7 +78,7 @@ class EnginesManagersModelBase(AbstractConcreteBase):
         return sa.orm.relationship('EnginesManagersModel',
                                    uselist=True, remote_side='EnginesManagersModel.id',
                                    secondary='engines_managers_fallbacks',
-                                   primaryjoin='engines_managers_fallbacks.c.engines_managers_id == EnginesManagersModel.id',
+                                   primaryjoin='engines_managers_fallbacks.c.engine_manager_id == EnginesManagersModel.id',
                                    secondaryjoin='engines_managers_fallbacks.c.fallback_id == EnginesManagersModel.id')
 
     def __init__(self, session, input_=None, **kwargs):
@@ -152,8 +149,8 @@ class EnginesManagersModelBase(AbstractConcreteBase):
 
 def build_engines_managers_fallbacks_table(metadata, **kwargs):
     return sa.Table("engines_managers_fallbacks", metadata,
-                    sa.Column("engines_managers_id", sa.Integer, sa.ForeignKey(
-                        "engines_managers.id", ondelete='CASCADE', onupdate='CASCADE'), primary_key=True),
-                    sa.Column("fallback_id", sa.Integer, sa.ForeignKey(
-                        "engines_managers.id", ondelete='CASCADE', onupdate='CASCADE'), primary_key=True),
-                    **kwargs)
+        sa.Column("engine_manager_id", sa.Integer, sa.ForeignKey(
+            "engines_managers.id", ondelete='CASCADE', onupdate='CASCADE'), primary_key=True),
+        sa.Column("fallback_id", sa.Integer, sa.ForeignKey(
+            "engines_managers.id", ondelete='CASCADE', onupdate='CASCADE'), primary_key=True),
+        **kwargs)
