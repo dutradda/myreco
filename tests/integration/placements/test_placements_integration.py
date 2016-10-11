@@ -215,7 +215,8 @@ class TestPlacementsModelPost(object):
                         'store': {
                             'country': 'test',
                             'id': 1,
-                            'name': 'test'
+                            'name': 'test',
+                            'configuration': None
                         },
                         'store_id': 1,
                         'type_name': {
@@ -333,7 +334,8 @@ class TestPlacementsModelGet(object):
                         'store': {
                             'country': 'test',
                             'id': 1,
-                            'name': 'test'
+                            'name': 'test',
+                            'configuration': None
                         },
                         'store_id': 1,
                         'type_name': {
@@ -537,7 +539,8 @@ class TestPlacementsModelUriTemplateGet(object):
                         'store': {
                             'country': 'test',
                             'id': 1,
-                            'name': 'test'
+                            'name': 'test',
+                            'configuration': None
                         },
                         'store_id': 1,
                         'type_name': {

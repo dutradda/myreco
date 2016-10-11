@@ -24,6 +24,7 @@
 from falconswagger.models.base import get_model_schema
 from sqlalchemy.ext.declarative import AbstractConcreteBase
 import sqlalchemy as sa
+import json
 
 
 class StoresModelBase(AbstractConcreteBase):
@@ -33,3 +34,14 @@ class StoresModelBase(AbstractConcreteBase):
     id = sa.Column(sa.Integer, primary_key=True)
     name = sa.Column(sa.String(255), unique=True, nullable=False)
     country = sa.Column(sa.String(255), unique=True, nullable=False)
+    configuration_json = sa.Column(sa.Text, default='null')
+
+    def _setattr(self, attr_name, value, session, input_):
+        if attr_name == 'configuration':
+            value = json.dumps(value)
+            attr_name = 'configuration_json'
+
+        super()._setattr(attr_name, value, session, input_)
+
+    def _format_output_json(self, dict_inst):
+        dict_inst['configuration'] = json.loads(dict_inst.pop('configuration_json'))

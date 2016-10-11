@@ -301,7 +301,8 @@ class TestEnginesManagersModelPost(object):
                 'store': {
                     'id': 1,
                     'country': 'test',
-                    'name': 'test'
+                    'name': 'test',
+                    'configuration': None
                 }
             },
             'store_id': 1,
@@ -384,7 +385,8 @@ class TestEnginesManagersModelPost(object):
                 'store': {
                     'id': 1,
                     'country': 'test',
-                    'name': 'test'
+                    'name': 'test',
+                    'configuration': None
                 }
             },
             'store_id': 1,
@@ -478,7 +480,8 @@ class TestEnginesManagersModelPost(object):
                     'store': {
                         'id': 1,
                         'country': 'test',
-                        'name': 'test'
+                        'name': 'test',
+                        'configuration': None
                     }
                 },
                 'store_id': 1,
@@ -544,7 +547,8 @@ class TestEnginesManagersModelPost(object):
                 'store': {
                     'id': 1,
                     'country': 'test',
-                    'name': 'test'
+                    'name': 'test',
+                    'configuration': None
                 }
             },
             'store_id': 1,
@@ -653,7 +657,8 @@ class TestEnginesManagersModelGet(object):
                 'store': {
                     'id': 1,
                     'country': 'test',
-                    'name': 'test'
+                    'name': 'test',
+                    'configuration': None
                 }
             },
             'store_id': 1,
@@ -890,7 +895,8 @@ class TestEnginesManagersModelUriTemplatePatch(object):
                 'store': {
                     'id': 1,
                     'country': 'test',
-                    'name': 'test'
+                    'name': 'test',
+                    'configuration': None
                 }
             },
             'store_id': 1,
@@ -1014,7 +1020,8 @@ class TestEnginesManagersModelUriTemplateGet(object):
                 'store': {
                     'id': 1,
                     'country': 'test',
-                    'name': 'test'
+                    'name': 'test',
+                    'configuration': None
                 }
             },
             'store_id': 1,

@@ -74,6 +74,7 @@ class TestStoresModelPost(object):
                     'additionalProperties': False,
                     'required': ['name', 'country'],
                     'properties': {
+                        'configuration': {'$ref': 'http://json-schema.org/draft-04/schema#'},
                         'name': {'type': 'string'},
                         'country': {'type': 'string'}
                     }
@@ -88,6 +89,7 @@ class TestStoresModelPost(object):
         }]
         resp = client.post('/stores/', headers=headers, body=json.dumps(body))
         body[0]['id'] = 1
+        body[0]['configuration'] = None
 
         assert resp.status_code == 201
         assert json.loads(resp.body) ==  body
@@ -120,6 +122,7 @@ class TestStoresModelGet(object):
         }]
         client.post('/stores/', headers=headers, body=json.dumps(body))
         body[0]['id'] = 1
+        body[0]['configuration'] = None
 
         resp = client.get('/stores/', headers=headers)
         assert resp.status_code == 200
@@ -145,6 +148,7 @@ class TestStoresModelUriTemplatePatch(object):
                     'additionalProperties': False,
                     'minProperties': 1,
                     'properties': {
+                        'configuration': {'$ref': 'http://json-schema.org/draft-04/schema#'},
                         'name': {'type': 'string'},
                         'country': {'type': 'string'}
                     }
@@ -221,5 +225,7 @@ class TestStoresModelUriTemplateGet(object):
 
         resp = client.get('/stores/1/', headers=headers)
         body[0]['id'] = 1
+        body[0]['configuration'] = None
+
         assert resp.status_code == 200
         assert json.loads(resp.body) == body[0]
