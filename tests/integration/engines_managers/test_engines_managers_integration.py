@@ -66,19 +66,19 @@ def app(session):
 
     item_type = {
         'name': 'products',
-        'id_names_json': '["sku"]',
+        'id_names_json': '["item_id"]',
         'schema_json': schema_json
     }
     ItemsTypesModel.insert(session, item_type)
     item_type = {
         'name': 'categories',
-        'id_names_json': '["id"]',
+        'id_names_json': '["item_id"]',
         'schema_json': schema_json
     }
     ItemsTypesModel.insert(session, item_type)
     item_type = {
         'name': 'invalid',
-        'id_names_json': '["id"]',
+        'id_names_json': '["item_id"]',
         'schema_json': '{"type": "object", "properties": {"item_id": {"type": "string"}}}'
     }
     ItemsTypesModel.insert(session, item_type)
@@ -277,7 +277,7 @@ class TestEnginesManagersModelPost(object):
                     }],
                     'name': 'products',
                     'id_names': [
-                        'sku'
+                        'item_id'
                     ]
                 },
                 'store_id': 1,
@@ -361,7 +361,7 @@ class TestEnginesManagersModelPost(object):
                     }],
                     'name': 'products',
                     'id_names': [
-                        'sku'
+                        'item_id'
                     ]
                 },
                 'store_id': 1,
@@ -456,7 +456,7 @@ class TestEnginesManagersModelPost(object):
                         }],
                         'name': 'products',
                         'id_names': [
-                            'sku'
+                            'item_id'
                         ]
                     },
                     'store_id': 1,
@@ -523,7 +523,7 @@ class TestEnginesManagersModelPost(object):
                     }],
                     'name': 'products',
                     'id_names': [
-                        'sku'
+                        'item_id'
                     ]
                 },
                 'store_id': 1,
@@ -633,7 +633,7 @@ class TestEnginesManagersModelGet(object):
                     }],
                     'name': 'products',
                     'id_names': [
-                        'sku'
+                        'item_id'
                     ]
                 },
                 'store_id': 1,
@@ -871,7 +871,7 @@ class TestEnginesManagersModelUriTemplatePatch(object):
                     }],
                     'name': 'products',
                     'id_names': [
-                        'sku'
+                        'item_id'
                     ]
                 },
                 'store_id': 1,
@@ -996,7 +996,7 @@ class TestEnginesManagersModelUriTemplateGet(object):
                     }],
                     'name': 'products',
                     'id_names': [
-                        'sku'
+                        'item_id'
                     ]
                 },
                 'store_id': 1,

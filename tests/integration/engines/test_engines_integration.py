@@ -57,7 +57,7 @@ def app(session):
     item_type = {
         'name': 'products',
         'id_names_json': '["sku"]',
-        'schema_json': '{}'
+        'schema_json': '{"properties": {"sku": {"type": "string"}}}'
     }
     ItemsTypesModel.insert(session, item_type)
 
@@ -129,9 +129,9 @@ class TestEnginesModelPost(object):
         body[0]['item_type'] = item_type = {
             'id': 1,
             'name': 'products',
-            'id_names': ["sku"],
-            'schema': {},
-            'available_filters': []
+            'id_names': ['sku'],
+            'schema': {'properties': {'sku': {'type': 'string'}}},
+            'available_filters': [{'name': 'sku', 'schema': {'type': 'string'}}]
         }
 
         assert resp.status_code == 201
@@ -166,8 +166,8 @@ class TestEnginesModelGet(object):
             'id': 1,
             'name': 'products',
             'id_names': ["sku"],
-            'schema': {},
-            'available_filters': []
+            'schema': {'properties': {'sku': {'type': 'string'}}},
+            'available_filters': [{'name': 'sku', 'schema': {'type': 'string'}}]
         }
 
         resp = client.get('/engines/', headers=headers)
@@ -318,8 +318,8 @@ class TestEnginesModelUriTemplateGet(object):
             'id': 1,
             'name': 'products',
             'id_names': ["sku"],
-            'schema': {},
-            'available_filters': []
+            'schema': {'properties': {'sku': {'type': 'string'}}},
+            'available_filters': [{'name': 'sku', 'schema': {'type': 'string'}}]
         }
 
         assert resp.status_code == 200

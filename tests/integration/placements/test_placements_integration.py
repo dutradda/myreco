@@ -40,6 +40,7 @@ def model_base():
 
 @pytest.fixture
 def app(session):
+    UsersModel.__api__ = None
     user = {
         'name': 'test',
         'email': 'test',
@@ -48,12 +49,14 @@ def app(session):
     }
     UsersModel.insert(session, user)
 
+    StoresModel.__api__ = None
     store = {
         'name': 'test',
         'country': 'test'
     }
     StoresModel.insert(session, store)
 
+    EnginesTypesNamesModel.__api__ = None
     EnginesTypesNamesModel.insert(session, {'name': 'visual_similarity'})
     EnginesTypesNamesModel.insert(session, {'name': 'top_seller'})
 
@@ -65,25 +68,27 @@ def app(session):
         }
     })
 
+    ItemsTypesModel.__api__ = None
     item_type = {
         'name': 'products',
-        'id_names_json': '["sku"]',
+        'id_names_json': '["item_id"]',
         'schema_json': schema_json
     }
     ItemsTypesModel.insert(session, item_type)
     item_type = {
         'name': 'categories',
-        'id_names_json': '["id"]',
+        'id_names_json': '["item_id"]',
         'schema_json': schema_json
     }
     ItemsTypesModel.insert(session, item_type)
     item_type = {
         'name': 'invalid',
-        'id_names_json': '["id"]',
+        'id_names_json': '["item_id"]',
         'schema_json': '{"type": "object", "properties": {"item_id": {"type": "string"}}}'
     }
     ItemsTypesModel.insert(session, item_type)
 
+    EnginesModel.__api__ = None
     engine = {
         'name': 'Visual Similarity',
         'configuration_json': json.dumps(
@@ -111,9 +116,11 @@ def app(session):
     }
     EnginesModel.insert(session, engine)
 
+    VariablesModel.__api__ = None
     VariablesModel.insert(session, {'name': 'test', 'store_id': 1})
     VariablesModel.insert(session, {'name': 'test2', 'store_id': 1})
 
+    EnginesManagersModel.__api__ = None
     engine_manager = {
         'store_id': 1,
         'engine_id': 1,
@@ -125,6 +132,7 @@ def app(session):
     }
     EnginesManagersModel.insert(session, engine_manager)
 
+    PlacementsModel.__api__ = None
     return HttpAPI([PlacementsModel], session.bind, FakeStrictRedis())
 
 
@@ -133,7 +141,6 @@ def headers():
     return {
         'Authorization': b64encode('test:test'.encode()).decode()
     }
-
 
 
 class TestPlacementsModelPost(object):
@@ -207,7 +214,7 @@ class TestPlacementsModelPost(object):
                             }],
                             'name': 'products',
                             'id_names': [
-                                'sku'
+                                'item_id'
                             ]
                         },
                         'item_type_id': 1,
@@ -326,7 +333,7 @@ class TestPlacementsModelGet(object):
                             }],
                             'name': 'products',
                             'id_names': [
-                                'sku'
+                                'item_id'
                             ]
                         },
                         'item_type_id': 1,
@@ -531,7 +538,7 @@ class TestPlacementsModelUriTemplateGet(object):
                             }],
                             'name': 'products',
                             'id_names': [
-                                'sku'
+                                'item_id'
                             ]
                         },
                         'item_type_id': 1,
