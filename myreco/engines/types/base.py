@@ -22,6 +22,7 @@
 
 
 from falconswagger.models.base import build_validator, get_module_path
+from abc import ABCMeta, abstractmethod
 import inspect
 
 
@@ -44,16 +45,18 @@ class EngineType(metaclass=EngineTypeMeta):
     def validate_config(self, engine):
         pass
 
-
-class EngineRecommenderMixin(object):
-
     def get_recommendations(self, **variables):
         return []
 
+    def export_objects(self):
+        pass
 
-class EngineDataImporterBigqueryMixin(object):
 
-    def import_data(self):
+class AbstractDataImporter(metaclass=ABCMeta):
+
+    @classmethod
+    @abstractmethod
+    def get_data(cls, configuration):
         pass
 
 

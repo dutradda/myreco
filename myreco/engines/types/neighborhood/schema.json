@@ -1,1 +1,7 @@
-{}
+{
+    "type": "object",
+    "required": ["data_importer_path"],
+    "properties": {
+        "data_importer_path": {"type": "string"}
+    }
+}

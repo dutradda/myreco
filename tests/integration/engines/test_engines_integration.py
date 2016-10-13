@@ -24,9 +24,13 @@
 from tests.integration.fixtures_models import (
     SQLAlchemyRedisModelBase, StoresModel, UsersModel,
     ItemsTypesModel, EnginesModel, EnginesTypesNamesModel)
+from myreco.factory import ModelsFactory
+from pytest_falcon.plugin import Client
 from falconswagger.http_api import HttpAPI
 from base64 import b64encode
 from fakeredis import FakeStrictRedis
+from unittest import mock
+from time import sleep
 import pytest
 import json
 
@@ -104,7 +108,7 @@ class TestEnginesModelPost(object):
     def test_post_with_invalid_grant(self, client):
         body = [{
             'name': 'Seven Days Top Seller',
-            'configuration': {"days_interval": 7},
+            'configuration': {"days_interval": 7, 'data_importer_path': 'test.test'},
             'store_id': 1,
             'type_name_id': 1,
             'item_type_id': 1
@@ -116,7 +120,7 @@ class TestEnginesModelPost(object):
     def test_post(self, client, headers):
         body = [{
             'name': 'Seven Days Top Seller',
-            'configuration': {"days_interval": 7},
+            'configuration': {"days_interval": 7, 'data_importer_path': 'test.test'},
             'store_id': 1,
             'type_name_id': 1,
             'item_type_id': 1
@@ -152,7 +156,7 @@ class TestEnginesModelGet(object):
     def test_get(self, client, headers):
         body = [{
             'name': 'Seven Days Top Seller',
-            'configuration': {"days_interval": 7},
+            'configuration': {"days_interval": 7, 'data_importer_path': 'test.test'},
             'store_id': 1,
             'type_name_id': 1,
             'item_type_id': 1
@@ -207,7 +211,7 @@ class TestEnginesModelUriTemplatePatch(object):
     def test_patch_with_invalid_configuration(self, client, headers):
         body = [{
             'name': 'Seven Days Top Seller',
-            'configuration': {"days_interval": 7},
+            'configuration': {"days_interval": 7, 'data_importer_path': 'test.test'},
             'store_id': 1,
             'type_name_id': 1,
             'item_type_id': 1
@@ -225,10 +229,10 @@ class TestEnginesModelUriTemplatePatch(object):
                 'message': "'days_interval' is a required property",
                 'schema': {
                     'type': 'object',
-                    'additionalProperties': False,
-                    'required': ['days_interval'],
+                    'required': ['days_interval', 'data_importer_path'],
                     'properties': {
-                        'days_interval': {'type': 'integer'}
+                        'days_interval': {'type': 'integer'},
+                        'data_importer_path': {'type': 'string'}
                     }
                 }
             }
@@ -245,7 +249,7 @@ class TestEnginesModelUriTemplatePatch(object):
     def test_patch(self, client, headers):
         body = [{
             'name': 'Seven Days Top Seller',
-            'configuration': {"days_interval": 7},
+            'configuration': {"days_interval": 7, 'data_importer_path': 'test.test'},
             'store_id': 1,
             'type_name_id': 1,
             'item_type_id': 1
@@ -272,7 +276,7 @@ class TestEnginesModelUriTemplateDelete(object):
     def test_delete(self, client, headers):
         body = [{
             'name': 'Seven Days Top Seller',
-            'configuration': {"days_interval": 7},
+            'configuration': {"days_interval": 7, 'data_importer_path': 'test.test'},
             'store_id': 1,
             'type_name_id': 1,
             'item_type_id': 1
@@ -302,7 +306,7 @@ class TestEnginesModelUriTemplateGet(object):
     def test_get(self, client, headers):
         body = [{
             'name': 'Seven Days Top Seller',
-            'configuration': {"days_interval": 7},
+            'configuration': {"days_interval": 7, 'data_importer_path': 'test.test'},
             'store_id': 1,
             'type_name_id': 1,
             'item_type_id': 1
@@ -324,3 +328,259 @@ class TestEnginesModelUriTemplateGet(object):
 
         assert resp.status_code == 200
         assert json.loads(resp.body) == body[0]
+
+
+@pytest.fixture
+def data_importer_app(session):
+    table_args = {'mysql_engine':'innodb'}
+    factory = ModelsFactory('myreco', commons_models_attributes={'__table_args__': table_args},
+                            commons_tables_attributes=table_args)
+    models = factory.make_all_models('importer')
+    user = {
+        'name': 'test',
+        'email': 'test',
+        'password': 'test',
+        'admin': True
+    }
+    models['users'].insert(session, user)
+
+    store = {
+        'name': 'test',
+        'country': 'test'
+    }
+    models['stores'].insert(session, store)
+
+    models['engines_types_names'].insert(session, {'name': 'top_seller'})
+
+    item_type = {
+        'name': 'products',
+        'id_names_json': '["sku"]',
+        'schema_json': '{"properties": {"sku": {"type": "string"}}}'
+    }
+    models['items_types'].insert(session, item_type)
+
+    engine = {
+        'name': 'Seven Days Top Seller',
+        'configuration': {'days_interval': 7, 'data_importer_path': 'test.test'},
+        'store_id': 1,
+        'type_name_id': 1,
+        'item_type_id': 1
+    }
+    models['engines'].insert(session, engine)
+
+    return HttpAPI([models['engines']], session.bind, FakeStrictRedis())
+
+
+@pytest.fixture
+def data_importer_client(data_importer_app):
+    return Client(data_importer_app)
+
+
+@mock.patch('myreco.engines.models.import_module')
+@mock.patch('myreco.engines.models.random.getrandbits',
+    new=mock.MagicMock(return_value=131940827655846590526331314439483569710))
+class TestEnginesModelsDataImporter(object):
+
+    def test_importer_post(self, import_module, data_importer_client, headers):
+        resp = data_importer_client.post('/engines/1/import_data', headers=headers)
+
+        assert json.loads(resp.body) == {'hash': '6342e10bd7dca3240c698aa79c98362e'}
+        assert import_module.call_args_list == [mock.call('test.test')]
+        assert import_module().get_data.call_args_list == [
+            mock.call({'days_interval': 7, 'data_importer_path': 'test.test'})]
+
+
+    def test_importer_get_running(self, import_module, data_importer_client, headers):
+        def func(x):
+            sleep(1)
+
+        import_module().get_data = func
+        data_importer_client.post('/engines/1/import_data', headers=headers)
+
+        resp = data_importer_client.get(
+            '/engines/1/import_data?hash=6342e10bd7dca3240c698aa79c98362e', headers=headers)
+
+        assert json.loads(resp.body) == {'status': 'running'}
+
+    def test_importer_get_done(self, import_module, data_importer_client, headers):
+        def func(x):
+            return 'testing'
+
+        import_module().get_data = func
+        data_importer_client.post('/engines/1/import_data', headers=headers)
+        sleep(0.1)
+        resp = data_importer_client.get(
+            '/engines/1/import_data?hash=6342e10bd7dca3240c698aa79c98362e', headers=headers)
+
+        assert json.loads(resp.body) == {'status': 'done', 'result': 'testing'}
+
+    def test_importer_get_with_error(
+            self, import_module, data_importer_client, headers):
+        def func(x):
+            raise Exception('testing')
+
+        import_module().get_data = func
+        data_importer_client.post('/engines/1/import_data', headers=headers)
+        sleep(0.1)
+        resp = data_importer_client.get(
+            '/engines/1/import_data?hash=6342e10bd7dca3240c698aa79c98362e', headers=headers)
+
+        assert json.loads(resp.body) == {'status': 'error', 'result': 'testing'}
+
+
+@pytest.fixture
+def objects_exporter_app(session):
+    table_args = {'mysql_engine':'innodb'}
+    factory = ModelsFactory('myreco', commons_models_attributes={'__table_args__': table_args},
+                            commons_tables_attributes=table_args)
+    models = factory.make_all_models('exporter')
+    user = {
+        'name': 'test',
+        'email': 'test',
+        'password': 'test',
+        'admin': True
+    }
+    models['users'].insert(session, user)
+
+    store = {
+        'name': 'test',
+        'country': 'test'
+    }
+    models['stores'].insert(session, store)
+
+    models['engines_types_names'].insert(session, {'name': 'top_seller'})
+
+    item_type = {
+        'name': 'products',
+        'id_names_json': '["sku"]',
+        'schema_json': '{"properties": {"sku": {"type": "string"}}}'
+    }
+    models['items_types'].insert(session, item_type)
+
+    engine = {
+        'name': 'Seven Days Top Seller',
+        'configuration': {'days_interval': 7, 'data_importer_path': 'test.test'},
+        'store_id': 1,
+        'type_name_id': 1,
+        'item_type_id': 1
+    }
+    models['engines'].insert(session, engine)
+
+    return HttpAPI([models['engines']], session.bind, FakeStrictRedis())
+
+
+@pytest.fixture
+def objects_exporter_client(objects_exporter_app):
+    return Client(objects_exporter_app)
+
+
+@mock.patch('myreco.engines.types.base.TopSellerEngine')
+@mock.patch('myreco.engines.models.random.getrandbits',
+    new=mock.MagicMock(return_value=131940827655846590526331314439483569710))
+class TestEnginesModelsObjectsExporter(object):
+
+    def test_exporter_post(self, engine, objects_exporter_client, headers):
+        resp = objects_exporter_client.post('/engines/1/export_objects', headers=headers)
+        assert json.loads(resp.body) == {'hash': '6342e10bd7dca3240c698aa79c98362e'}
+
+    def test_exporter_get_running(self, engine, objects_exporter_client, headers):
+        def func():
+            sleep(1)
+
+        engine().export_objects = func
+        objects_exporter_client.post('/engines/1/export_objects', headers=headers)
+
+        resp = objects_exporter_client.get(
+            '/engines/1/export_objects?hash=6342e10bd7dca3240c698aa79c98362e', headers=headers)
+        assert json.loads(resp.body) == {'status': 'running'}
+
+    def test_exporter_get_done(self, engine, objects_exporter_client, headers):
+        def func():
+            return 'testing'
+
+        engine().export_objects = func
+        objects_exporter_client.post('/engines/1/export_objects', headers=headers)
+        sleep(0.1)
+        resp = objects_exporter_client.get(
+            '/engines/1/export_objects?hash=6342e10bd7dca3240c698aa79c98362e', headers=headers)
+
+        assert json.loads(resp.body) == {'status': 'done', 'result': 'testing'}
+
+    def test_exporter_get_with_error(
+            self, engine, objects_exporter_client, headers):
+        def func():
+            raise Exception('testing')
+
+        engine().export_objects = func
+        objects_exporter_client.post('/engines/1/export_objects', headers=headers)
+        sleep(0.1)
+        resp = objects_exporter_client.get(
+            '/engines/1/export_objects?hash=6342e10bd7dca3240c698aa79c98362e', headers=headers)
+
+        assert json.loads(resp.body) == {'status': 'error', 'result': 'testing'}
+
+
+@mock.patch('myreco.engines.models.import_module')
+@mock.patch('myreco.engines.types.base.TopSellerEngine')
+@mock.patch('myreco.engines.models.random.getrandbits',
+    new=mock.MagicMock(return_value=131940827655846590526331314439483569710))
+class TestEnginesModelsObjectsExporterWithImport(object):
+
+    def test_exporter_post_with_import(self, export_objects, import_module, objects_exporter_client, headers):
+        resp = objects_exporter_client.post('/engines/1/export_objects?import_data=true', headers=headers)
+
+        assert json.loads(resp.body) == {'hash': '6342e10bd7dca3240c698aa79c98362e'}
+        assert import_module.call_args_list == [mock.call('test.test')]
+        assert import_module().get_data.call_args_list == [
+            mock.call({'days_interval': 7, 'data_importer_path': 'test.test'})]
+
+    def test_exporter_get_running_with_import(self, engine, import_module, objects_exporter_client, headers):
+        def func(x):
+            sleep(1)
+
+        import_module().get_data = func
+        objects_exporter_client.post('/engines/1/export_objects?import_data=true', headers=headers)
+
+        resp = objects_exporter_client.get(
+            '/engines/1/export_objects?hash=6342e10bd7dca3240c698aa79c98362e', headers=headers)
+
+        assert json.loads(resp.body) == {'status': 'running'}
+
+    def test_exporter_get_done_with_import(self, engine, import_module, objects_exporter_client, headers):
+        def func():
+            return 'testing'
+
+        engine().export_objects = func
+        objects_exporter_client.post('/engines/1/export_objects?import_data=true', headers=headers)
+        sleep(0.1)
+        resp = objects_exporter_client.get(
+            '/engines/1/export_objects?hash=6342e10bd7dca3240c698aa79c98362e', headers=headers)
+
+        assert import_module.call_args_list == [mock.call('test.test')]
+        assert json.loads(resp.body) == {'status': 'done', 'result': 'testing'}
+
+    def test_exporter_get_with_error_in_import_with_import(
+            self, engine, import_module, objects_exporter_client, headers):
+        def func(x):
+            raise Exception('testing')
+
+        import_module().get_data = func
+        objects_exporter_client.post('/engines/1/export_objects?import_data=true', headers=headers)
+        sleep(0.1)
+        resp = objects_exporter_client.get(
+            '/engines/1/export_objects?hash=6342e10bd7dca3240c698aa79c98362e', headers=headers)
+
+        assert json.loads(resp.body) == {'status': 'error', 'result': 'testing'}
+
+    def test_exporter_get_with_error_in_export_with_import(
+            self, engine, import_module, objects_exporter_client, headers):
+        def func():
+            raise Exception('testing')
+
+        engine().export_objects = func
+        objects_exporter_client.post('/engines/1/export_objects?import_data=true', headers=headers)
+        sleep(0.1)
+        resp = objects_exporter_client.get(
+            '/engines/1/export_objects?hash=6342e10bd7dca3240c698aa79c98362e', headers=headers)
+
+        assert json.loads(resp.body) == {'status': 'error', 'result': 'testing'}

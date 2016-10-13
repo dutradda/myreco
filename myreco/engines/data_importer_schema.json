@@ -1,0 +1,29 @@
+{
+    "/engines/{id}/import_data": {
+        "parameters": [{
+            "name": "Authorization",
+            "in": "header",
+            "required": true,
+            "type": "string"
+        },{
+            "name": "id",
+            "in": "path",
+            "type": "integer",
+            "required": true
+        }],
+        "post": {
+            "operationId": "post_import_data",
+            "responses": {"201": {"description": "Executing"}}
+        },
+        "get": {
+            "parameters": [{
+                "name": "hash",
+                "in": "query",
+                "type": "string",
+                "required": true
+            }],
+            "operationId": "get_import_data",
+            "responses": {"200": {"description": "Got"}}
+        }
+    }
+}

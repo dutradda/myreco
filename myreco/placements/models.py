@@ -34,7 +34,6 @@ import json
 
 class PlacementsModelBase(AbstractConcreteBase):
     __tablename__ = 'placements'
-    __schema__ = get_model_schema(__file__)
 
     hash = sa.Column(sa.String(255), primary_key=True)
     small_hash = sa.Column(sa.String(255), unique=True, nullable=False)
@@ -66,7 +65,8 @@ class PlacementsModelBase(AbstractConcreteBase):
         super().__setattr__(name, value)
 
 
-class PlacementsModelRecommenderMixin(AbstractConcreteBase):
+class PlacementsModelRecommenderBase(PlacementsModelBase):
+    __schema__ = get_model_schema(__file__)
 
     @classmethod
     def get_recommendations(cls, req, resp):

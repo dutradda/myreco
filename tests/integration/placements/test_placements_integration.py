@@ -91,17 +91,23 @@ def app(session):
     EnginesModel.__api__ = None
     engine = {
         'name': 'Visual Similarity',
-        'configuration_json': json.dumps(
-            {'item_id_name': 'item_id', 'aggregators_ids_name': 'filter_test'}),
+        'configuration_json': json.dumps({
+            'item_id_name': 'item_id',
+            'aggregators_ids_name': 'filter_test',
+            'data_importer_path': 'test.test'
+        }),
         'store_id': 1,
         'type_name_id': 1,
         'item_type_id': 1
     }
     EnginesModel.insert(session, engine)
     engine = {
-        'name': 'Categories Top Seller',
-        'configuration_json': json.dumps(
-            {'item_id_name': 'item_id', 'aggregators_ids_name': 'filter_test'}),
+        'name': 'Categories Visual Similarity',
+        'configuration_json': json.dumps({
+            'item_id_name': 'item_id',
+            'aggregators_ids_name': 'filter_test',
+            'data_importer_path': 'test.test'
+        }),
         'store_id': 1,
         'type_name_id': 1,
         'item_type_id': 2
@@ -109,7 +115,10 @@ def app(session):
     EnginesModel.insert(session, engine)
     engine = {
         'name': 'Invalid Top Seller',
-        'configuration_json': '{"days_interval": 7}',
+        'configuration_json': json.dumps({
+            'days_interval': 7,
+            'data_importer_path': 'test.test'
+        }),
         'store_id': 1,
         'type_name_id': 2,
         'item_type_id': 3
@@ -193,7 +202,8 @@ class TestPlacementsModelPost(object):
                     'engine': {
                         'configuration': {
                             'aggregators_ids_name': 'filter_test',
-                            'item_id_name': 'item_id'
+                            'item_id_name': 'item_id',
+                            'data_importer_path': 'test.test'
                         },
                         'id': 1,
                         'item_type': {
@@ -312,7 +322,8 @@ class TestPlacementsModelGet(object):
                     'engine': {
                         'configuration': {
                             'aggregators_ids_name': 'filter_test',
-                            'item_id_name': 'item_id'
+                            'item_id_name': 'item_id',
+                            'data_importer_path': 'test.test'
                         },
                         'id': 1,
                         'item_type': {
@@ -517,7 +528,8 @@ class TestPlacementsModelUriTemplateGet(object):
                     'engine': {
                         'configuration': {
                             'aggregators_ids_name': 'filter_test',
-                            'item_id_name': 'item_id'
+                            'item_id_name': 'item_id',
+                            'data_importer_path': 'test.test'
                         },
                         'id': 1,
                         'item_type': {

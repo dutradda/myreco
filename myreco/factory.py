@@ -25,14 +25,20 @@ from myreco.users.models import (GrantsModelBase, URIsModelBase, MethodsModelBas
     UsersModelBase, build_users_grants_table, build_users_stores_table)
 from myreco.stores.model import StoresModelBase
 from myreco.variables.model import VariablesModelBase
-from myreco.placements.models import (PlacementsModelBase, PlacementsModelRecommenderMixin,
+from myreco.placements.models import (PlacementsModelBase, PlacementsModelRecommenderBase,
     VariationsModelBase, ABTestUsersModelBase, build_variations_engines_managers_table)
 from myreco.engines_managers.models import (EnginesManagersVariablesModelBase,
     EnginesManagersModelBase, build_engines_managers_fallbacks_table)
-from myreco.engines.models import EnginesModelBase, EnginesTypesNamesModelBase
+from myreco.engines.models import (
+    EnginesModelBase, EnginesModelDataImporterBase,
+    EnginesModelObjectsExporterBase, EnginesTypesNamesModelBase)
 from myreco.items_types.models import ItemsTypesModelBase
 from falconswagger.models.sqlalchemy_redis import SQLAlchemyRedisModelBuilder
 from falconswagger.hooks import Authorizer
+
+
+class FactoryError(Exception):
+    pass
 
 
 class MyrecoAuthorizer(Authorizer):
@@ -65,15 +71,21 @@ class ModelsFactory(object):
             attrs.update(update)
         return attrs
 
-    def make_all_models(self, placement_with_recommender=True):
+    def make_all_models(self, app_type='recommender'):
         self.make_all_tables()
+        app_types = {'recommender', 'importer', 'exporter'}
+        if app_type not in app_types:
+            FactoryError(
+                "Invalid application type '{}'. Valid types: {}".format(
+                    app_type, ', '.join(app_types)))
+
         return {
-            'engines': self.make_engines_model(),
+            'engines': self.make_engines_model(app_type),
             'engines_types_names': self.make_engines_types_names_model(),
             'engines_managers': self.make_engines_managers_model(),
             'engines_managers_variables': self.make_engines_managers_variables_model(),
             'items_types': self.make_items_types_model(),
-            'placements': self.make_placements_model(placement_with_recommender=True),
+            'placements': self.make_placements_model(app_type),
             'variations': self.make_variations_model(),
             'ab_test_users': self.make_ab_test_users_model(),
             'stores': self.make_stores_model(),
@@ -108,9 +120,17 @@ class ModelsFactory(object):
         attributes = self._init_attributes(attributes, self._commons_tables_attrs)
         return build_engines_managers_fallbacks_table(self.base_model.metadata, **attributes)
 
-    def make_engines_model(self, attributes=None):
+    def make_engines_model(self, app_type, attributes=None):
         attributes = self._init_attributes(attributes, self._commons_models_attrs)
-        return self.meta_class('EnginesModel', (EnginesModelBase, self.base_model), attributes)
+
+        if app_type == 'recommender':
+            bases_classes = (EnginesModelBase, self.base_model)
+        elif app_type == 'importer':
+            bases_classes = (EnginesModelDataImporterBase, self.base_model)
+        elif app_type == 'exporter':
+            bases_classes = (EnginesModelObjectsExporterBase, self.base_model)
+
+        return self.meta_class('EnginesModel', bases_classes, attributes)
 
     def make_engines_types_names_model(self, attributes=None):
         attributes = self._init_attributes(attributes, self._commons_models_attrs)
@@ -133,12 +153,14 @@ class ModelsFactory(object):
         return self.meta_class(
             'ItemsTypesModel', (ItemsTypesModelBase, self.base_model), attributes)
 
-    def make_placements_model(self, attributes=None, placement_with_recommender=True):
+    def make_placements_model(self, app_type, attributes=None):
         attributes = self._init_attributes(attributes, self._commons_models_attrs)
-        if placement_with_recommender:
-            bases_classes = (PlacementsModelBase, PlacementsModelRecommenderMixin, self.base_model)
+
+        if app_type == 'recommender':
+            bases_classes = (PlacementsModelRecommenderBase, self.base_model)
         else:
             bases_classes = (PlacementsModelBase, self.base_model)
+
         return self.meta_class(
             'PlacementsModel', bases_classes, attributes)
 

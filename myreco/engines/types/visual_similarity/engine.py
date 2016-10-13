@@ -22,12 +22,12 @@
 
 
 from falconswagger.models.base import get_model_schema
-from myreco.engines.types.base import EngineRecommenderMixin, EngineType
+from myreco.engines.types.base import EngineType
 from jsonschema import ValidationError
 import json
 
 
-class VisualSimilarityEngine(EngineRecommenderMixin, EngineType):
+class VisualSimilarityEngine(EngineType):
     __configuration_schema__ = get_model_schema(__file__)
 
     def get_variables(self, engine):

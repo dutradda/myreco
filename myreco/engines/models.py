@@ -27,13 +27,19 @@ from myreco.engines.types.base import EngineTypeChooser
 from types import MethodType, FunctionType
 from jsonschema import ValidationError
 from sqlalchemy.ext.declarative import AbstractConcreteBase, declared_attr
+from concurrent.futures import ThreadPoolExecutor
+from importlib import import_module
+from falcon import HTTPNotFound
 import sqlalchemy as sa
 import json
+import random
+import logging
 
 
 class EnginesModelBase(AbstractConcreteBase):
     __tablename__ = 'engines'
     __schema__ = get_model_schema(__file__)
+    _jobs = dict()
 
     id = sa.Column(sa.Integer, primary_key=True, autoincrement=True)
     name = sa.Column(sa.String(255), unique=True, nullable=False)
@@ -101,6 +107,92 @@ class EnginesModelBase(AbstractConcreteBase):
     def _format_output_json(self, dict_inst):
         dict_inst['configuration'] = json.loads(dict_inst.pop('configuration_json'))
         dict_inst['variables'] = self.type_.get_variables(self)
+
+
+class EnginesModelDataImporterBase(EnginesModelBase):
+    __schema__ = get_model_schema(__file__, 'data_importer_schema.json')
+
+    @classmethod
+    def post_import_data(cls, req, resp):
+        engine = cls._get_engine(req, resp)
+        data_importer = import_module(engine['configuration']['data_importer_path'])
+        job_hash = '{:x}'.format(random.getrandbits(128))
+
+        cls._background_run(data_importer.get_data, job_hash, engine['configuration'])
+        resp.body = json.dumps({'hash': job_hash})
+
+    @classmethod
+    def _get_engine(cls, req, resp, todict=True):
+        id_ = req.context['parameters']['uri_template']['id']
+        session = req.context['session']
+        engines = cls.get(session, {'id': id_}, todict=todict)
+
+        if not engines:
+            raise HTTPNotFound()
+
+        return engines[0]
+
+    @classmethod
+    def _background_run(cls, func_, job_hash, *args, **kwargs):
+        executor = ThreadPoolExecutor(2)
+        job = executor.submit(func_, *args, **kwargs)
+        executor.submit(cls._job_watcher, executor, job, job_hash)
+
+    @classmethod
+    def _job_watcher(cls, executor, job, job_hash):
+        cls._jobs[job_hash] = {'status': 'running'}
+        try:
+            result = job.result()
+            cls._jobs[job_hash] = {'status': 'done', 'result': result}
+
+        except Exception as error:
+            logging.exception(error)
+            cls._jobs[job_hash] = {'status': 'error', 'result': str(error)}
+
+        executor.shutdown()
+
+    @classmethod
+    def get_import_data(cls, req, resp):
+        cls._get_job(req, resp)
+
+    @classmethod
+    def _get_job(cls, req, resp):
+        status = cls._jobs.get(req.context['parameters']['query_string']['hash'])
+
+        if status is None:
+            raise HTTPNotFound()
+
+        resp.body = json.dumps(status)
+
+
+class EnginesModelObjectsExporterBase(EnginesModelDataImporterBase):
+    __schema__ = get_model_schema(__file__, 'objects_exporter_schema.json')
+
+    @classmethod
+    def post_export_objects(cls, req, resp):
+        import_data = req.context['parameters']['query_string'].get('import_data')
+        job_hash = '{:x}'.format(random.getrandbits(128))
+
+        if import_data:
+            engine = cls._get_engine(req, resp, todict=False)
+            config = json.loads(engine.configuration_json)
+            data_importer = import_module(config['data_importer_path'])
+            cls._background_run(cls._run_import_export, job_hash, data_importer, engine, config)
+
+        else:
+            engine = cls._get_engine(req, resp, todict=False)
+            cls._background_run(engine.type_.export_objects, job_hash)
+
+        resp.body = json.dumps({'hash': job_hash})
+
+    @classmethod
+    def _run_import_export(cls, data_importer, engine, config):
+        data_importer.get_data(config)
+        return engine.type_.export_objects()
+
+    @classmethod
+    def get_export_objects(cls, req, resp):
+        cls._get_job(req, resp)
 
 
 class EnginesTypesNamesModelBase(AbstractConcreteBase):
