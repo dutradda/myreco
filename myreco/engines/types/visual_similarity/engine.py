@@ -30,10 +30,10 @@ import json
 class VisualSimilarityEngine(EngineType):
     __configuration_schema__ = get_model_schema(__file__)
 
-    def get_variables(self, engine):
-        item_id_name = self.configuration['item_id_name']
-        aggregators_ids_name = self.configuration['aggregators_ids_name']
-        item_type_schema_props = json.loads(engine.item_type.schema_json)['properties']
+    def get_variables(self):
+        item_id_name = self.engine['configuration']['item_id_name']
+        aggregators_ids_name = self.engine['configuration']['aggregators_ids_name']
+        item_type_schema_props = self.engine['item_type']['schema']['properties']
         return [{
             'name': item_id_name,
             'schema': item_type_schema_props[item_id_name]
@@ -42,10 +42,10 @@ class VisualSimilarityEngine(EngineType):
             'schema': item_type_schema_props[aggregators_ids_name]
         }]
 
-    def validate_config(self, engine):
-        item_id_name = self.configuration['item_id_name']
-        aggregators_ids_name = self.configuration['aggregators_ids_name']
-        item_type_schema_props = json.loads(engine.item_type.schema_json)['properties']
+    def _validate_config(self, engine):
+        item_id_name = engine['configuration']['item_id_name']
+        aggregators_ids_name = engine['configuration']['aggregators_ids_name']
+        item_type_schema_props = engine['item_type']['schema']['properties']
         message = "Configuration key '{}' not in item_type schema"
 
         if item_id_name not in item_type_schema_props:

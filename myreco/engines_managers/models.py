@@ -142,9 +142,10 @@ class EnginesManagersModelBase(AbstractConcreteBase):
 
         super()._setattr(attr_name, value, session, input_)
 
-    def _format_output_json(self, dict_inst):
-        for fallback in dict_inst.get('fallbacks'):
-            fallback.pop('fallbacks')
+    def _format_output_json(self, dict_inst, schema):
+        if schema.get('fallbacks') is not False:
+            for fallback in dict_inst.get('fallbacks'):
+                fallback.pop('fallbacks')
 
 
 def build_engines_managers_fallbacks_table(metadata, **kwargs):

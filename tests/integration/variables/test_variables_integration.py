@@ -47,7 +47,8 @@ def app(session):
 
     store = {
         'name': 'test',
-        'country': 'test'
+        'country': 'test',
+        'configuration': {'data_path': '/test'}
     }
     StoresModel.insert(session, store)
     return HttpAPI([VariablesModel], session.bind, FakeStrictRedis())

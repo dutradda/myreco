@@ -23,7 +23,7 @@
 
 from falconswagger.models.redis import RedisModelMeta, RedisModelBuilder
 from falconswagger.models.base import get_model_schema
-from sqlalchemy.ext.declarative import AbstractConcreteBase
+from sqlalchemy.ext.declarative import AbstractConcreteBase, declared_attr
 from jsonschema import ValidationError
 from copy import deepcopy
 import sqlalchemy as sa
@@ -39,6 +39,10 @@ class ItemsTypesModelBase(AbstractConcreteBase):
     name = sa.Column(sa.String(255), unique=True, nullable=False)
     id_names_json = sa.Column(sa.String(255), nullable=False)
     schema_json = sa.Column(sa.Text, nullable=False)
+
+    @declared_attr
+    def store_id(cls):
+        return sa.Column(sa.ForeignKey('stores.id'), nullable=False)
 
     def _setattr(self, attr_name, value, session, input_):
         if attr_name == 'id_names':
@@ -72,17 +76,20 @@ class ItemsTypesModelBase(AbstractConcreteBase):
                     instance=id_names,
                     schema=schema)
 
-    def _format_output_json(self, dict_inst):
-        if 'id_names_json' in dict_inst:
-            dict_inst['id_names'] = json.loads(dict_inst.pop('id_names_json'))
+    def _format_output_json(self, dict_inst, todict_schema):
+        if todict_schema.get('id_names') is not False:
+            if 'id_names_json' in dict_inst:
+                dict_inst['id_names'] = json.loads(dict_inst.pop('id_names_json'))
 
-        if 'schema_json' in dict_inst:
-            dict_inst['schema'] = json.loads(dict_inst.pop('schema_json'))
+        if todict_schema.get('schema') is not False:
+            if 'schema_json' in dict_inst:
+                dict_inst['schema'] = json.loads(dict_inst.pop('schema_json'))
 
-        schema_properties = dict_inst['schema'].get('properties', {})
-        schema_properties_names = sorted(schema_properties.keys())
-        dict_inst['available_filters'] = [{'name': name, 'schema': schema_properties[name]} \
-            for name in schema_properties_names]
+                schema_properties = dict_inst['schema'].get('properties', {})
+                schema_properties_names = sorted(schema_properties.keys())
+                dict_inst['available_filters'] = \
+                    [{'name': name, 'schema': schema_properties[name]} \
+                        for name in schema_properties_names]
 
     @classmethod
     def associate_all_items(cls, session):

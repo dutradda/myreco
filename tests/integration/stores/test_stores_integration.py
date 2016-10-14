@@ -72,9 +72,9 @@ class TestStoresModelPost(object):
                 'schema': {
                     'type': 'object',
                     'additionalProperties': False,
-                    'required': ['name', 'country'],
+                    'required': ['name', 'country', 'configuration'],
                     'properties': {
-                        'configuration': {'$ref': 'http://json-schema.org/draft-04/schema#'},
+                        'configuration': {"$ref": "#/definitions/configuration"},
                         'name': {'type': 'string'},
                         'country': {'type': 'string'}
                     }
@@ -85,11 +85,11 @@ class TestStoresModelPost(object):
     def test_post(self, client, headers):
         body = [{
             'name': 'test',
-            'country': 'test'
+            'country': 'test',
+            'configuration': {'data_path': '/test'}
         }]
         resp = client.post('/stores/', headers=headers, body=json.dumps(body))
         body[0]['id'] = 1
-        body[0]['configuration'] = None
 
         assert resp.status_code == 201
         assert json.loads(resp.body) ==  body
@@ -118,11 +118,11 @@ class TestStoresModelGet(object):
     def test_get(self, client, headers):
         body = [{
             'name': 'test',
-            'country': 'test'
+            'country': 'test',
+            'configuration': {'data_path': '/test'}
         }]
         client.post('/stores/', headers=headers, body=json.dumps(body))
         body[0]['id'] = 1
-        body[0]['configuration'] = None
 
         resp = client.get('/stores/', headers=headers)
         assert resp.status_code == 200
@@ -148,7 +148,7 @@ class TestStoresModelUriTemplatePatch(object):
                     'additionalProperties': False,
                     'minProperties': 1,
                     'properties': {
-                        'configuration': {'$ref': 'http://json-schema.org/draft-04/schema#'},
+                        'configuration': {"$ref": "#/definitions/configuration"},
                         'name': {'type': 'string'},
                         'country': {'type': 'string'}
                     }
@@ -159,7 +159,8 @@ class TestStoresModelUriTemplatePatch(object):
     def test_patch_not_found(self, client, headers):
         body = {
             'name': 'test',
-            'country': 'test'
+            'country': 'test',
+            'configuration': {'data_path': '/test'}
         }
         resp = client.patch('/stores/1/', headers=headers, body=json.dumps(body))
         assert resp.status_code == 404
@@ -167,7 +168,8 @@ class TestStoresModelUriTemplatePatch(object):
     def test_patch(self, client, headers):
         body = [{
             'name': 'test',
-            'country': 'test'
+            'country': 'test',
+            'configuration': {'data_path': '/test'}
         }]
         obj = json.loads(client.post('/stores/', headers=headers, body=json.dumps(body)).body)[0]
 
@@ -191,7 +193,8 @@ class TestStoresModelUriTemplateDelete(object):
     def test_delete(self, client, headers):
         body = [{
             'name': 'test',
-            'country': 'test'
+            'country': 'test',
+            'configuration': {'data_path': '/test'}
         }]
         client.post('/stores/', headers=headers, body=json.dumps(body))
 
@@ -219,13 +222,14 @@ class TestStoresModelUriTemplateGet(object):
     def test_get(self, client, headers):
         body = [{
             'name': 'test',
-            'country': 'test'
+            'country': 'test',
+            'configuration': {'data_path': '/test'}
         }]
         client.post('/stores/', headers=headers, body=json.dumps(body))
 
         resp = client.get('/stores/1/', headers=headers)
         body[0]['id'] = 1
-        body[0]['configuration'] = None
+        body[0]['configuration'] = {'data_path': '/test'}
 
         assert resp.status_code == 200
         assert json.loads(resp.body) == body[0]

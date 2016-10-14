@@ -52,7 +52,8 @@ def app(session):
     StoresModel.__api__ = None
     store = {
         'name': 'test',
-        'country': 'test'
+        'country': 'test',
+        'configuration': {'data_path': '/test'}
     }
     StoresModel.insert(session, store)
 
@@ -71,18 +72,21 @@ def app(session):
     ItemsTypesModel.__api__ = None
     item_type = {
         'name': 'products',
+        'store_id': 1,
         'id_names_json': '["item_id"]',
         'schema_json': schema_json
     }
     ItemsTypesModel.insert(session, item_type)
     item_type = {
         'name': 'categories',
+        'store_id': 1,
         'id_names_json': '["item_id"]',
         'schema_json': schema_json
     }
     ItemsTypesModel.insert(session, item_type)
     item_type = {
         'name': 'invalid',
+        'store_id': 1,
         'id_names_json': '["item_id"]',
         'schema_json': '{"type": "object", "properties": {"item_id": {"type": "string"}}}'
     }
@@ -208,6 +212,7 @@ class TestPlacementsModelPost(object):
                         'id': 1,
                         'item_type': {
                             'id': 1,
+                            'store_id': 1,
                             'schema': {
                                 'type': 'object',
                                 'properties': {
@@ -233,7 +238,7 @@ class TestPlacementsModelPost(object):
                             'country': 'test',
                             'id': 1,
                             'name': 'test',
-                            'configuration': None
+                            'configuration': {'data_path': '/test'}
                         },
                         'store_id': 1,
                         'type_name': {
@@ -328,6 +333,7 @@ class TestPlacementsModelGet(object):
                         'id': 1,
                         'item_type': {
                             'id': 1,
+                            'store_id': 1,
                             'schema': {
                                 'type': 'object',
                                 'properties': {
@@ -353,7 +359,7 @@ class TestPlacementsModelGet(object):
                             'country': 'test',
                             'id': 1,
                             'name': 'test',
-                            'configuration': None
+                            'configuration': {'data_path': '/test'}
                         },
                         'store_id': 1,
                         'type_name': {
@@ -534,6 +540,7 @@ class TestPlacementsModelUriTemplateGet(object):
                         'id': 1,
                         'item_type': {
                             'id': 1,
+                            'store_id': 1,
                             'schema': {
                                 'type': 'object',
                                 'properties': {
@@ -559,7 +566,7 @@ class TestPlacementsModelUriTemplateGet(object):
                             'country': 'test',
                             'id': 1,
                             'name': 'test',
-                            'configuration': None
+                            'configuration': {'data_path': '/test'}
                         },
                         'store_id': 1,
                         'type_name': {

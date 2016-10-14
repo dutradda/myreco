@@ -59,6 +59,7 @@
             "additionalProperties": false,
             "properties": {
                 "name": {"type": "string"},
+                "store_id": {"type": "integer"},
                 "id_names": {
                     "type": "array",
                     "minItems": 1,
@@ -73,9 +74,10 @@
             "items": {
                 "type": "object",
                 "additionalProperties": false,
-                "required": ["name", "id_names", "schema"],
+                "required": ["name", "id_names", "schema", "store_id"],
                 "properties": {
                     "name": {"type": "string"},
+                    "store_id": {"type": "integer"},
                     "id_names": {
                         "type": "array",
                         "minItems": 1,

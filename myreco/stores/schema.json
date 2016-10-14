@@ -60,7 +60,7 @@
             "properties": {
                 "name": {"type": "string"},
                 "country": {"type": "string"},
-                "configuration": {"$ref": "http://json-schema.org/draft-04/schema#"}
+                "configuration": {"$ref": "#/definitions/configuration"}
             }
         },
         "schema_array": {
@@ -69,12 +69,19 @@
             "items": {
                 "type": "object",
                 "additionalProperties": false,
-                "required": ["name", "country"],
+                "required": ["name", "country", "configuration"],
                 "properties": {
                     "name": {"type": "string"},
                     "country": {"type": "string"},
-                    "configuration": {"$ref": "http://json-schema.org/draft-04/schema#"}
+                    "configuration": {"$ref": "#/definitions/configuration"}
                 }
+            }
+        },
+        "configuration": {
+            "type": "object",
+            "required": ["data_path"],
+            "properties": {
+                "data_path": {"type": "string"}
             }
         }
     }

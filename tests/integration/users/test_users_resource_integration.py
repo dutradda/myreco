@@ -918,7 +918,8 @@ class TestUsersResourceDeleteGet(object):
     def test_delete_many(self, client, headers):
         store = [{
             'name': 'test',
-            'country': 'test'
+            'country': 'test',
+            'configuration': {'data_path': '/test'}
         }]
         resp = client.post('/stores', body=json.dumps(store), headers=headers)
         assert resp.status_code == 201

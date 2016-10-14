@@ -42,7 +42,7 @@ class PlacementsModelBase(AbstractConcreteBase):
 
     @declared_attr
     def store_id(cls):
-        return sa.Column(sa.ForeignKey('stores.id'), primary_key=True)
+        return sa.Column(sa.ForeignKey('stores.id'), nullable=False)
 
     @declared_attr
     def variations(cls):
@@ -82,7 +82,7 @@ class PlacementsModelRecommenderBase(PlacementsModelBase):
                     schema = cls._get_variable_schema(engine, engine_var)
                     engine_vars[var_name] = JsonBuilder(req.params[var_name], schema)
 
-            engine_type = EngineTypeChooser(engine['type_name']['name'])(engine['configuration'])
+            engine_type = EngineTypeChooser(engine['type_name']['name'])(engine)
             recommendations.extend(engine_type.get_recommendations(**engine_vars))
 
         if not recommendations:

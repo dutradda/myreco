@@ -49,7 +49,8 @@ def app(session):
 
     store = {
         'name': 'test',
-        'country': 'test'
+        'country': 'test',
+        'configuration': {'data_path': '/test'}
     }
     StoresModel.insert(session, store)
 
@@ -66,18 +67,21 @@ def app(session):
 
     item_type = {
         'name': 'products',
+        'store_id': 1,
         'id_names_json': '["item_id"]',
         'schema_json': schema_json
     }
     ItemsTypesModel.insert(session, item_type)
     item_type = {
         'name': 'categories',
+        'store_id': 1,
         'id_names_json': '["item_id"]',
         'schema_json': schema_json
     }
     ItemsTypesModel.insert(session, item_type)
     item_type = {
         'name': 'invalid',
+        'store_id': 1,
         'id_names_json': '["item_id"]',
         'schema_json': '{"type": "object", "properties": {"item_id": {"type": "string"}}}'
     }
@@ -270,6 +274,7 @@ class TestEnginesManagersModelPost(object):
             'engine': {
                 'item_type': {
                     'id': 1,
+                    'store_id': 1,
                     'schema': {
                         'type': 'object',
                         'properties': {
@@ -312,7 +317,7 @@ class TestEnginesManagersModelPost(object):
                     'id': 1,
                     'country': 'test',
                     'name': 'test',
-                    'configuration': None
+                    'configuration': {'data_path': '/test'}
                 }
             },
             'store_id': 1,
@@ -355,6 +360,7 @@ class TestEnginesManagersModelPost(object):
             'engine': {
                 'item_type': {
                     'id': 1,
+                    'store_id': 1,
                     'schema': {
                         'type': 'object',
                         'properties': {
@@ -397,7 +403,7 @@ class TestEnginesManagersModelPost(object):
                     'id': 1,
                     'country': 'test',
                     'name': 'test',
-                    'configuration': None
+                    'configuration': {'data_path': '/test'}
                 }
             },
             'store_id': 1,
@@ -451,6 +457,7 @@ class TestEnginesManagersModelPost(object):
                 'engine': {
                     'item_type': {
                         'id': 1,
+                        'store_id': 1,
                         'schema': {
                             'type': 'object',
                             'properties': {
@@ -493,7 +500,7 @@ class TestEnginesManagersModelPost(object):
                         'id': 1,
                         'country': 'test',
                         'name': 'test',
-                        'configuration': None
+                        'configuration': {'data_path': '/test'}
                     }
                 },
                 'store_id': 1,
@@ -519,6 +526,7 @@ class TestEnginesManagersModelPost(object):
             'engine': {
                 'item_type': {
                     'id': 1,
+                    'store_id': 1,
                     'schema': {
                         'type': 'object',
                         'properties': {
@@ -561,7 +569,7 @@ class TestEnginesManagersModelPost(object):
                     'id': 1,
                     'country': 'test',
                     'name': 'test',
-                    'configuration': None
+                    'configuration': {'data_path': '/test'}
                 }
             },
             'store_id': 1,
@@ -630,6 +638,7 @@ class TestEnginesManagersModelGet(object):
             'engine': {
                 'item_type': {
                     'id': 1,
+                    'store_id': 1,
                     'schema': {
                         'type': 'object',
                         'properties': {
@@ -672,7 +681,7 @@ class TestEnginesManagersModelGet(object):
                     'id': 1,
                     'country': 'test',
                     'name': 'test',
-                    'configuration': None
+                    'configuration': {'data_path': '/test'}
                 }
             },
             'store_id': 1,
@@ -869,6 +878,7 @@ class TestEnginesManagersModelUriTemplatePatch(object):
             'engine': {
                 'item_type': {
                     'id': 1,
+                    'store_id': 1,
                     'schema': {
                         'type': 'object',
                         'properties': {
@@ -911,7 +921,7 @@ class TestEnginesManagersModelUriTemplatePatch(object):
                     'id': 1,
                     'country': 'test',
                     'name': 'test',
-                    'configuration': None
+                    'configuration': {'data_path': '/test'}
                 }
             },
             'store_id': 1,
@@ -995,6 +1005,7 @@ class TestEnginesManagersModelUriTemplateGet(object):
             'engine': {
                 'item_type': {
                     'id': 1,
+                    'store_id': 1,
                     'schema': {
                         'type': 'object',
                         'properties': {
@@ -1037,7 +1048,7 @@ class TestEnginesManagersModelUriTemplateGet(object):
                     'id': 1,
                     'country': 'test',
                     'name': 'test',
-                    'configuration': None
+                    'configuration': {'data_path': '/test'}
                 }
             },
             'store_id': 1,

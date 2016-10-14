@@ -45,6 +45,12 @@ class EnginesModelBase(AbstractConcreteBase):
     name = sa.Column(sa.String(255), unique=True, nullable=False)
     configuration_json = sa.Column(sa.Text, nullable=False)
 
+    @property
+    def configuration(self):
+        if not hasattr(self, '_configuration'):
+            self._configuration = json.loads(self.configuration_json)
+        return self._configuration
+
     @declared_attr
     def store_id(cls):
         return sa.Column(sa.ForeignKey('stores.id'), nullable=False)
@@ -76,18 +82,8 @@ class EnginesModelBase(AbstractConcreteBase):
         return self._type
 
     def _set_type(self):
-        self._type = EngineTypeChooser(self.type_name.name)(json.loads(self.configuration_json))
-
-    def __init__(self, session, input_=None, **kwargs):
-        super().__init__(session, input_=input_, **kwargs)
-        self._validate_config(session, input_)
-
-    def _validate_config(self, session, input_):
-        if self.type_name is not None:
-            validator = self.type_.__config_validator__
-            if validator:
-                validator.validate(self.type_.configuration)
-                self.type_.validate_config(self)
+        todict_schema = {'variables': False}
+        self._type = EngineTypeChooser(self.type_name.name)(self.todict(todict_schema))
 
     def _setattr(self, attr_name, value, session, input_):
         if attr_name == 'configuration':
@@ -104,9 +100,13 @@ class EnginesModelBase(AbstractConcreteBase):
 
         super()._setattr(attr_name, value, session, input_)
 
-    def _format_output_json(self, dict_inst):
-        dict_inst['configuration'] = json.loads(dict_inst.pop('configuration_json'))
-        dict_inst['variables'] = self.type_.get_variables(self)
+    def _format_output_json(self, dict_inst, schema):
+        if schema.get('configuration') is not False:
+            dict_inst.pop('configuration_json')
+            dict_inst['configuration'] = self.configuration
+
+        if schema.get('variables') is not False:
+            dict_inst['variables'] = self.type_.get_variables()
 
 
 class EnginesModelDataImporterBase(EnginesModelBase):
@@ -114,11 +114,11 @@ class EnginesModelDataImporterBase(EnginesModelBase):
 
     @classmethod
     def post_import_data(cls, req, resp):
-        engine = cls._get_engine(req, resp)
-        data_importer = import_module(engine['configuration']['data_importer_path'])
+        engine = cls._get_engine(req, resp, todict=False)
+        data_importer = import_module(engine.configuration['data_importer_path'])
         job_hash = '{:x}'.format(random.getrandbits(128))
 
-        cls._background_run(data_importer.get_data, job_hash, engine['configuration'])
+        cls._background_run(data_importer.get_data, job_hash, engine)
         resp.body = json.dumps({'hash': job_hash})
 
     @classmethod
@@ -130,6 +130,8 @@ class EnginesModelDataImporterBase(EnginesModelBase):
         if not engines:
             raise HTTPNotFound()
 
+        # loading all relationships because the session will be closed
+        [getattr(engines[0], rel_name) for rel_name in engines[0].__relationships__]
         return engines[0]
 
     @classmethod
@@ -173,23 +175,19 @@ class EnginesModelObjectsExporterBase(EnginesModelDataImporterBase):
         import_data = req.context['parameters']['query_string'].get('import_data')
         job_hash = '{:x}'.format(random.getrandbits(128))
         session = req.context['session']
+        engine = cls._get_engine(req, resp, todict=False)
 
         if import_data:
-            engine = cls._get_engine(req, resp, todict=False)
-            config = json.loads(engine.configuration_json)
-            data_importer = import_module(config['data_importer_path'])
-            cls._background_run(cls._run_import_export, job_hash, data_importer,
-                                engine, config, session)
-
+            cls._background_run(cls._run_import_export, job_hash, engine, session)
         else:
-            engine = cls._get_engine(req, resp, todict=False)
             cls._background_run(engine.type_.export_objects, job_hash, session)
 
         resp.body = json.dumps({'hash': job_hash})
 
     @classmethod
-    def _run_import_export(cls, data_importer, engine, config, session):
-        data_importer.get_data(config)
+    def _run_import_export(cls, engine, session):
+        data_importer = import_module(engine.configuration['data_importer_path'])
+        data_importer.get_data(engine)
         return engine.type_.export_objects(session)
 
     @classmethod

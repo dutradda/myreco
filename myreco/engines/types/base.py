@@ -22,6 +22,7 @@
 
 
 from falconswagger.models.base import build_validator, get_module_path
+from jsonschema import Draft4Validator
 from abc import ABCMeta, abstractmethod
 import inspect
 
@@ -29,20 +30,22 @@ import inspect
 class EngineTypeMeta(type):
 
     def __init__(cls, name, bases_classes, attributes):
-        cls.__config_validator__ = None
-        schema = getattr(cls, '__configuration_schema__', None)
-        if schema:
+        if name != 'EngineType':
+            schema = cls.__configuration_schema__
+            Draft4Validator.check_schema(schema)
             cls.__config_validator__ = build_validator(schema, get_module_path(cls))
 
 
 class EngineType(metaclass=EngineTypeMeta):
-    def __init__(self, configuration):
-        self.configuration = configuration
+    def __init__(self, engine):
+        self.__config_validator__.validate(engine['configuration'])
+        self._validate_config(engine)
+        self.engine = engine
 
-    def get_variables(self, engine):
+    def get_variables(self):
         return []
 
-    def validate_config(self, engine):
+    def _validate_config(self, engine):
         pass
 
     def get_recommendations(self, **variables):
@@ -56,7 +59,7 @@ class AbstractDataImporter(metaclass=ABCMeta):
 
     @classmethod
     @abstractmethod
-    def get_data(cls, configuration):
+    def get_data(cls, engine):
         pass
 
 

@@ -52,7 +52,8 @@ def app(session):
 
     store = {
         'name': 'test',
-        'country': 'test'
+        'country': 'test',
+        'configuration': {'data_path': '/test'}
     }
     StoresModel.insert(session, store)
 
@@ -61,7 +62,8 @@ def app(session):
     item_type = {
         'name': 'products',
         'id_names_json': '["sku"]',
-        'schema_json': '{"properties": {"sku": {"type": "string"}}}'
+        'schema_json': '{"properties": {"sku": {"type": "string"}}}',
+        'store_id': 1
     }
     ItemsTypesModel.insert(session, item_type)
 
@@ -128,10 +130,12 @@ class TestEnginesModelPost(object):
         resp = client.post('/engines/', headers=headers, body=json.dumps(body))
         body[0]['id'] = 1
         body[0]['variables'] = []
-        body[0]['store'] = {'id': 1, 'name': 'test', 'country': 'test', 'configuration': None}
+        body[0]['store'] = \
+            {'id': 1, 'name': 'test', 'country': 'test', 'configuration': {'data_path': '/test'}}
         body[0]['type_name'] = {'id': 1, 'name': 'top_seller'}
         body[0]['item_type'] = item_type = {
             'id': 1,
+            'store_id': 1,
             'name': 'products',
             'id_names': ['sku'],
             'schema': {'properties': {'sku': {'type': 'string'}}},
@@ -164,10 +168,12 @@ class TestEnginesModelGet(object):
         client.post('/engines/', headers=headers, body=json.dumps(body))
         body[0]['id'] = 1
         body[0]['variables'] = []
-        body[0]['store'] = {'id': 1, 'name': 'test', 'country': 'test', 'configuration': None}
+        body[0]['store'] = \
+            {'id': 1, 'name': 'test', 'country': 'test', 'configuration': {'data_path': '/test'}}
         body[0]['type_name'] = {'id': 1, 'name': 'top_seller'}
         body[0]['item_type'] = item_type = {
             'id': 1,
+            'store_id': 1,
             'name': 'products',
             'id_names': ["sku"],
             'schema': {'properties': {'sku': {'type': 'string'}}},
@@ -316,10 +322,12 @@ class TestEnginesModelUriTemplateGet(object):
         resp = client.get('/engines/1/', headers=headers)
         body[0]['id'] = 1
         body[0]['variables'] = []
-        body[0]['store'] = {'id': 1, 'name': 'test', 'country': 'test', 'configuration': None}
+        body[0]['store'] = \
+            {'id': 1, 'name': 'test', 'country': 'test', 'configuration': {'data_path': '/test'}}
         body[0]['type_name'] = {'id': 1, 'name': 'top_seller'}
         body[0]['item_type'] = item_type = {
             'id': 1,
+            'store_id': 1,
             'name': 'products',
             'id_names': ["sku"],
             'schema': {'properties': {'sku': {'type': 'string'}}},
@@ -346,7 +354,8 @@ def data_importer_app(session):
 
     store = {
         'name': 'test',
-        'country': 'test'
+        'country': 'test',
+        'configuration': {'data_path': '/test'}
     }
     models['stores'].insert(session, store)
 
@@ -354,6 +363,7 @@ def data_importer_app(session):
 
     item_type = {
         'name': 'products',
+        'store_id': 1,
         'id_names_json': '["sku"]',
         'schema_json': '{"properties": {"sku": {"type": "string"}}}'
     }
@@ -386,8 +396,7 @@ class TestEnginesModelsDataImporter(object):
 
         assert json.loads(resp.body) == {'hash': '6342e10bd7dca3240c698aa79c98362e'}
         assert import_module.call_args_list == [mock.call('test.test')]
-        assert import_module().get_data.call_args_list == [
-            mock.call({'days_interval': 7, 'data_importer_path': 'test.test'})]
+        assert type(type(import_module().get_data.call_args_list[0][0][0])) == type(EnginesModel)
 
 
     def test_importer_get_running(self, import_module, data_importer_client, headers):
@@ -444,7 +453,8 @@ def objects_exporter_app(session):
 
     store = {
         'name': 'test',
-        'country': 'test'
+        'country': 'test',
+        'configuration': {'data_path': '/test'}
     }
     models['stores'].insert(session, store)
 
@@ -452,6 +462,7 @@ def objects_exporter_app(session):
 
     item_type = {
         'name': 'products',
+        'store_id': 1,
         'id_names_json': '["sku"]',
         'schema_json': '{"properties": {"sku": {"type": "string"}}}'
     }
@@ -531,8 +542,7 @@ class TestEnginesModelsObjectsExporterWithImport(object):
 
         assert json.loads(resp.body) == {'hash': '6342e10bd7dca3240c698aa79c98362e'}
         assert import_module.call_args_list == [mock.call('test.test')]
-        assert import_module().get_data.call_args_list == [
-            mock.call({'days_interval': 7, 'data_importer_path': 'test.test'})]
+        assert type(type(import_module().get_data.call_args_list[0][0][0])) == type(EnginesModel)
 
     def test_exporter_get_running_with_import(self, engine, import_module, objects_exporter_client, headers):
         def func(x):

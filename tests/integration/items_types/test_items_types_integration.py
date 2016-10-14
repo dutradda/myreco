@@ -21,7 +21,7 @@
 # SOFTWARE.
 
 
-from tests.integration.fixtures_models import UsersModel, SQLAlchemyRedisModelBase
+from tests.integration.fixtures_models import UsersModel, StoresModel, SQLAlchemyRedisModelBase
 from falconswagger.http_api import HttpAPI
 from tests.integration.fixtures_models import ItemsTypesModel
 from base64 import b64encode
@@ -44,6 +44,13 @@ def app(session):
         'admin': True
     }
     UsersModel.insert(session, user)
+
+    store = {
+        'name': 'test',
+        'country': 'test',
+        'configuration': {'data_path': '/test'}
+    }
+    StoresModel.insert(session, store)
 
     return HttpAPI([ItemsTypesModel], session.bind, FakeStrictRedis())
 
@@ -72,9 +79,10 @@ class TestItemsTypesModelPost(object):
                 'schema': {
                     'type': 'object',
                     'additionalProperties': False,
-                    'required': ['name', 'id_names', 'schema'],
+                    'required': ['name', 'id_names', 'schema', 'store_id'],
                     'properties': {
                         'name': {'type': 'string'},
+                        'store_id': {'type': 'integer'},
                         'id_names': {
                             'type': 'array',
                             'minItems': 1,
@@ -89,6 +97,7 @@ class TestItemsTypesModelPost(object):
     def test_post(self, client, headers):
         body = [{
             'name': 'test',
+            'store_id': 1,
             'id_names': ['id'],
             'schema': {'properties': {'id': {'type': 'integer'}}}
         }]
@@ -102,6 +111,7 @@ class TestItemsTypesModelPost(object):
     def test_post_with_invalid_grant(self, client):
         body = [{
             'name': 'test',
+            'store_id': 1,
             'id_names': ['test'],
             'schema': {'properties': {'id': {'type': 'integer'}}}
         }]
@@ -112,6 +122,7 @@ class TestItemsTypesModelPost(object):
     def test_post_with_invalid_id_name(self, client, headers):
         body = [{
             'name': 'test',
+            'store_id': 1,
             'id_names': ['id', 'id2'],
             'schema': {
                 'properties': {
@@ -148,6 +159,7 @@ class TestItemsTypesModelGet(object):
     def test_get(self, client, headers):
         body = [{
             'name': 'test',
+            'store_id': 1,
             'id_names': ['test'],
             'schema': {'properties': {'test': {'type': 'string'}}}
         }]
@@ -180,6 +192,7 @@ class TestItemsTypesModelUriTemplatePatch(object):
                     'minProperties': 1,
                     'properties': {
                         'name': {'type': 'string'},
+                        'store_id': {'type': 'integer'},
                         'id_names': {
                             'type': 'array',
                             'minItems': 1,
@@ -194,6 +207,7 @@ class TestItemsTypesModelUriTemplatePatch(object):
     def test_patch_not_found(self, client, headers):
         body = {
             'name': 'test',
+            'store_id': 1,
             'id_names': ['test'],
             'schema': {'properties': {'test': {'type': 'string'}}}
         }
@@ -203,6 +217,7 @@ class TestItemsTypesModelUriTemplatePatch(object):
     def test_patch(self, client, headers):
         body = [{
             'name': 'test',
+            'store_id': 1,
             'id_names': ['test'],
             'schema': {'properties': {'test': {'type': 'string'}}}
         }]
@@ -221,6 +236,7 @@ class TestItemsTypesModelUriTemplatePatch(object):
     def test_patch_with_invalid_id_name(self, client, headers):
         body = [{
             'name': 'test',
+            'store_id': 1,
             'id_names': ['id'],
             'schema': {
                 'properties': {
@@ -256,6 +272,7 @@ class TestItemsTypesModelUriTemplateDelete(object):
     def test_delete(self, client, headers):
         body = [{
             'name': 'test',
+            'store_id': 1,
             'id_names': ['test'],
             'schema': {'properties': {'test': {'type': 'string'}}}
         }]
@@ -273,6 +290,7 @@ class TestItemsTypesModelUriTemplateDelete(object):
     def test_if_delete_disassociate_model_correctly(self, client, headers):
         body = [{
             'name': 'test',
+            'store_id': 1,
             'id_names': ['test'],
             'schema': {'properties': {'test': {'type': 'string'}}}
         }]
@@ -301,6 +319,7 @@ class TestItemsTypesModelUriTemplateGet(object):
     def test_get(self, client, headers):
         body = [{
             'name': 'test',
+            'store_id': 1,
             'id_names': ['test'],
             'schema': {'properties': {'test': {'type': 'string'}}}
         }]
@@ -318,6 +337,7 @@ class TestItemsModelSchema(object):
     def test_if_build_item_model_schema_correctly(self, client, headers):
         body = [{
             'name': 'test',
+            'store_id': 1,
             'id_names': ['id'],
             'schema': {'properties': {'id': {'type': 'string'}}}
         }]
@@ -407,6 +427,7 @@ class TestItemsModelSchema(object):
             self, client, headers):
         body = [{
             'name': 'test',
+            'store_id': 1,
             'id_names': ['id', 'id2'],
             'schema': {
                 'properties': {
@@ -518,6 +539,7 @@ class TestItemsModelPost(object):
     def test_items_post_valid(self, client, headers):
         body = [{
             'name': 'test',
+            'store_id': 1,
             'id_names': ['id'],
             'schema': {
                 'properties': {
@@ -535,6 +557,7 @@ class TestItemsModelPost(object):
     def test_items_post_invalid(self, client, headers):
         body = [{
             'name': 'test',
+            'store_id': 1,
             'id_names': ['id'],
             'schema': {
                 'properties': {
@@ -561,6 +584,7 @@ class TestItemsModelPatch(object):
     def test_items_patch_valid(self, client, headers):
         body = [{
             'name': 'test',
+            'store_id': 1,
             'id_names': ['id'],
             'schema': {
                 'properties': {
@@ -585,6 +609,7 @@ class TestItemsModelPatch(object):
     def test_items_patch_with_delete(self, client, headers):
         body = [{
             'name': 'test',
+            'store_id': 1,
             'id_names': ['id'],
             'schema': {
                 'properties': {
@@ -609,6 +634,7 @@ class TestItemsModelPatch(object):
     def test_items_patch_invalid(self, client, headers):
         body = [{
             'name': 'test',
+            'store_id': 1,
             'id_names': ['id'],
             'schema': {
                 'properties': {

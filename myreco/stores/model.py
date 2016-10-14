@@ -23,6 +23,7 @@
 
 from falconswagger.models.base import get_model_schema
 from sqlalchemy.ext.declarative import AbstractConcreteBase
+from jsonschema import Draft4Validator
 import sqlalchemy as sa
 import json
 
@@ -30,11 +31,23 @@ import json
 class StoresModelBase(AbstractConcreteBase):
     __tablename__ = 'stores'
     __schema__ = get_model_schema(__file__)
+    __config_validator__ = Draft4Validator(__schema__['definitions']['configuration'])
 
     id = sa.Column(sa.Integer, primary_key=True)
     name = sa.Column(sa.String(255), unique=True, nullable=False)
     country = sa.Column(sa.String(255), unique=True, nullable=False)
-    configuration_json = sa.Column(sa.Text)
+    configuration_json = sa.Column(sa.Text, nullable=False)
+
+    @property
+    def configuration(self):
+        if not hasattr(self, '_configuration'):
+            self._configuration = json.loads(self.configuration_json)
+        return self._configuration
+
+    def __init__(self, session, input_=None, **kwargs):
+        super().__init__(session, input_=input_, **kwargs)
+        if self.configuration_json:
+            self.__config_validator__.validate(self.configuration)
 
     def _setattr(self, attr_name, value, session, input_):
         if attr_name == 'configuration':
@@ -43,6 +56,7 @@ class StoresModelBase(AbstractConcreteBase):
 
         super()._setattr(attr_name, value, session, input_)
 
-    def _format_output_json(self, dict_inst):
-        config = dict_inst.pop('configuration_json')
-        dict_inst['configuration'] = json.loads('null' if config is None else config)
+    def _format_output_json(self, dict_inst, schema):
+        if schema.get('configuration') is not False:
+            config = dict_inst.pop('configuration_json')
+            dict_inst['configuration'] = self.configuration
