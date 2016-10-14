@@ -32,7 +32,7 @@ from myreco.engines_managers.models import (EnginesManagersVariablesModelBase,
 from myreco.engines.models import (
     EnginesModelBase, EnginesModelDataImporterBase,
     EnginesModelObjectsExporterBase, EnginesTypesNamesModelBase)
-from myreco.items_types.models import ItemsTypesModelBase
+from myreco.items_types.models import ItemsTypesModelBase, build_items_types_stores_table
 from falconswagger.models.sqlalchemy_redis import SQLAlchemyRedisModelBuilder
 from falconswagger.hooks import Authorizer
 
@@ -101,7 +101,8 @@ class ModelsFactory(object):
             'users_grants': self.make_users_grants_table(),
             'users_stores': self.make_users_stores_table(),
             'variations_engines_managers': self.make_variations_engines_managers_table(),
-            'engines_managers_fallbacks': self.make_engines_managers_fallbacks_table()
+            'engines_managers_fallbacks': self.make_engines_managers_fallbacks_table(),
+            'items_types_stores': self.make_items_types_stores_table()
         }
 
     def make_users_grants_table(self, attributes=None):
@@ -119,6 +120,10 @@ class ModelsFactory(object):
     def make_engines_managers_fallbacks_table(self, attributes=None):
         attributes = self._init_attributes(attributes, self._commons_tables_attrs)
         return build_engines_managers_fallbacks_table(self.base_model.metadata, **attributes)
+
+    def make_items_types_stores_table(self, attributes=None):
+        attributes = self._init_attributes(attributes, self._commons_tables_attrs)
+        return build_items_types_stores_table(self.base_model.metadata, **attributes)
 
     def make_engines_model(self, app_type, attributes=None):
         attributes = self._init_attributes(attributes, self._commons_models_attrs)

@@ -120,8 +120,7 @@ class EnginesModelDataImporterBase(EnginesModelBase):
         session = req.context['session']
         data_importer = import_module(engine.configuration['data_importer_path'])
         job_hash = '{:x}'.format(random.getrandbits(128))
-        item_model = cls.__api__.models[build_item_key(engine.item_type.name)]
-        items_indices_map = ItemsIndicesMap(session.redis_bind, item_model)
+        items_indices_map = cls._build_items_indices_map(session, engine)
 
         cls._background_run(data_importer.get_data, job_hash, engine, items_indices_map)
         resp.body = json.dumps({'hash': job_hash})
@@ -138,6 +137,12 @@ class EnginesModelDataImporterBase(EnginesModelBase):
         # loading all relationships because the session will be closed
         [getattr(engines[0], rel_name) for rel_name in engines[0].__relationships__]
         return engines[0]
+
+    @classmethod
+    def _build_items_indices_map(cls, session, engine):
+        item_collection_model = cls.__api__.models[build_item_key(engine.item_type.name)]
+        item_model = item_collection_model.__models__[engine.store_id]
+        return ItemsIndicesMap(session.redis_bind, item_model)
 
     @classmethod
     def _background_run(cls, func_, job_hash, *args, **kwargs):
@@ -181,8 +186,7 @@ class EnginesModelObjectsExporterBase(EnginesModelDataImporterBase):
         job_hash = '{:x}'.format(random.getrandbits(128))
         session = req.context['session']
         engine = cls._get_engine(req, resp, todict=False)
-        item_model = cls.__api__.models[build_item_key(engine.item_type.name)]
-        items_indices_map = ItemsIndicesMap(session.redis_bind, item_model)
+        items_indices_map = cls._build_items_indices_map(session, engine)
 
         if import_data:
             cls._background_run(cls._run_import_export, job_hash,

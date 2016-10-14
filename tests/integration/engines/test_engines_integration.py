@@ -64,7 +64,7 @@ def app(session):
         'name': 'products',
         'id_names_json': '["sku"]',
         'schema_json': '{"properties": {"sku": {"type": "string"}}}',
-        'store_id': 1
+        'stores': [{'id': 1}]
     }
     ItemsTypesModel.insert(session, item_type)
 
@@ -134,9 +134,14 @@ class TestEnginesModelPost(object):
         body[0]['store'] = \
             {'id': 1, 'name': 'test', 'country': 'test', 'configuration': {'data_path': '/test'}}
         body[0]['type_name'] = {'id': 1, 'name': 'top_seller'}
-        body[0]['item_type'] = item_type = {
+        body[0]['item_type'] = {
             'id': 1,
-            'store_id': 1,
+            'stores': [{
+                'configuration': {'data_path': '/test'},
+                'country': 'test',
+                'id': 1,
+                'name': 'test'
+            }],
             'name': 'products',
             'id_names': ['sku'],
             'schema': {'properties': {'sku': {'type': 'string'}}},
@@ -172,9 +177,14 @@ class TestEnginesModelGet(object):
         body[0]['store'] = \
             {'id': 1, 'name': 'test', 'country': 'test', 'configuration': {'data_path': '/test'}}
         body[0]['type_name'] = {'id': 1, 'name': 'top_seller'}
-        body[0]['item_type'] = item_type = {
+        body[0]['item_type'] = {
             'id': 1,
-            'store_id': 1,
+            'stores': [{
+                'configuration': {'data_path': '/test'},
+                'country': 'test',
+                'id': 1,
+                'name': 'test'
+            }],
             'name': 'products',
             'id_names': ["sku"],
             'schema': {'properties': {'sku': {'type': 'string'}}},
@@ -326,9 +336,14 @@ class TestEnginesModelUriTemplateGet(object):
         body[0]['store'] = \
             {'id': 1, 'name': 'test', 'country': 'test', 'configuration': {'data_path': '/test'}}
         body[0]['type_name'] = {'id': 1, 'name': 'top_seller'}
-        body[0]['item_type'] = item_type = {
+        body[0]['item_type'] = {
             'id': 1,
-            'store_id': 1,
+            'stores': [{
+                'configuration': {'data_path': '/test'},
+                'country': 'test',
+                'id': 1,
+                'name': 'test'
+            }],
             'name': 'products',
             'id_names': ["sku"],
             'schema': {'properties': {'sku': {'type': 'string'}}},
@@ -364,7 +379,7 @@ def data_importer_app(session):
 
     item_type = {
         'name': 'products',
-        'store_id': 1,
+        'stores': [{'id': 1}],
         'id_names_json': '["sku"]',
         'schema_json': '{"properties": {"sku": {"type": "string"}}}'
     }
@@ -468,7 +483,7 @@ def objects_exporter_app(session):
 
     item_type = {
         'name': 'products',
-        'store_id': 1,
+        'stores': [{'id': 1}],
         'id_names_json': '["sku"]',
         'schema_json': '{"properties": {"sku": {"type": "string"}}}'
     }

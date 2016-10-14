@@ -67,21 +67,21 @@ def app(session):
 
     item_type = {
         'name': 'products',
-        'store_id': 1,
+        'stores': [{'id': 1}],
         'id_names_json': '["item_id"]',
         'schema_json': schema_json
     }
     ItemsTypesModel.insert(session, item_type)
     item_type = {
         'name': 'categories',
-        'store_id': 1,
+        'stores': [{'id': 1}],
         'id_names_json': '["item_id"]',
         'schema_json': schema_json
     }
     ItemsTypesModel.insert(session, item_type)
     item_type = {
         'name': 'invalid',
-        'store_id': 1,
+        'stores': [{'id': 1}],
         'id_names_json': '["item_id"]',
         'schema_json': '{"type": "object", "properties": {"item_id": {"type": "string"}}}'
     }
@@ -274,7 +274,12 @@ class TestEnginesManagersModelPost(object):
             'engine': {
                 'item_type': {
                     'id': 1,
-                    'store_id': 1,
+                    'stores': [{
+                        'configuration': {'data_path': '/test'},
+                        'country': 'test',
+                        'id': 1,
+                        'name': 'test'
+                    }],
                     'schema': {
                         'type': 'object',
                         'properties': {
@@ -360,7 +365,12 @@ class TestEnginesManagersModelPost(object):
             'engine': {
                 'item_type': {
                     'id': 1,
-                    'store_id': 1,
+                    'stores': [{
+                        'configuration': {'data_path': '/test'},
+                        'country': 'test',
+                        'id': 1,
+                        'name': 'test'
+                    }],
                     'schema': {
                         'type': 'object',
                         'properties': {
@@ -457,7 +467,12 @@ class TestEnginesManagersModelPost(object):
                 'engine': {
                     'item_type': {
                         'id': 1,
-                        'store_id': 1,
+                        'stores': [{
+                            'configuration': {'data_path': '/test'},
+                            'country': 'test',
+                            'id': 1,
+                            'name': 'test'
+                        }],
                         'schema': {
                             'type': 'object',
                             'properties': {
@@ -526,7 +541,12 @@ class TestEnginesManagersModelPost(object):
             'engine': {
                 'item_type': {
                     'id': 1,
-                    'store_id': 1,
+                    'stores': [{
+                        'configuration': {'data_path': '/test'},
+                        'country': 'test',
+                        'id': 1,
+                        'name': 'test'
+                    }],
                     'schema': {
                         'type': 'object',
                         'properties': {
@@ -638,7 +658,12 @@ class TestEnginesManagersModelGet(object):
             'engine': {
                 'item_type': {
                     'id': 1,
-                    'store_id': 1,
+                    'stores': [{
+                        'configuration': {'data_path': '/test'},
+                        'country': 'test',
+                        'id': 1,
+                        'name': 'test'
+                    }],
                     'schema': {
                         'type': 'object',
                         'properties': {
@@ -878,7 +903,12 @@ class TestEnginesManagersModelUriTemplatePatch(object):
             'engine': {
                 'item_type': {
                     'id': 1,
-                    'store_id': 1,
+                    'stores': [{
+                        'configuration': {'data_path': '/test'},
+                        'country': 'test',
+                        'id': 1,
+                        'name': 'test'
+                    }],
                     'schema': {
                         'type': 'object',
                         'properties': {
@@ -1005,7 +1035,12 @@ class TestEnginesManagersModelUriTemplateGet(object):
             'engine': {
                 'item_type': {
                     'id': 1,
-                    'store_id': 1,
+                    'stores': [{
+                        'configuration': {'data_path': '/test'},
+                        'country': 'test',
+                        'id': 1,
+                        'name': 'test'
+                    }],
                     'schema': {
                         'type': 'object',
                         'properties': {
