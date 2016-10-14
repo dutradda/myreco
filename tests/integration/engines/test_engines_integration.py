@@ -484,7 +484,7 @@ class TestEnginesModelsObjectsExporter(object):
         assert json.loads(resp.body) == {'hash': '6342e10bd7dca3240c698aa79c98362e'}
 
     def test_exporter_get_running(self, engine, objects_exporter_client, headers):
-        def func():
+        def func(x):
             sleep(1)
 
         engine().export_objects = func
@@ -495,7 +495,7 @@ class TestEnginesModelsObjectsExporter(object):
         assert json.loads(resp.body) == {'status': 'running'}
 
     def test_exporter_get_done(self, engine, objects_exporter_client, headers):
-        def func():
+        def func(x):
             return 'testing'
 
         engine().export_objects = func
@@ -508,7 +508,7 @@ class TestEnginesModelsObjectsExporter(object):
 
     def test_exporter_get_with_error(
             self, engine, objects_exporter_client, headers):
-        def func():
+        def func(x):
             raise Exception('testing')
 
         engine().export_objects = func
@@ -547,7 +547,7 @@ class TestEnginesModelsObjectsExporterWithImport(object):
         assert json.loads(resp.body) == {'status': 'running'}
 
     def test_exporter_get_done_with_import(self, engine, import_module, objects_exporter_client, headers):
-        def func():
+        def func(x):
             return 'testing'
 
         engine().export_objects = func
@@ -574,7 +574,7 @@ class TestEnginesModelsObjectsExporterWithImport(object):
 
     def test_exporter_get_with_error_in_export_with_import(
             self, engine, import_module, objects_exporter_client, headers):
-        def func():
+        def func(x):
             raise Exception('testing')
 
         engine().export_objects = func

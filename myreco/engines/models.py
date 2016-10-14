@@ -172,23 +172,25 @@ class EnginesModelObjectsExporterBase(EnginesModelDataImporterBase):
     def post_export_objects(cls, req, resp):
         import_data = req.context['parameters']['query_string'].get('import_data')
         job_hash = '{:x}'.format(random.getrandbits(128))
+        session = req.context['session']
 
         if import_data:
             engine = cls._get_engine(req, resp, todict=False)
             config = json.loads(engine.configuration_json)
             data_importer = import_module(config['data_importer_path'])
-            cls._background_run(cls._run_import_export, job_hash, data_importer, engine, config)
+            cls._background_run(cls._run_import_export, job_hash, data_importer,
+                                engine, config, session)
 
         else:
             engine = cls._get_engine(req, resp, todict=False)
-            cls._background_run(engine.type_.export_objects, job_hash)
+            cls._background_run(engine.type_.export_objects, job_hash, session)
 
         resp.body = json.dumps({'hash': job_hash})
 
     @classmethod
-    def _run_import_export(cls, data_importer, engine, config):
+    def _run_import_export(cls, data_importer, engine, config, session):
         data_importer.get_data(config)
-        return engine.type_.export_objects()
+        return engine.type_.export_objects(session)
 
     @classmethod
     def get_export_objects(cls, req, resp):

@@ -48,7 +48,7 @@ class EngineType(metaclass=EngineTypeMeta):
     def get_recommendations(self, **variables):
         return []
 
-    def export_objects(self):
+    def export_objects(self, session):
         pass
 
 
