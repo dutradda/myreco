@@ -24,6 +24,8 @@
 from falconswagger.models.base import get_model_schema
 from falconswagger.exceptions import ModelBaseError
 from myreco.engines.types.base import EngineTypeChooser
+from myreco.engines.types.items_indices_map import ItemsIndicesMap
+from myreco.items_types.models import build_item_key
 from types import MethodType, FunctionType
 from jsonschema import ValidationError
 from sqlalchemy.ext.declarative import AbstractConcreteBase, declared_attr
@@ -115,10 +117,13 @@ class EnginesModelDataImporterBase(EnginesModelBase):
     @classmethod
     def post_import_data(cls, req, resp):
         engine = cls._get_engine(req, resp, todict=False)
+        session = req.context['session']
         data_importer = import_module(engine.configuration['data_importer_path'])
         job_hash = '{:x}'.format(random.getrandbits(128))
+        item_model = cls.__api__.models[build_item_key(engine.item_type.name)]
+        items_indices_map = ItemsIndicesMap(session.redis_bind, item_model)
 
-        cls._background_run(data_importer.get_data, job_hash, engine)
+        cls._background_run(data_importer.get_data, job_hash, engine, items_indices_map)
         resp.body = json.dumps({'hash': job_hash})
 
     @classmethod
@@ -176,19 +181,22 @@ class EnginesModelObjectsExporterBase(EnginesModelDataImporterBase):
         job_hash = '{:x}'.format(random.getrandbits(128))
         session = req.context['session']
         engine = cls._get_engine(req, resp, todict=False)
+        item_model = cls.__api__.models[build_item_key(engine.item_type.name)]
+        items_indices_map = ItemsIndicesMap(session.redis_bind, item_model)
 
         if import_data:
-            cls._background_run(cls._run_import_export, job_hash, engine, session)
+            cls._background_run(cls._run_import_export, job_hash,
+                                engine, session, items_indices_map)
         else:
-            cls._background_run(engine.type_.export_objects, job_hash, session)
+            cls._background_run(engine.type_.export_objects, job_hash, session, items_indices_map)
 
         resp.body = json.dumps({'hash': job_hash})
 
     @classmethod
-    def _run_import_export(cls, engine, session):
+    def _run_import_export(cls, engine, session, items_indices_map):
         data_importer = import_module(engine.configuration['data_importer_path'])
-        data_importer.get_data(engine)
-        return engine.type_.export_objects(session)
+        data_importer.get_data(engine, items_indices_map)
+        return engine.type_.export_objects(session, items_indices_map)
 
     @classmethod
     def get_export_objects(cls, req, resp):

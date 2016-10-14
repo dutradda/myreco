@@ -21,6 +21,7 @@
 # SOFTWARE.
 
 
+from myreco.engines.types.items_indices_map import ItemsIndicesMap
 from falconswagger.models.redis import RedisModelMeta, RedisModelBuilder
 from falconswagger.models.base import get_model_schema
 from sqlalchemy.ext.declarative import AbstractConcreteBase, declared_attr
@@ -28,6 +29,10 @@ from jsonschema import ValidationError
 from copy import deepcopy
 import sqlalchemy as sa
 import json
+
+
+def build_item_key(name):
+    return name.lower().replace(' ', '_')
 
 
 class ItemsTypesModelBase(AbstractConcreteBase):
@@ -103,17 +108,15 @@ class ItemsTypesModelBase(AbstractConcreteBase):
     @classmethod
     def _build_item_model(cls, item_type):
         if cls.__api__:
-            item_type['name'] = item_type['name'].lower().replace(' ', '_')
-            schema = cls._build_item_model_schema(item_type)
-            model = \
-                RedisModelBuilder(
-                    item_type['name'], item_type['id_names'], schema, metaclass=ItemsModelBaseMeta)
+            name, schema, id_names = item_type['name'], item_type['schema'], item_type['id_names']
+            key = build_item_key(name)
+            schema = cls._build_item_model_schema(key, schema, id_names)
+            model = RedisModelBuilder(key, id_names, schema, metaclass=ItemsModelBaseMeta)
             cls.__api__.associate_model(model)
 
     @classmethod
-    def _build_item_model_schema(cls, item_type):
-        name, schema, id_names = item_type['name'], item_type['schema'], item_type['id_names']
-        base_uri = '/{}'.format(name)
+    def _build_item_model_schema(cls, key, schema, id_names):
+        base_uri = '/{}'.format(key)
         id_names_uri = base_uri + '/' + '/'.join(['{{{}}}'.format(id_name) for id_name in id_names])
         patch_schema = deepcopy(schema)
         required = patch_schema.get('required')

@@ -25,6 +25,7 @@ from tests.integration.fixtures_models import (
     SQLAlchemyRedisModelBase, StoresModel, UsersModel,
     ItemsTypesModel, EnginesModel, EnginesTypesNamesModel)
 from myreco.factory import ModelsFactory
+from myreco.engines.types.items_indices_map import ItemsIndicesMap
 from pytest_falcon.plugin import Client
 from falconswagger.http_api import HttpAPI
 from base64 import b64encode
@@ -378,7 +379,10 @@ def data_importer_app(session):
     }
     models['engines'].insert(session, engine)
 
-    return HttpAPI([models['engines']], session.bind, FakeStrictRedis())
+    api = HttpAPI([models['engines'], models['items_types']], session.bind, FakeStrictRedis())
+    models['items_types'].associate_all_items(session)
+
+    return api
 
 
 @pytest.fixture
@@ -396,11 +400,13 @@ class TestEnginesModelsDataImporter(object):
 
         assert json.loads(resp.body) == {'hash': '6342e10bd7dca3240c698aa79c98362e'}
         assert import_module.call_args_list == [mock.call('test.test')]
+        assert len(import_module().get_data.call_args_list[0][0]) == 2
         assert type(type(import_module().get_data.call_args_list[0][0][0])) == type(EnginesModel)
+        assert type(import_module().get_data.call_args_list[0][0][1]) == ItemsIndicesMap
 
 
     def test_importer_get_running(self, import_module, data_importer_client, headers):
-        def func(x):
+        def func(x, y):
             sleep(1)
 
         import_module().get_data = func
@@ -412,7 +418,7 @@ class TestEnginesModelsDataImporter(object):
         assert json.loads(resp.body) == {'status': 'running'}
 
     def test_importer_get_done(self, import_module, data_importer_client, headers):
-        def func(x):
+        def func(x, y):
             return 'testing'
 
         import_module().get_data = func
@@ -425,7 +431,7 @@ class TestEnginesModelsDataImporter(object):
 
     def test_importer_get_with_error(
             self, import_module, data_importer_client, headers):
-        def func(x):
+        def func(x, y):
             raise Exception('testing')
 
         import_module().get_data = func
@@ -477,7 +483,10 @@ def objects_exporter_app(session):
     }
     models['engines'].insert(session, engine)
 
-    return HttpAPI([models['engines']], session.bind, FakeStrictRedis())
+    api = HttpAPI([models['engines'], models['items_types']], session.bind, FakeStrictRedis())
+    models['items_types'].associate_all_items(session)
+
+    return api
 
 
 @pytest.fixture
@@ -495,7 +504,7 @@ class TestEnginesModelsObjectsExporter(object):
         assert json.loads(resp.body) == {'hash': '6342e10bd7dca3240c698aa79c98362e'}
 
     def test_exporter_get_running(self, engine, objects_exporter_client, headers):
-        def func(x):
+        def func(x, y):
             sleep(1)
 
         engine().export_objects = func
@@ -506,7 +515,7 @@ class TestEnginesModelsObjectsExporter(object):
         assert json.loads(resp.body) == {'status': 'running'}
 
     def test_exporter_get_done(self, engine, objects_exporter_client, headers):
-        def func(x):
+        def func(x, y):
             return 'testing'
 
         engine().export_objects = func
@@ -519,7 +528,7 @@ class TestEnginesModelsObjectsExporter(object):
 
     def test_exporter_get_with_error(
             self, engine, objects_exporter_client, headers):
-        def func(x):
+        def func(x, y):
             raise Exception('testing')
 
         engine().export_objects = func
@@ -542,10 +551,12 @@ class TestEnginesModelsObjectsExporterWithImport(object):
 
         assert json.loads(resp.body) == {'hash': '6342e10bd7dca3240c698aa79c98362e'}
         assert import_module.call_args_list == [mock.call('test.test')]
+        assert len(import_module().get_data.call_args_list[0][0]) == 2
         assert type(type(import_module().get_data.call_args_list[0][0][0])) == type(EnginesModel)
+        assert type(import_module().get_data.call_args_list[0][0][1]) == ItemsIndicesMap
 
     def test_exporter_get_running_with_import(self, engine, import_module, objects_exporter_client, headers):
-        def func(x):
+        def func(x, y):
             sleep(1)
 
         import_module().get_data = func
@@ -557,7 +568,7 @@ class TestEnginesModelsObjectsExporterWithImport(object):
         assert json.loads(resp.body) == {'status': 'running'}
 
     def test_exporter_get_done_with_import(self, engine, import_module, objects_exporter_client, headers):
-        def func(x):
+        def func(x, y):
             return 'testing'
 
         engine().export_objects = func
@@ -571,7 +582,7 @@ class TestEnginesModelsObjectsExporterWithImport(object):
 
     def test_exporter_get_with_error_in_import_with_import(
             self, engine, import_module, objects_exporter_client, headers):
-        def func(x):
+        def func(x, y):
             raise Exception('testing')
 
         import_module().get_data = func
@@ -584,7 +595,7 @@ class TestEnginesModelsObjectsExporterWithImport(object):
 
     def test_exporter_get_with_error_in_export_with_import(
             self, engine, import_module, objects_exporter_client, headers):
-        def func(x):
+        def func(x, y):
             raise Exception('testing')
 
         engine().export_objects = func
