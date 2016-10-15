@@ -21,9 +21,59 @@
 # SOFTWARE.
 
 
+from myreco.engines.types.base import EngineType, EngineError
+from myreco.engines.types.utils import build_csv_readers, build_data_path
 from falconswagger.models.base import get_model_schema
-from myreco.engines.types.base import EngineType
+from concurrent.futures import ThreadPoolExecutor
+import numpy as np
+import os.path
+import zlib
 
 
 class TopSellerEngine(EngineType):
     __configuration_schema__ = get_model_schema(__file__)
+
+    def export_objects(self, session, items_indices_map):
+        readers = build_csv_readers(build_data_path(self.engine))
+        top_seller_vector = self._build_top_seller_vector(readers, items_indices_map)
+        redis_key = self._build_redis_key()
+        session.redis_bind.set(redis_key, zlib.compress(top_seller_vector.tobytes()))
+        result = sorted(enumerate(top_seller_vector), key=(lambda x: (x[1], x[0])), reverse=True)
+        indices_items_map = items_indices_map.get_indices_items_map()
+        return [{' | '.join(eval(indices_items_map[r[0]])): int(r[1])} for r in result]
+
+    def _build_top_seller_vector(self, readers, items_indices_map):
+        error_message = "No data found for engine '{}'".format(self.engine['name'])
+        if not len(readers):
+            raise EngineError(error_message)
+
+        executor = ThreadPoolExecutor(len(readers))
+        jobs = []
+        indices_values_map = dict()
+        for reader in readers:
+            job = executor.submit(self._set_indices_values_map,
+                                indices_values_map, reader, items_indices_map)
+            jobs.append(job)
+
+        [job.result() for job in jobs]
+
+        if not indices_values_map:
+            raise EngineError(error_message)
+
+        vector = np.zeros(max(indices_values_map.keys())+1, dtype=np.int32)
+        indices = np.array(list(indices_values_map.keys()), dtype=np.int32)
+        vector[indices] = np.array(list(indices_values_map.values()), dtype=np.int32)
+
+        return vector
+
+    def _set_indices_values_map(self, indices_values_map, reader, items_indices_map):
+        items_indices_map = items_indices_map.get_all()
+
+        for line in reader:
+            value = line.pop('value')
+            index = items_indices_map.get(line)
+            if index is not None:
+                indices_values_map[int(index)] = int(value)
+
+    def _build_redis_key(self):
+        return '{}_{}'.format(self.engine['type_name']['name'], self.engine['id'])

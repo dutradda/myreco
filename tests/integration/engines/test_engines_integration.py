@@ -438,7 +438,6 @@ class TestEnginesModelsDataImporter(object):
 
         import_module().get_data = func
         data_importer_client.post('/engines/1/import_data', headers=headers)
-        sleep(0.1)
         resp = data_importer_client.get(
             '/engines/1/import_data?hash=6342e10bd7dca3240c698aa79c98362e', headers=headers)
 
@@ -451,11 +450,11 @@ class TestEnginesModelsDataImporter(object):
 
         import_module().get_data = func
         data_importer_client.post('/engines/1/import_data', headers=headers)
-        sleep(0.1)
         resp = data_importer_client.get(
             '/engines/1/import_data?hash=6342e10bd7dca3240c698aa79c98362e', headers=headers)
 
-        assert json.loads(resp.body) == {'status': 'error', 'result': 'testing'}
+        assert json.loads(resp.body) == \
+            {'status': 'error', 'result': {'message': 'testing', 'name': 'Exception'}}
 
 
 @pytest.fixture
@@ -509,59 +508,74 @@ def objects_exporter_client(objects_exporter_app):
     return Client(objects_exporter_app)
 
 
-@mock.patch('myreco.engines.types.base.TopSellerEngine')
+@mock.patch('myreco.engines.types.top_seller.engine.build_csv_readers')
 @mock.patch('myreco.engines.models.random.getrandbits',
     new=mock.MagicMock(return_value=131940827655846590526331314439483569710))
 class TestEnginesModelsObjectsExporter(object):
 
-    def test_exporter_post(self, engine, objects_exporter_client, headers):
+    def test_exporter_post(self, readers_builder, objects_exporter_client, headers):
+        products = [{'sku': 'test'}]
+        objects_exporter_client.post('/products?store_id=1',
+                                    body=json.dumps(products), headers=headers)
+        readers_builder.return_value = [[{'value': 1, 'sku': 'test'}]]
+
         resp = objects_exporter_client.post('/engines/1/export_objects', headers=headers)
         assert json.loads(resp.body) == {'hash': '6342e10bd7dca3240c698aa79c98362e'}
 
-    def test_exporter_get_running(self, engine, objects_exporter_client, headers):
-        def func(x, y):
-            sleep(1)
+    def test_exporter_get_running(self, readers_builder, objects_exporter_client, headers):
+        products = [{'sku': 'test'}]
+        objects_exporter_client.post('/products?store_id=1',
+                                    body=json.dumps(products), headers=headers)
 
-        engine().export_objects = func
+        readers_builder.return_value = \
+            [[{'value': 1, 'sku': 'test{}'.format(i)}] for i in range(1000)]
         objects_exporter_client.post('/engines/1/export_objects', headers=headers)
 
         resp = objects_exporter_client.get(
             '/engines/1/export_objects?hash=6342e10bd7dca3240c698aa79c98362e', headers=headers)
         assert json.loads(resp.body) == {'status': 'running'}
 
-    def test_exporter_get_done(self, engine, objects_exporter_client, headers):
-        def func(x, y):
-            return 'testing'
+    def test_exporter_get_done(self, readers_builder, objects_exporter_client, headers):
+        products = [{'sku': 'test'}]
+        objects_exporter_client.post('/products?store_id=1',
+                                    body=json.dumps(products), headers=headers)
 
-        engine().export_objects = func
+        readers_builder.return_value = [[{'value': 1, 'sku': 'test'}]]
         objects_exporter_client.post('/engines/1/export_objects', headers=headers)
         sleep(0.1)
         resp = objects_exporter_client.get(
             '/engines/1/export_objects?hash=6342e10bd7dca3240c698aa79c98362e', headers=headers)
 
-        assert json.loads(resp.body) == {'status': 'done', 'result': 'testing'}
+        assert json.loads(resp.body) == {'status': 'done', 'result': [{'test': 1}]}
 
     def test_exporter_get_with_error(
-            self, engine, objects_exporter_client, headers):
-        def func(x, y):
-            raise Exception('testing')
+            self, readers_builder, objects_exporter_client, headers):
+        products = [{'sku': 'test'}]
+        objects_exporter_client.post('/products?store_id=1',
+                                    body=json.dumps(products), headers=headers)
 
-        engine().export_objects = func
+        readers_builder.return_value = [[]]
         objects_exporter_client.post('/engines/1/export_objects', headers=headers)
         sleep(0.1)
         resp = objects_exporter_client.get(
             '/engines/1/export_objects?hash=6342e10bd7dca3240c698aa79c98362e', headers=headers)
 
-        assert json.loads(resp.body) == {'status': 'error', 'result': 'testing'}
+        assert json.loads(resp.body) == {
+            'status': 'error',
+            'result': {
+                'message': "No data found for engine 'Seven Days Top Seller'",
+                'name': 'EngineError'
+            }
+        }
 
 
 @mock.patch('myreco.engines.models.import_module')
-@mock.patch('myreco.engines.types.base.TopSellerEngine')
+@mock.patch('myreco.engines.types.top_seller.engine.build_csv_readers')
 @mock.patch('myreco.engines.models.random.getrandbits',
     new=mock.MagicMock(return_value=131940827655846590526331314439483569710))
 class TestEnginesModelsObjectsExporterWithImport(object):
 
-    def test_exporter_post_with_import(self, export_objects, import_module, objects_exporter_client, headers):
+    def test_exporter_post_with_import(self, readers_builder, import_module, objects_exporter_client, headers):
         resp = objects_exporter_client.post('/engines/1/export_objects?import_data=true', headers=headers)
 
         assert json.loads(resp.body) == {'hash': '6342e10bd7dca3240c698aa79c98362e'}
@@ -570,7 +584,7 @@ class TestEnginesModelsObjectsExporterWithImport(object):
         assert type(type(import_module().get_data.call_args_list[0][0][0])) == type(EnginesModel)
         assert type(import_module().get_data.call_args_list[0][0][1]) == ItemsIndicesMap
 
-    def test_exporter_get_running_with_import(self, engine, import_module, objects_exporter_client, headers):
+    def test_exporter_get_running_with_import(self, readers_builder, import_module, objects_exporter_client, headers):
         def func(x, y):
             sleep(1)
 
@@ -582,41 +596,49 @@ class TestEnginesModelsObjectsExporterWithImport(object):
 
         assert json.loads(resp.body) == {'status': 'running'}
 
-    def test_exporter_get_done_with_import(self, engine, import_module, objects_exporter_client, headers):
-        def func(x, y):
-            return 'testing'
+    def test_exporter_get_done_with_import(self, readers_builder, import_module, objects_exporter_client, headers):
+        products = [{'sku': 'test'}]
+        objects_exporter_client.post('/products?store_id=1',
+                                    body=json.dumps(products), headers=headers)
 
-        engine().export_objects = func
+        readers_builder.return_value = [[{'value': 1, 'sku': 'test'}]]
         objects_exporter_client.post('/engines/1/export_objects?import_data=true', headers=headers)
         sleep(0.1)
         resp = objects_exporter_client.get(
             '/engines/1/export_objects?hash=6342e10bd7dca3240c698aa79c98362e', headers=headers)
 
         assert import_module.call_args_list == [mock.call('test.test')]
-        assert json.loads(resp.body) == {'status': 'done', 'result': 'testing'}
+        assert json.loads(resp.body) == {'status': 'done', 'result': [{'test': 1}]}
 
     def test_exporter_get_with_error_in_import_with_import(
-            self, engine, import_module, objects_exporter_client, headers):
+            self, readers_builder, import_module, objects_exporter_client, headers):
         def func(x, y):
             raise Exception('testing')
 
         import_module().get_data = func
         objects_exporter_client.post('/engines/1/export_objects?import_data=true', headers=headers)
-        sleep(0.1)
         resp = objects_exporter_client.get(
             '/engines/1/export_objects?hash=6342e10bd7dca3240c698aa79c98362e', headers=headers)
 
-        assert json.loads(resp.body) == {'status': 'error', 'result': 'testing'}
+        assert json.loads(resp.body) == \
+            {'status': 'error', 'result': {'message': 'testing', 'name': 'Exception'}}
 
     def test_exporter_get_with_error_in_export_with_import(
-            self, engine, import_module, objects_exporter_client, headers):
-        def func(x, y):
-            raise Exception('testing')
+            self, readers_builder, import_module, objects_exporter_client, headers):
+        products = [{'sku': 'test'}]
+        objects_exporter_client.post('/products?store_id=1',
+                                    body=json.dumps(products), headers=headers)
 
-        engine().export_objects = func
+        readers_builder.return_value = [[]]
         objects_exporter_client.post('/engines/1/export_objects?import_data=true', headers=headers)
         sleep(0.1)
         resp = objects_exporter_client.get(
             '/engines/1/export_objects?hash=6342e10bd7dca3240c698aa79c98362e', headers=headers)
 
-        assert json.loads(resp.body) == {'status': 'error', 'result': 'testing'}
+        assert json.loads(resp.body) == {
+            'status': 'error',
+            'result': {
+                'message': "No data found for engine 'Seven Days Top Seller'",
+                'name': 'EngineError'
+            }
+        }

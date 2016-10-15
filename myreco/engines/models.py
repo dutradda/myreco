@@ -116,50 +116,51 @@ class EnginesModelDataImporterBase(EnginesModelBase):
 
     @classmethod
     def post_import_data(cls, req, resp):
-        engine = cls._get_engine(req, resp, todict=False)
-        session = req.context['session']
+        engine, session = cls._get_engine(req, resp, todict=False)
         data_importer = import_module(engine.configuration['data_importer_path'])
         job_hash = '{:x}'.format(random.getrandbits(128))
         items_indices_map = cls._build_items_indices_map(session, engine)
 
-        cls._background_run(data_importer.get_data, job_hash, engine, items_indices_map)
+        cls._background_run(data_importer.get_data, job_hash, session, engine, items_indices_map)
         resp.body = json.dumps({'hash': job_hash})
 
     @classmethod
     def _get_engine(cls, req, resp, todict=True):
         id_ = req.context['parameters']['uri_template']['id']
         session = req.context['session']
+        session = type(session)(bind=session.bind, redis_bind=session.redis_bind)
         engines = cls.get(session, {'id': id_}, todict=todict)
 
         if not engines:
             raise HTTPNotFound()
 
-        # loading all relationships because the session will be closed
-        [getattr(engines[0], rel_name) for rel_name in engines[0].__relationships__]
-        return engines[0]
+        return engines[0], session
 
     @classmethod
     def _build_items_indices_map(cls, session, engine):
         item_collection_model = cls.__api__.models[build_item_key(engine.item_type.name)]
         item_model = item_collection_model.__models__[engine.store_id]
-        return ItemsIndicesMap(session.redis_bind, item_model)
+        return ItemsIndicesMap(session, item_model)
 
     @classmethod
-    def _background_run(cls, func_, job_hash, *args, **kwargs):
+    def _background_run(cls, func_, job_hash, session, *args, **kwargs):
         executor = ThreadPoolExecutor(2)
         job = executor.submit(func_, *args, **kwargs)
-        executor.submit(cls._job_watcher, executor, job, job_hash)
+        executor.submit(cls._job_watcher, executor, job, job_hash, session)
 
     @classmethod
-    def _job_watcher(cls, executor, job, job_hash):
+    def _job_watcher(cls, executor, job, job_hash, session):
         cls._jobs[job_hash] = {'status': 'running'}
         try:
             result = job.result()
-            cls._jobs[job_hash] = {'status': 'done', 'result': result}
-
         except Exception as error:
+            result = {'name': error.__class__.__name__, 'message': str(error)}
+            cls._jobs[job_hash] = {'status': 'error', 'result': result}
             logging.exception(error)
-            cls._jobs[job_hash] = {'status': 'error', 'result': str(error)}
+        else:
+            cls._jobs[job_hash] = {'status': 'done', 'result': result}
+        finally:
+            session.close()
 
         executor.shutdown()
 
@@ -184,15 +185,16 @@ class EnginesModelObjectsExporterBase(EnginesModelDataImporterBase):
     def post_export_objects(cls, req, resp):
         import_data = req.context['parameters']['query_string'].get('import_data')
         job_hash = '{:x}'.format(random.getrandbits(128))
-        session = req.context['session']
-        engine = cls._get_engine(req, resp, todict=False)
+        engine, session = cls._get_engine(req, resp, todict=False)
         items_indices_map = cls._build_items_indices_map(session, engine)
+        items_indices_map.update()
 
         if import_data:
-            cls._background_run(cls._run_import_export, job_hash,
+            cls._background_run(cls._run_import_export, job_hash, session,
                                 engine, session, items_indices_map)
         else:
-            cls._background_run(engine.type_.export_objects, job_hash, session, items_indices_map)
+            cls._background_run(engine.type_.export_objects, job_hash,
+                                session, session, items_indices_map)
 
         resp.body = json.dumps({'hash': job_hash})
 

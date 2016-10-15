@@ -27,6 +27,10 @@ from abc import ABCMeta, abstractmethod
 import inspect
 
 
+class EngineError(Exception):
+    pass
+
+
 class EngineTypeMeta(type):
 
     def __init__(cls, name, bases_classes, attributes):
