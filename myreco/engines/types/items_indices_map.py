@@ -29,7 +29,9 @@ class ItemsIndicesDict(dict):
 
     def get(self, keys, default=None):
         key = self._item_model(keys).get_key().encode()
-        return dict.get(self, key, default)
+        value = dict.get(self, key, default)
+        if value is not default:
+            return int(value.decode())
 
 
 class ItemsIndicesMap(object):
@@ -92,3 +94,8 @@ class ItemsIndicesMap(object):
         if items_indices_map:
             self.session.redis_bind.hmset(redis_key, items_indices_map)
             self.session.redis_bind.hmset(indices_items_key, indices_items_map)
+
+        return self._format_output(self.get_all())
+
+    def _format_output(self, output):
+        return {' | '.join(eval(k)): int(v.decode()) for k, v in output.items()}

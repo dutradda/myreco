@@ -22,10 +22,14 @@
 
 
 from tests.integration.fixtures_models import UsersModel, StoresModel, SQLAlchemyRedisModelBase
-from falconswagger.http_api import HttpAPI
 from tests.integration.fixtures_models import ItemsTypesModel
+from falconswagger.http_api import HttpAPI
+from myreco.factory import ModelsFactory
 from base64 import b64encode
 from fakeredis import FakeStrictRedis
+from unittest import mock
+from pytest_falcon.plugin import Client
+from time import sleep
 import pytest
 import json
 
@@ -692,3 +696,67 @@ class TestItemsModelPatch(object):
                 'schema': {'type': 'string'}
             }
         }
+
+
+@pytest.fixture
+def indices_updater_app(session):
+    table_args = {'mysql_engine':'innodb'}
+    factory = ModelsFactory('myreco', commons_models_attributes={'__table_args__': table_args},
+                            commons_tables_attributes=table_args)
+    models = factory.make_all_models('exporter')
+    user = {
+        'name': 'test',
+        'email': 'test',
+        'password': 'test',
+        'admin': True
+    }
+    models['users'].insert(session, user)
+
+    store = {
+        'name': 'test',
+        'country': 'test',
+        'configuration': {'data_path': '/test'}
+    }
+    models['stores'].insert(session, store)
+
+
+    item_type = {
+        'name': 'products',
+        'stores': [{'id': 1}],
+        'id_names_json': '["sku"]',
+        'schema_json': '{"properties": {"sku": {"type": "string"}}}'
+    }
+    models['items_types'].insert(session, item_type)
+
+    api = HttpAPI([models['items_types']], session.bind, FakeStrictRedis())
+    models['items_types'].associate_all_items(session)
+
+    return api
+
+
+@pytest.fixture
+def indices_updater_client(indices_updater_app):
+    return Client(indices_updater_app)
+
+
+@mock.patch('falconswagger.models.base.random.getrandbits',
+    new=mock.MagicMock(return_value=131940827655846590526331314439483569710))
+class TestItemsTypesModelIndicesUpdater(object):
+
+    def test_indices_updater_post(self, indices_updater_client, headers):
+        products = [{'sku': 'test'}]
+        indices_updater_client.post('/products?store_id=1',
+                                    body=json.dumps(products), headers=headers)
+
+        resp = indices_updater_client.post('/products/update_indices?store_id=1', headers=headers)
+        assert json.loads(resp.body) == {'hash': '6342e10bd7dca3240c698aa79c98362e'}
+
+    def test_indices_updater_get_done(self, indices_updater_client, headers):
+        products = [{'sku': 'test'}]
+        indices_updater_client.post('/products?store_id=1',
+                                    body=json.dumps(products), headers=headers)
+        resp = indices_updater_client.post('/products/update_indices?store_id=1', headers=headers)
+        resp = indices_updater_client.get(
+            '/products/update_indices?store_id=1&hash=6342e10bd7dca3240c698aa79c98362e',
+            headers=headers)
+        assert json.loads(resp.body) == {'status': 'done', 'result': {'test': 0}}

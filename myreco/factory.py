@@ -32,7 +32,8 @@ from myreco.engines_managers.models import (EnginesManagersVariablesModelBase,
 from myreco.engines.models import (
     EnginesModelBase, EnginesModelDataImporterBase,
     EnginesModelObjectsExporterBase, EnginesTypesNamesModelBase)
-from myreco.items_types.models import ItemsTypesModelBase, build_items_types_stores_table
+from myreco.items_types.models import (ItemsTypesModelBase, build_items_types_stores_table,
+    ItemsTypesModelIndicesUpdaterBase)
 from falconswagger.models.sqlalchemy_redis import SQLAlchemyRedisModelBuilder
 from falconswagger.hooks import Authorizer
 
@@ -84,7 +85,7 @@ class ModelsFactory(object):
             'engines_types_names': self.make_engines_types_names_model(),
             'engines_managers': self.make_engines_managers_model(),
             'engines_managers_variables': self.make_engines_managers_variables_model(),
-            'items_types': self.make_items_types_model(),
+            'items_types': self.make_items_types_model(app_type),
             'placements': self.make_placements_model(app_type),
             'variations': self.make_variations_model(),
             'ab_test_users': self.make_ab_test_users_model(),
@@ -153,10 +154,15 @@ class ModelsFactory(object):
             'EnginesManagersVariablesModel',
             (EnginesManagersVariablesModelBase, self.base_model), attributes)
 
-    def make_items_types_model(self, attributes=None):
+    def make_items_types_model(self, app_type, attributes=None):
         attributes = self._init_attributes(attributes, self._commons_models_attrs)
-        return self.meta_class(
-            'ItemsTypesModel', (ItemsTypesModelBase, self.base_model), attributes)
+
+        if app_type == 'recommender':
+            bases_classes = (ItemsTypesModelBase, self.base_model)
+        else:
+            bases_classes = (ItemsTypesModelIndicesUpdaterBase, self.base_model)
+
+        return self.meta_class('ItemsTypesModel', bases_classes, attributes)
 
     def make_placements_model(self, app_type, attributes=None):
         attributes = self._init_attributes(attributes, self._commons_models_attrs)

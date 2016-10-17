@@ -29,13 +29,10 @@ from myreco.items_types.models import build_item_key
 from types import MethodType, FunctionType
 from jsonschema import ValidationError
 from sqlalchemy.ext.declarative import AbstractConcreteBase, declared_attr
-from concurrent.futures import ThreadPoolExecutor
 from importlib import import_module
 from falcon import HTTPNotFound
 import sqlalchemy as sa
 import json
-import random
-import logging
 
 
 class EnginesModelBase(AbstractConcreteBase):
@@ -115,98 +112,52 @@ class EnginesModelDataImporterBase(EnginesModelBase):
     __schema__ = get_model_schema(__file__, 'data_importer_schema.json')
 
     @classmethod
-    def post_import_data(cls, req, resp):
-        engine, session = cls._get_engine(req, resp, todict=False)
-        data_importer = import_module(engine.configuration['data_importer_path'])
-        job_hash = '{:x}'.format(random.getrandbits(128))
-        items_indices_map = cls._build_items_indices_map(session, engine)
+    def _run_job(cls, job_session, req, resp):
+        engine = cls._get_engine(req, job_session)
+        try:
+            data_importer = import_module(engine.configuration['data_importer_path'])
+        except Exception as error:
+            raise ModelBaseError("invalid 'data_importer_path' configuration for this engine")
 
-        cls._background_run(data_importer.get_data, job_hash, session, engine, items_indices_map)
-        resp.body = json.dumps({'hash': job_hash})
+        items_indices_map = cls._build_items_indices_map(job_session, engine)
+        return data_importer.get_data(engine, items_indices_map)
 
     @classmethod
-    def _get_engine(cls, req, resp, todict=True):
+    def _get_engine(cls, req, job_session):
         id_ = req.context['parameters']['uri_template']['id']
-        session = req.context['session']
-        session = type(session)(bind=session.bind, redis_bind=session.redis_bind)
-        engines = cls.get(session, {'id': id_}, todict=todict)
+        engines = cls.get(job_session, {'id': id_}, todict=False)
 
         if not engines:
             raise HTTPNotFound()
 
-        return engines[0], session
+        return engines[0]
 
     @classmethod
-    def _build_items_indices_map(cls, session, engine):
+    def _build_items_indices_map(cls, job_session, engine):
         item_collection_model = cls.__api__.models[build_item_key(engine.item_type.name)]
         item_model = item_collection_model.__models__[engine.store_id]
-        return ItemsIndicesMap(session, item_model)
-
-    @classmethod
-    def _background_run(cls, func_, job_hash, session, *args, **kwargs):
-        executor = ThreadPoolExecutor(2)
-        job = executor.submit(func_, *args, **kwargs)
-        executor.submit(cls._job_watcher, executor, job, job_hash, session)
-
-    @classmethod
-    def _job_watcher(cls, executor, job, job_hash, session):
-        cls._jobs[job_hash] = {'status': 'running'}
-        try:
-            result = job.result()
-        except Exception as error:
-            result = {'name': error.__class__.__name__, 'message': str(error)}
-            cls._jobs[job_hash] = {'status': 'error', 'result': result}
-            logging.exception(error)
-        else:
-            cls._jobs[job_hash] = {'status': 'done', 'result': result}
-        finally:
-            session.close()
-
-        executor.shutdown()
-
-    @classmethod
-    def get_import_data(cls, req, resp):
-        cls._get_job(req, resp)
-
-    @classmethod
-    def _get_job(cls, req, resp):
-        status = cls._jobs.get(req.context['parameters']['query_string']['hash'])
-
-        if status is None:
-            raise HTTPNotFound()
-
-        resp.body = json.dumps(status)
+        return ItemsIndicesMap(job_session, item_model)
 
 
 class EnginesModelObjectsExporterBase(EnginesModelDataImporterBase):
     __schema__ = get_model_schema(__file__, 'objects_exporter_schema.json')
 
     @classmethod
-    def post_export_objects(cls, req, resp):
+    def _run_job(cls, job_session, req, resp):
         import_data = req.context['parameters']['query_string'].get('import_data')
-        job_hash = '{:x}'.format(random.getrandbits(128))
-        engine, session = cls._get_engine(req, resp, todict=False)
-        items_indices_map = cls._build_items_indices_map(session, engine)
-        items_indices_map.update()
+        engine = cls._get_engine(req, job_session)
+        items_indices_map = cls._build_items_indices_map(job_session, engine)
 
         if import_data:
-            cls._background_run(cls._run_import_export, job_hash, session,
-                                engine, session, items_indices_map)
+            try:
+                data_importer = import_module(engine.configuration['data_importer_path'])
+            except ImportError:
+                raise ModelBaseError("Invalid 'data_importer_path'", input_=engine.configuration)
+
+            data_importer.get_data(engine, items_indices_map)
+            return engine.type_.export_objects(job_session, items_indices_map)
         else:
-            cls._background_run(engine.type_.export_objects, job_hash,
-                                session, session, items_indices_map)
-
-        resp.body = json.dumps({'hash': job_hash})
-
-    @classmethod
-    def _run_import_export(cls, engine, session, items_indices_map):
-        data_importer = import_module(engine.configuration['data_importer_path'])
-        data_importer.get_data(engine, items_indices_map)
-        return engine.type_.export_objects(session, items_indices_map)
-
-    @classmethod
-    def get_export_objects(cls, req, resp):
-        cls._get_job(req, resp)
+            return engine.type_.export_objects(job_session, items_indices_map)
 
 
 class EnginesTypesNamesModelBase(AbstractConcreteBase):

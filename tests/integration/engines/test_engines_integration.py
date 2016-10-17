@@ -405,51 +405,51 @@ def data_importer_client(data_importer_app):
     return Client(data_importer_app)
 
 
-@mock.patch('myreco.engines.models.import_module')
-@mock.patch('myreco.engines.models.random.getrandbits',
+@mock.patch('falconswagger.models.base.random.getrandbits',
     new=mock.MagicMock(return_value=131940827655846590526331314439483569710))
 class TestEnginesModelsDataImporter(object):
 
-    def test_importer_post(self, import_module, data_importer_client, headers):
+    def test_importer_post(self, data_importer_client, headers, monkeypatch):
+        import_module = mock.MagicMock()
+        monkeypatch.setattr('myreco.engines.models.import_module', import_module)
         resp = data_importer_client.post('/engines/1/import_data', headers=headers)
 
         assert json.loads(resp.body) == {'hash': '6342e10bd7dca3240c698aa79c98362e'}
+        sleep(0.1)
         assert import_module.call_args_list == [mock.call('test.test')]
         assert len(import_module().get_data.call_args_list[0][0]) == 2
         assert type(type(import_module().get_data.call_args_list[0][0][0])) == type(EnginesModel)
         assert type(import_module().get_data.call_args_list[0][0][1]) == ItemsIndicesMap
 
-
-    def test_importer_get_running(self, import_module, data_importer_client, headers):
+    def test_importer_get_running(self, data_importer_client, headers, monkeypatch):
         def func(x, y):
             sleep(1)
 
+        import_module = mock.MagicMock()
+        monkeypatch.setattr('myreco.engines.models.import_module', import_module)
         import_module().get_data = func
         data_importer_client.post('/engines/1/import_data', headers=headers)
-
         resp = data_importer_client.get(
             '/engines/1/import_data?hash=6342e10bd7dca3240c698aa79c98362e', headers=headers)
-
         assert json.loads(resp.body) == {'status': 'running'}
 
-    def test_importer_get_done(self, import_module, data_importer_client, headers):
-        def func(x, y):
-            return 'testing'
-
-        import_module().get_data = func
+    def test_importer_get_done(self, data_importer_client, headers, monkeypatch):
+        import_module = mock.MagicMock()
+        monkeypatch.setattr('myreco.engines.models.import_module', import_module)
+        import_module().get_data.return_value = 'testing'
         data_importer_client.post('/engines/1/import_data', headers=headers)
+        sleep(0.1)
         resp = data_importer_client.get(
             '/engines/1/import_data?hash=6342e10bd7dca3240c698aa79c98362e', headers=headers)
 
         assert json.loads(resp.body) == {'status': 'done', 'result': 'testing'}
 
-    def test_importer_get_with_error(
-            self, import_module, data_importer_client, headers):
-        def func(x, y):
-            raise Exception('testing')
-
-        import_module().get_data = func
+    def test_importer_get_with_error(self, data_importer_client, headers, monkeypatch):
+        import_module = mock.MagicMock()
+        monkeypatch.setattr('myreco.engines.models.import_module', import_module)
+        import_module().get_data.side_effect = Exception('testing')
         data_importer_client.post('/engines/1/import_data', headers=headers)
+        sleep(0.1)
         resp = data_importer_client.get(
             '/engines/1/import_data?hash=6342e10bd7dca3240c698aa79c98362e', headers=headers)
 
@@ -509,7 +509,7 @@ def objects_exporter_client(objects_exporter_app):
 
 
 @mock.patch('myreco.engines.types.top_seller.engine.build_csv_readers')
-@mock.patch('myreco.engines.models.random.getrandbits',
+@mock.patch('falconswagger.models.base.random.getrandbits',
     new=mock.MagicMock(return_value=131940827655846590526331314439483569710))
 class TestEnginesModelsObjectsExporter(object):
 
@@ -541,6 +541,7 @@ class TestEnginesModelsObjectsExporter(object):
                                     body=json.dumps(products), headers=headers)
 
         readers_builder.return_value = [[{'value': 1, 'sku': 'test'}]]
+        objects_exporter_client.post('/products/update_indices?store_id=1', headers=headers)
         objects_exporter_client.post('/engines/1/export_objects', headers=headers)
         sleep(0.1)
         resp = objects_exporter_client.get(
@@ -571,13 +572,13 @@ class TestEnginesModelsObjectsExporter(object):
 
 @mock.patch('myreco.engines.models.import_module')
 @mock.patch('myreco.engines.types.top_seller.engine.build_csv_readers')
-@mock.patch('myreco.engines.models.random.getrandbits',
+@mock.patch('falconswagger.models.base.random.getrandbits',
     new=mock.MagicMock(return_value=131940827655846590526331314439483569710))
 class TestEnginesModelsObjectsExporterWithImport(object):
 
     def test_exporter_post_with_import(self, readers_builder, import_module, objects_exporter_client, headers):
         resp = objects_exporter_client.post('/engines/1/export_objects?import_data=true', headers=headers)
-
+        sleep(0.1)
         assert json.loads(resp.body) == {'hash': '6342e10bd7dca3240c698aa79c98362e'}
         assert import_module.call_args_list == [mock.call('test.test')]
         assert len(import_module().get_data.call_args_list[0][0]) == 2
@@ -602,6 +603,7 @@ class TestEnginesModelsObjectsExporterWithImport(object):
                                     body=json.dumps(products), headers=headers)
 
         readers_builder.return_value = [[{'value': 1, 'sku': 'test'}]]
+        objects_exporter_client.post('/products/update_indices?store_id=1', headers=headers)
         objects_exporter_client.post('/engines/1/export_objects?import_data=true', headers=headers)
         sleep(0.1)
         resp = objects_exporter_client.get(
@@ -612,11 +614,9 @@ class TestEnginesModelsObjectsExporterWithImport(object):
 
     def test_exporter_get_with_error_in_import_with_import(
             self, readers_builder, import_module, objects_exporter_client, headers):
-        def func(x, y):
-            raise Exception('testing')
-
-        import_module().get_data = func
+        import_module().get_data.side_effect = Exception('testing')
         objects_exporter_client.post('/engines/1/export_objects?import_data=true', headers=headers)
+        sleep(0.1)
         resp = objects_exporter_client.get(
             '/engines/1/export_objects?hash=6342e10bd7dca3240c698aa79c98362e', headers=headers)
 

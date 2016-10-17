@@ -291,6 +291,42 @@ class ItemsTypesModelBase(AbstractConcreteBase):
         [cls._disassociate_item(item_type) for item_type in items_types]
 
 
+class ItemsTypesModelIndicesUpdaterBase(ItemsTypesModelBase):
+
+    @classmethod
+    def _build_items_collections_schema(cls, key, schema, id_names):
+        update_indices_uri = '/{}/update_indices'.format(key)
+        schema = ItemsTypesModelBase._build_items_collections_schema(key, schema, id_names)
+        schema[update_indices_uri] = {
+            'parameters': [{
+                'name': 'Authorization',
+                'in': 'header',
+                'required': True,
+                'type': 'string'
+            },{
+                'name': 'store_id',
+                'in': 'query',
+                'required': True,
+                'type': 'integer'
+            }],
+            'post': {
+                'operationId': 'post_job',
+                'responses': {'201': {'description': 'Executing'}}
+            },
+            'get': {
+                'parameters': [{
+                    'name': 'hash',
+                    'in': 'query',
+                    'required': True,
+                    'type': 'string'
+                }],
+                'operationId': 'get_job',
+                'responses': {'200': {'description': 'Got'}}
+            }
+        }
+        return schema
+
+
 class ItemsModelBaseMeta(RedisModelMeta):
 
     def get(cls, session, ids=None, limit=None, offset=None, **kwargs):
@@ -320,6 +356,11 @@ class ItemsCollectionsModelBaseMeta(RedisModelMeta):
     def get(cls, session, ids=None, limit=None, offset=None, **kwargs):
         item_model = cls._get_model(kwargs)
         return item_model.get(session, ids=ids, limit=limit, offset=offset, **kwargs)
+
+    def _run_job(cls, job_session, req, resp):
+        params = req.context['parameters']['query_string']
+        items_indices_map = ItemsIndicesMap(job_session, cls._get_model(params))
+        return items_indices_map.update()
 
 
 def build_items_types_stores_table(metadata, **kwargs):

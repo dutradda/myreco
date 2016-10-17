@@ -40,7 +40,10 @@ class TopSellerEngine(EngineType):
         session.redis_bind.set(redis_key, zlib.compress(top_seller_vector.tobytes()))
         result = sorted(enumerate(top_seller_vector), key=(lambda x: (x[1], x[0])), reverse=True)
         indices_items_map = items_indices_map.get_indices_items_map()
-        return [{' | '.join(eval(indices_items_map[r[0]])): int(r[1])} for r in result]
+        return [{self._format_output(indices_items_map, r): int(r[1])} for r in result]
+
+    def _format_output(self, indices_items_map, r):
+        return ' | '.join(eval(indices_items_map[r[0]]))
 
     def _build_top_seller_vector(self, readers, items_indices_map):
         error_message = "No data found for engine '{}'".format(self.engine['name'])

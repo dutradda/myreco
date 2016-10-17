@@ -12,7 +12,7 @@
             "required": true
         }],
         "post": {
-            "operationId": "post_export_objects",
+            "operationId": "post_job",
             "responses": {"201": {"description": "Executing"}}
         },
         "get": {
@@ -27,7 +27,7 @@
                 "type": "boolean",
                 "default": false
             }],
-            "operationId": "get_export_objects",
+            "operationId": "get_job",
             "responses": {"200": {"description": "Got"}}
         }
     }
