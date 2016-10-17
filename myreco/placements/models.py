@@ -145,5 +145,5 @@ def build_variations_engines_managers_table(metadata, **kwargs):
     return sa.Table(
         'variations_engines_managers', metadata,
         sa.Column('variation_id', sa.Integer, sa.ForeignKey('variations.id', ondelete='CASCADE', onupdate='CASCADE'), primary_key=True),
-        sa.Column('engine_manager_id', sa.Integer, sa.ForeignKey('engines_managers.id', ondelete='CASCADE', onupdate='CASCADE'), nullable=False),
+        sa.Column('engine_manager_id', sa.Integer, sa.ForeignKey('engines_managers.id', ondelete='CASCADE', onupdate='CASCADE'), primary_key=True),
         **kwargs)
