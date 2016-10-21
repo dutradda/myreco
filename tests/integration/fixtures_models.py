@@ -32,6 +32,7 @@ from myreco.engines_managers.models import (EnginesManagersVariablesModelBase,
 from myreco.engines.models import EnginesModelBase, EnginesTypesNamesModelBase
 from myreco.items_types.models import ItemsTypesModelBase
 from myreco.factory import ModelsFactory
+from unittest.mock import MagicMock
 
 
 table_args = {'mysql_engine':'innodb'}
@@ -68,3 +69,5 @@ EnginesTypesNamesModel = models['engines_types_names']
 ItemsTypesModel = models['items_types']
     
 SQLAlchemyRedisModelBase = factory.base_model
+
+DataImporter = MagicMock()

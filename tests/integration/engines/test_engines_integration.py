@@ -23,7 +23,7 @@
 
 from tests.integration.fixtures_models import (
     SQLAlchemyRedisModelBase, StoresModel, UsersModel,
-    ItemsTypesModel, EnginesModel, EnginesTypesNamesModel)
+    ItemsTypesModel, EnginesModel, EnginesTypesNamesModel, DataImporter)
 from myreco.factory import ModelsFactory
 from myreco.engines.types.items_indices_map import ItemsIndicesMap
 from pytest_falcon.plugin import Client
@@ -402,7 +402,7 @@ def data_importer_app(session):
 
     engine = {
         'name': 'Seven Days Top Seller',
-        'configuration': {'days_interval': 7, 'data_importer_path': 'test.test'},
+        'configuration': {'days_interval': 7, 'data_importer_path': 'tests.integration.fixtures_models.DataImporter'},
         'store_id': 1,
         'type_name_id': 1,
         'item_type_id': 1
@@ -424,49 +424,78 @@ def data_importer_client(data_importer_app):
     new=mock.MagicMock(return_value=131940827655846590526331314439483569710))
 class TestEnginesModelsDataImporter(object):
 
-    def test_importer_post(self, data_importer_client, headers, monkeypatch):
-        import_module = mock.MagicMock()
-        monkeypatch.setattr('myreco.engines.models.import_module', import_module)
+    def test_importer_post(self, data_importer_client, headers):
+        DataImporter.get_data.return_value = {}
         resp = data_importer_client.post('/engines/1/import_data', headers=headers)
+        hash_ = json.loads(resp.body)
 
-        assert json.loads(resp.body) == {'hash': '6342e10bd7dca3240c698aa79c98362e'}
-        sleep(0.1)
-        assert import_module.call_args_list == [mock.call('test.test')]
-        assert len(import_module().get_data.call_args_list[0][0]) == 2
-        assert type(type(import_module().get_data.call_args_list[0][0][0])) == type(EnginesModel)
-        assert type(import_module().get_data.call_args_list[0][0][1]) == ItemsIndicesMap
+        while True:
+            resp = data_importer_client.get(
+                '/engines/1/import_data?hash=6342e10bd7dca3240c698aa79c98362e',
+                headers=headers)
+            if json.loads(resp.body)['status'] != 'running':
+                break
 
-    def test_importer_get_running(self, data_importer_client, headers, monkeypatch):
-        def func(x, y):
+        called = bool(DataImporter.get_data.called)
+        DataImporter.get_data.reset_mock()
+
+        assert hash_ == {'hash': '6342e10bd7dca3240c698aa79c98362e'}
+        assert called
+
+    def test_importer_get_running(self, data_importer_client, headers):
+        def func(x, y, z):
             sleep(1)
+            return {}
 
-        import_module = mock.MagicMock()
-        monkeypatch.setattr('myreco.engines.models.import_module', import_module)
-        import_module().get_data = func
+        DataImporter.get_data = func
         data_importer_client.post('/engines/1/import_data', headers=headers)
+
         resp = data_importer_client.get(
             '/engines/1/import_data?hash=6342e10bd7dca3240c698aa79c98362e', headers=headers)
+        sleep(0.1)
+        DataImporter.get_data = mock.MagicMock()
+
         assert json.loads(resp.body) == {'status': 'running'}
 
-    def test_importer_get_done(self, data_importer_client, headers, monkeypatch):
-        import_module = mock.MagicMock()
-        monkeypatch.setattr('myreco.engines.models.import_module', import_module)
-        import_module().get_data.return_value = 'testing'
+        while True:
+            resp = data_importer_client.get(
+                '/engines/1/import_data?hash=6342e10bd7dca3240c698aa79c98362e',
+                headers=headers)
+            if json.loads(resp.body)['status'] != 'running':
+                break
+
+
+    def test_importer_get_done(self, data_importer_client, headers):
+        DataImporter.get_data.return_value = 'testing'
         data_importer_client.post('/engines/1/import_data', headers=headers)
-        sleep(0.1)
+
+        while True:
+            resp = data_importer_client.get(
+                '/engines/1/import_data?hash=6342e10bd7dca3240c698aa79c98362e',
+                headers=headers)
+            if json.loads(resp.body)['status'] != 'running':
+                break
+
         resp = data_importer_client.get(
             '/engines/1/import_data?hash=6342e10bd7dca3240c698aa79c98362e', headers=headers)
+        DataImporter.get_data = mock.MagicMock()
 
         assert json.loads(resp.body) == {'status': 'done', 'result': 'testing'}
 
-    def test_importer_get_with_error(self, data_importer_client, headers, monkeypatch):
-        import_module = mock.MagicMock()
-        monkeypatch.setattr('myreco.engines.models.import_module', import_module)
-        import_module().get_data.side_effect = Exception('testing')
+    def test_importer_get_with_error(self, data_importer_client, headers):
+        DataImporter.get_data.side_effect = Exception('testing')
         data_importer_client.post('/engines/1/import_data', headers=headers)
-        sleep(0.1)
+
+        while True:
+            resp = data_importer_client.get(
+                '/engines/1/import_data?hash=6342e10bd7dca3240c698aa79c98362e',
+                headers=headers)
+            if json.loads(resp.body)['status'] != 'running':
+                break
+
         resp = data_importer_client.get(
             '/engines/1/import_data?hash=6342e10bd7dca3240c698aa79c98362e', headers=headers)
+        DataImporter.get_data = mock.MagicMock()
 
         assert json.loads(resp.body) == \
             {'status': 'error', 'result': {'message': 'testing', 'name': 'Exception'}}
@@ -508,7 +537,7 @@ def objects_exporter_app(session):
 
     engine = {
         'name': 'Seven Days Top Seller',
-        'configuration': {'days_interval': 7, 'data_importer_path': 'test.test'},
+        'configuration': {'days_interval': 7, 'data_importer_path': 'tests.integration.fixtures_models.DataImporter'},
         'store_id': 1,
         'type_name_id': 1,
         'item_type_id': 1
@@ -559,9 +588,16 @@ class TestEnginesModelsObjectsExporter(object):
                                     body=json.dumps(products), headers=headers)
 
         readers_builder.return_value = [[{'value': 1, 'sku': 'test'}]]
-        objects_exporter_client.post('/products/update_indices?store_id=1', headers=headers)
+        resp = objects_exporter_client.post('/products/update_filters?store_id=1', headers=headers)
         objects_exporter_client.post('/engines/1/export_objects', headers=headers)
-        sleep(0.1)
+
+        while True:
+            resp = objects_exporter_client.get(
+                '/engines/1/export_objects?hash=6342e10bd7dca3240c698aa79c98362e',
+                headers=headers)
+            if json.loads(resp.body)['status'] != 'running':
+                break
+
         resp = objects_exporter_client.get(
             '/engines/1/export_objects?hash=6342e10bd7dca3240c698aa79c98362e', headers=headers)
 
@@ -575,7 +611,14 @@ class TestEnginesModelsObjectsExporter(object):
 
         readers_builder.return_value = [[]]
         objects_exporter_client.post('/engines/1/export_objects', headers=headers)
-        sleep(0.1)
+
+        while True:
+            resp = objects_exporter_client.get(
+                '/engines/1/export_objects?hash=6342e10bd7dca3240c698aa79c98362e',
+                headers=headers)
+            if json.loads(resp.body)['status'] != 'running':
+                break
+
         resp = objects_exporter_client.get(
             '/engines/1/export_objects?hash=6342e10bd7dca3240c698aa79c98362e', headers=headers)
 
@@ -588,68 +631,108 @@ class TestEnginesModelsObjectsExporter(object):
         }
 
 
-@mock.patch('myreco.engines.models.import_module')
 @mock.patch('myreco.engines.types.top_seller.engine.build_csv_readers')
 @mock.patch('falconswagger.models.base.random.getrandbits',
     new=mock.MagicMock(return_value=131940827655846590526331314439483569710))
 class TestEnginesModelsObjectsExporterWithImport(object):
 
-    def test_exporter_post_with_import(self, readers_builder, import_module, objects_exporter_client, headers):
+    def test_exporter_post_with_import(self, readers_builder, objects_exporter_client, headers):
+        readers_builder.return_value = [[{'sku': 'test', 'value': 1}]]
+        DataImporter.get_data.return_value = {}
         resp = objects_exporter_client.post('/engines/1/export_objects?import_data=true', headers=headers)
-        sleep(0.1)
-        assert json.loads(resp.body) == {'hash': '6342e10bd7dca3240c698aa79c98362e'}
-        assert import_module.call_args_list == [mock.call('test.test')]
-        assert len(import_module().get_data.call_args_list[0][0]) == 2
-        assert type(type(import_module().get_data.call_args_list[0][0][0])) == type(EnginesModel)
-        assert type(import_module().get_data.call_args_list[0][0][1]) == ItemsIndicesMap
+        hash_ = json.loads(resp.body)
 
-    def test_exporter_get_running_with_import(self, readers_builder, import_module, objects_exporter_client, headers):
-        def func(x, y):
+        while True:
+            resp = objects_exporter_client.get(
+                '/engines/1/export_objects?hash=6342e10bd7dca3240c698aa79c98362e',
+                headers=headers)
+            if json.loads(resp.body)['status'] != 'running':
+                break
+
+        called = bool(DataImporter.get_data.called)
+        DataImporter.get_data.reset_mock()
+
+        assert hash_ == {'hash': '6342e10bd7dca3240c698aa79c98362e'}
+        assert called
+
+    def test_exporter_get_running_with_import(self, readers_builder, objects_exporter_client, headers):
+        def func(x, y, z):
             sleep(1)
+            return {}
 
-        import_module().get_data = func
+        readers_builder.return_value = [[{'sku': 'test', 'value': 1}]]
+        DataImporter.get_data = func
         objects_exporter_client.post('/engines/1/export_objects?import_data=true', headers=headers)
 
         resp = objects_exporter_client.get(
             '/engines/1/export_objects?hash=6342e10bd7dca3240c698aa79c98362e', headers=headers)
+        DataImporter.get_data = mock.MagicMock()
 
         assert json.loads(resp.body) == {'status': 'running'}
 
-    def test_exporter_get_done_with_import(self, readers_builder, import_module, objects_exporter_client, headers):
+        while True:
+            resp = objects_exporter_client.get(
+                '/engines/1/export_objects?hash=6342e10bd7dca3240c698aa79c98362e',
+                headers=headers)
+            if json.loads(resp.body)['status'] != 'running':
+                break
+
+    def test_exporter_get_done_with_import(self, readers_builder, objects_exporter_client, headers):
         products = [{'sku': 'test'}]
         objects_exporter_client.post('/products?store_id=1',
                                     body=json.dumps(products), headers=headers)
 
         readers_builder.return_value = [[{'value': 1, 'sku': 'test'}]]
-        objects_exporter_client.post('/products/update_indices?store_id=1', headers=headers)
+        objects_exporter_client.post('/products/update_filters?store_id=1', headers=headers)
         objects_exporter_client.post('/engines/1/export_objects?import_data=true', headers=headers)
-        sleep(0.1)
+
+        while True:
+            resp = objects_exporter_client.get(
+                '/engines/1/export_objects?hash=6342e10bd7dca3240c698aa79c98362e',
+                headers=headers)
+            if json.loads(resp.body)['status'] != 'running':
+                break
+
         resp = objects_exporter_client.get(
             '/engines/1/export_objects?hash=6342e10bd7dca3240c698aa79c98362e', headers=headers)
 
-        assert import_module.call_args_list == [mock.call('test.test')]
         assert json.loads(resp.body) == {'status': 'done', 'result': [{'test': 1}]}
 
     def test_exporter_get_with_error_in_import_with_import(
-            self, readers_builder, import_module, objects_exporter_client, headers):
-        import_module().get_data.side_effect = Exception('testing')
+            self, readers_builder, objects_exporter_client, headers):
+        DataImporter.get_data.side_effect = Exception('testing')
         objects_exporter_client.post('/engines/1/export_objects?import_data=true', headers=headers)
-        sleep(0.1)
+
+        while True:
+            resp = objects_exporter_client.get(
+                '/engines/1/export_objects?hash=6342e10bd7dca3240c698aa79c98362e',
+                headers=headers)
+            if json.loads(resp.body)['status'] != 'running':
+                break
+
         resp = objects_exporter_client.get(
             '/engines/1/export_objects?hash=6342e10bd7dca3240c698aa79c98362e', headers=headers)
+        DataImporter.get_data = mock.MagicMock()
 
         assert json.loads(resp.body) == \
             {'status': 'error', 'result': {'message': 'testing', 'name': 'Exception'}}
 
     def test_exporter_get_with_error_in_export_with_import(
-            self, readers_builder, import_module, objects_exporter_client, headers):
+            self, readers_builder, objects_exporter_client, headers):
         products = [{'sku': 'test'}]
         objects_exporter_client.post('/products?store_id=1',
                                     body=json.dumps(products), headers=headers)
 
         readers_builder.return_value = [[]]
         objects_exporter_client.post('/engines/1/export_objects?import_data=true', headers=headers)
-        sleep(0.1)
+
+        while True:
+            resp = objects_exporter_client.get(
+                '/engines/1/export_objects?hash=6342e10bd7dca3240c698aa79c98362e',
+                headers=headers)
+            if json.loads(resp.body)['status'] != 'running':
+                break
+
         resp = objects_exporter_client.get(
             '/engines/1/export_objects?hash=6342e10bd7dca3240c698aa79c98362e', headers=headers)
 

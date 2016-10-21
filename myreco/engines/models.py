@@ -114,13 +114,21 @@ class EnginesModelDataImporterBase(EnginesModelBase):
     @classmethod
     def _run_job(cls, job_session, req, resp):
         engine = cls._get_engine(req, job_session)
-        try:
-            data_importer = import_module(engine.configuration['data_importer_path'])
-        except Exception as error:
-            raise ModelBaseError("invalid 'data_importer_path' configuration for this engine")
+        data_importer = cls._get_data_importer(engine.configuration['data_importer_path'])
+        items_indices_map = cls._build_items_indices_map(engine)
+        return data_importer.get_data(engine, items_indices_map, job_session)
 
-        items_indices_map = cls._build_items_indices_map(job_session, engine)
-        return data_importer.get_data(engine, items_indices_map)
+    @classmethod
+    def _get_data_importer(cls, path):
+        try:
+            module_path = '.'.join(path.split('.')[:-1])
+            class_name = path.split('.')[-1]
+            module = import_module(module_path)
+            return getattr(module, class_name)
+
+        except Exception as error:
+            raise ModelBaseError(
+                "invalid 'data_importer_path' configuration for this engine", path)
 
     @classmethod
     def _get_engine(cls, req, job_session):
@@ -133,10 +141,10 @@ class EnginesModelDataImporterBase(EnginesModelBase):
         return engines[0]
 
     @classmethod
-    def _build_items_indices_map(cls, job_session, engine):
+    def _build_items_indices_map(cls, engine):
         item_collection_model = cls.__api__.models[build_item_key(engine.item_type.name)]
         item_model = item_collection_model.__models__[engine.store_id]
-        return ItemsIndicesMap(job_session, item_model)
+        return ItemsIndicesMap(item_model)
 
 
 class EnginesModelObjectsExporterBase(EnginesModelDataImporterBase):
@@ -146,15 +154,11 @@ class EnginesModelObjectsExporterBase(EnginesModelDataImporterBase):
     def _run_job(cls, job_session, req, resp):
         import_data = req.context['parameters']['query_string'].get('import_data')
         engine = cls._get_engine(req, job_session)
-        items_indices_map = cls._build_items_indices_map(job_session, engine)
+        items_indices_map = cls._build_items_indices_map(engine)
 
         if import_data:
-            try:
-                data_importer = import_module(engine.configuration['data_importer_path'])
-            except ImportError:
-                raise ModelBaseError("Invalid 'data_importer_path'", input_=engine.configuration)
-
-            data_importer.get_data(engine, items_indices_map)
+            data_importer = cls._get_data_importer(engine.configuration['data_importer_path'])
+            data_importer.get_data(engine, items_indices_map, job_session)
             return engine.type_.export_objects(job_session, items_indices_map)
         else:
             return engine.type_.export_objects(job_session, items_indices_map)

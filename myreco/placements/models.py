@@ -25,6 +25,8 @@ from falconswagger.models.base import get_model_schema
 from falconswagger.json_builder import JsonBuilder
 from falconswagger.exceptions import ModelBaseError
 from myreco.engines.types.base import EngineTypeChooser
+from myreco.engines.types.filters.factory import FiltersFactory
+from myreco.items_types.models import build_item_key
 from falcon.errors import HTTPNotFound
 from sqlalchemy.ext.declarative import AbstractConcreteBase, declared_attr
 import sqlalchemy as sa
@@ -72,18 +74,18 @@ class PlacementsModelRecommenderBase(PlacementsModelBase):
     def get_recommendations(cls, req, resp):
         placement = cls._get_placement(req, resp)
         recommendations = []
+        session = req.context['session']
+        input_variables = req.context['parameters']['query_string']
 
-        for engine_manger in placement['variations'][0]['engines_managers']:
-            engine_vars = dict()
-            engine = engine_manger['engine']
-            for engine_var in engine_manger['engine_variables']:
-                var_name = engine_var['variable']['name']
-                if var_name in req.params:
-                    schema = cls._get_variable_schema(engine, engine_var)
-                    engine_vars[var_name] = JsonBuilder(req.params[var_name], schema)
-
-            engine_type = EngineTypeChooser(engine['type_name']['name'])(engine)
-            recommendations.extend(engine_type.get_recommendations(**engine_vars))
+        for engine_manager in placement['variations'][0]['engines_managers']:
+            engine = engine_manager['engine']
+            items_model = cls._get_items_model(engine)
+            engine_vars, filters = \
+                cls._get_variables_and_filters(engine_manager, items_model, input_variables)
+            engine_type = EngineTypeChooser(engine['type_name']['name'])(items_model=items_model)
+            max_recos = engine_manager['max_recos']
+            eng_recos = engine_type.get_recommendations(session, filters, max_recos, **engine_vars)
+            recommendations.extend(eng_recos)
 
         if not recommendations:
             raise HTTPNotFound()
@@ -102,7 +104,31 @@ class PlacementsModelRecommenderBase(PlacementsModelBase):
         return placements[0]
 
     @classmethod
-    def _get_variable_schema(self, engine, engine_var):
+    def _get_variables_and_filters(cls, engine_manager, items_model, input_variables):
+        engine_vars = dict()
+        filters = dict()
+        engine = engine_manager['engine']
+
+        for engine_var in engine_manager['engine_variables']:
+            var_name = engine_var['variable']['name']
+            var_engine_name = engine_var['inside_engine_name']
+
+            if var_name in input_variables:
+                schema, schema_ids = cls._get_variable_schema(engine, engine_var)
+
+                schema_ids = schema if schema_ids is None else schema_ids
+                var_value = JsonBuilder(input_variables[var_name], schema_ids)
+
+                if not engine_var['is_filter']:
+                    engine_vars[var_engine_name] = var_value
+                else:
+                    filter_ = FiltersFactory.make(items_model, engine_var, schema)
+                    filters[filter_] = var_value
+
+        return engine_vars, filters
+
+    @classmethod
+    def _get_variable_schema(cls, engine, engine_var):
         if engine_var['is_filter']:
             variables = engine['item_type']['available_filters']
         else:
@@ -110,7 +136,23 @@ class PlacementsModelRecommenderBase(PlacementsModelBase):
 
         for var in variables:
             if var['name'] == engine_var['inside_engine_name']:
-                return var['schema']
+                if engine_var['is_filter'] and engine_var['filter_type'] == 'Property Of':
+                    return var['schema'], cls._build_id_names_schema(engine)
+                else:
+                    return var['schema'], None
+
+    @classmethod
+    def _build_id_names_schema(cls, engine):
+        return {
+            'type': 'array',
+            'items': [engine['item_type']['schema']['properties'][id_name] \
+                for id_name in engine['item_type']['schema']['id_names']]
+        }
+
+    @classmethod
+    def _get_items_model(cls, engine):
+        items_types_model_key = build_item_key(engine['item_type']['name'])
+        return cls.__api__.models[items_types_model_key].__models__[engine['store_id']]
 
 
 class VariationsModelBase(AbstractConcreteBase):

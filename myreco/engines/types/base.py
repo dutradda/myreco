@@ -24,7 +24,8 @@
 from falconswagger.models.base import build_validator, get_module_path
 from jsonschema import Draft4Validator
 from abc import ABCMeta, abstractmethod
-import inspect
+from bottleneck import argpartition
+import msgpack
 
 
 class EngineError(Exception):
@@ -41,19 +42,47 @@ class EngineTypeMeta(type):
 
 
 class EngineType(metaclass=EngineTypeMeta):
-    def __init__(self, engine):
-        self.__config_validator__.validate(engine['configuration'])
-        self._validate_config(engine)
+
+    def __init__(self, engine=None, items_model=None):
+        if engine is not None:
+            self.validate_config(engine)
+
         self.engine = engine
+        self.items_model = items_model
 
     def get_variables(self):
         return []
 
+    def validate_config(self, engine):
+        self.__config_validator__.validate(engine['configuration'])
+        self._validate_config(engine)
+
     def _validate_config(self, engine):
         pass
 
-    def get_recommendations(self, **variables):
-        return []
+    def get_recommendations(self, session, filters, max_recos, **variables):
+        rec_vector = self._build_rec_vector(session, **variables)
+        [filter_.filter(session, rec_vector, ids) for filter_, ids in filters.items()]
+        return self._build_rec_list(session, rec_vector, max_recos)
+
+    def _build_rec_vector(self, session, **variables):
+        pass
+
+    def _build_rec_list(self, session, rec_vector, max_recos):
+        items_indices_map = self.items_model.build_items_indices_map()
+        best_indices = self._get_best_indices(rec_vector, max_recos)
+        best_items_keys = items_indices_map.get_items(session, best_indices)
+        return [msgpack.loads(item, encoding='utf-8') for item in session.redis_bind.hmget(
+                            self.items_model.__key__, best_items_keys) if item is not None]
+
+    def _get_best_indices(self, rec_vector, max_recos):
+        if max_recos > rec_vector.size:
+            max_recos = rec_vector.size
+
+        best_indices = argpartition(-rec_vector, max_recos-1)[:max_recos]
+        best_values = rec_vector[best_indices]
+        return [i for i, v in
+            sorted(zip(best_indices, best_values), key=lambda x: x[1]) if v > 0.0]
 
     def export_objects(self, session):
         pass
@@ -63,7 +92,7 @@ class AbstractDataImporter(metaclass=ABCMeta):
 
     @classmethod
     @abstractmethod
-    def get_data(cls, engine):
+    def get_data(cls, engine, items_indices_map, session):
         pass
 
 

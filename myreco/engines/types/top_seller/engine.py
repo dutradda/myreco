@@ -35,17 +35,17 @@ class TopSellerEngine(EngineType):
 
     def export_objects(self, session, items_indices_map):
         readers = build_csv_readers(build_data_path(self.engine))
-        top_seller_vector = self._build_top_seller_vector(readers, items_indices_map)
+        top_seller_vector = self._build_top_seller_vector(readers, items_indices_map, session)
         redis_key = self._build_redis_key()
         session.redis_bind.set(redis_key, zlib.compress(top_seller_vector.tobytes()))
         result = sorted(enumerate(top_seller_vector), key=(lambda x: (x[1], x[0])), reverse=True)
-        indices_items_map = items_indices_map.get_indices_items_map()
+        indices_items_map = items_indices_map.get_indices_items_map(session)
         return [{self._format_output(indices_items_map, r): int(r[1])} for r in result]
 
     def _format_output(self, indices_items_map, r):
         return ' | '.join(eval(indices_items_map[r[0]]))
 
-    def _build_top_seller_vector(self, readers, items_indices_map):
+    def _build_top_seller_vector(self, readers, items_indices_map, session):
         error_message = "No data found for engine '{}'".format(self.engine['name'])
         if not len(readers):
             raise EngineError(error_message)
@@ -54,8 +54,8 @@ class TopSellerEngine(EngineType):
         jobs = []
         indices_values_map = dict()
         for reader in readers:
-            job = executor.submit(self._set_indices_values_map,
-                                indices_values_map, reader, items_indices_map)
+            job = executor.submit(self._set_indices_values_map, indices_values_map,
+                                reader, items_indices_map, session)
             jobs.append(job)
 
         [job.result() for job in jobs]
@@ -69,8 +69,8 @@ class TopSellerEngine(EngineType):
 
         return vector
 
-    def _set_indices_values_map(self, indices_values_map, reader, items_indices_map):
-        items_indices_map = items_indices_map.get_all()
+    def _set_indices_values_map(self, indices_values_map, reader, items_indices_map, session):
+        items_indices_map = items_indices_map.get_all(session)
 
         for line in reader:
             value = line.pop('value')

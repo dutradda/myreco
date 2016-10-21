@@ -22,6 +22,8 @@
 
 
 from myreco.engines.types.items_indices_map import ItemsIndicesMap
+from myreco.engines.types.filters.factory import FiltersFactory
+from myreco.engines.types.filters.filters import BooleanFilterBy
 from falconswagger.models.redis import RedisModelMeta, RedisModelBuilder
 from falconswagger.models.base import get_model_schema, ModelBase, get_dir_path
 from falconswagger.exceptions import ModelBaseError
@@ -97,12 +99,14 @@ class ItemsTypesModelBase(AbstractConcreteBase):
             id_names = schema['id_names']
             class_name = cls._build_class_name(name)
             key = build_item_key(name)
-            items_models = {store['id']: cls._build_item_model(item_type, store) \
+            items_models = {store['id']: cls._build_items_model(item_type, store) \
                 for store in item_type['stores']}
             attributes = {
                 '__key__': key,
                 '__schema__': cls._build_items_collections_schema(key, schema, id_names),
-                '__models__': items_models
+                '__models__': items_models,
+                '__all_models__': cls.__all_models__,
+                '__item_type__': item_type
             }
             items_collections = ItemsCollectionsModelBaseMeta(class_name, (ModelBase,), attributes)
             cls.__api__.associate_model(items_collections)
@@ -118,7 +122,7 @@ class ItemsTypesModelBase(AbstractConcreteBase):
         return final_name + 'Model'
 
     @classmethod
-    def _build_item_model(cls, item_type, store):
+    def _build_items_model(cls, item_type, store):
         class_name = cls._build_class_name(item_type['name'], store['name'])
         key = build_item_key(item_type['name'], store['id'])
         id_names = item_type['schema']['id_names']
@@ -181,11 +185,13 @@ class ItemsTypesModelBase(AbstractConcreteBase):
                     'parameters': [{
                         'name': 'page',
                         'in': 'query',
-                        'type': 'integer'
+                        'type': 'integer',
+                        'default': 1
                     },{
                         'name': 'items_per_page',
                         'in': 'query',
-                        'type': 'integer'
+                        'type': 'integer',
+                        'default': 1000
                     }],
                     'operationId': 'get_by_body',
                     'responses': {'200': {'description': 'Got'}}
@@ -282,9 +288,9 @@ class ItemsTypesModelIndicesUpdaterBase(ItemsTypesModelBase):
 
     @classmethod
     def _build_items_collections_schema(cls, key, schema, id_names):
-        update_indices_uri = '/{}/update_indices'.format(key)
+        update_filters_uri = '/{}/update_filters'.format(key)
         schema = ItemsTypesModelBase._build_items_collections_schema(key, schema, id_names)
-        schema[update_indices_uri] = {
+        schema[update_filters_uri] = {
             'parameters': [{
                 'name': 'Authorization',
                 'in': 'header',
@@ -316,38 +322,131 @@ class ItemsTypesModelIndicesUpdaterBase(ItemsTypesModelBase):
 
 class ItemsModelBaseMeta(RedisModelMeta):
 
+    def __init__(cls, name, bases, attrs):
+        RedisModelMeta.__init__(cls, name, bases, attrs)
+        cls.index = None
+
     def get(cls, session, ids=None, limit=None, offset=None, **kwargs):
         items_per_page, page = kwargs.get('items_per_page', 1000), kwargs.get('page', 1)
         limit = items_per_page * page
         offset = items_per_page * (page-1)
         return RedisModelMeta.get(cls, session, ids=ids, limit=limit, offset=offset, **kwargs)
 
+    def build_items_indices_map(cls):
+        return ItemsIndicesMap(cls)
+
 
 class ItemsCollectionsModelBaseMeta(RedisModelMeta):
 
     def insert(cls, session, objs, **kwargs):
-        item_model = cls._get_model(kwargs)
-        return item_model.insert(session, objs, **kwargs)
+        items_model = cls._get_model(kwargs)
+        ret_values = items_model.insert(session, objs, **kwargs)
+        cls._set_stock_filter(session, items_model)
+        return ret_values
 
     def _get_model(cls, kwargs):
         store_id = kwargs.pop('store_id')
-        item_model = cls.__models__.get(store_id)
-        if item_model is None:
+        items_model = cls.__models__.get(store_id)
+        if items_model is None:
             raise HTTPNotFound()
-        return item_model
+        return items_model
+
+    def _set_stock_filter(cls, session, items_model):
+        items_keys = set(session.redis_bind.hkeys(items_model.__key__))
+        items_indices_map = ItemsIndicesMap(items_model).get_all(session)
+        items_indices_keys = set(items_indices_map.keys())
+        remaining_keys = items_indices_keys.intersection(items_keys)
+        old_keys = items_indices_keys.difference(items_keys)
+
+        items = []
+        cls._set_stock_item(remaining_keys, items_model, items_indices_map, True, items)
+        cls._set_stock_item(old_keys, items_model, items_indices_map, False, items)
+
+        stock_filter = BooleanFilterBy(items_model, 'stock')
+        stock_filter.update(session, items)
+
+    def _set_stock_item(cls, keys, items_model, items_indices_map, value, items):
+        for k in keys:
+            item = items_model({'stock': value})
+            item.set_ids(eval(k))
+            item.index = int(items_indices_map[k])
+            items.append(item)
 
     def update(cls, session, objs, ids=None, **kwargs):
-        item_model = cls._get_model(kwargs)
-        return item_model.update(session, objs, ids=ids, **kwargs)
+        items_model = cls._get_model(kwargs)
+        ret_values = items_model.update(session, objs, ids=ids, **kwargs)
+        cls._set_stock_filter(session, items_model)
+        return ret_values
 
     def get(cls, session, ids=None, limit=None, offset=None, **kwargs):
-        item_model = cls._get_model(kwargs)
-        return item_model.get(session, ids=ids, limit=limit, offset=offset, **kwargs)
+        items_model = cls._get_model(kwargs)
+        return items_model.get(session, ids=ids, limit=limit, offset=offset, **kwargs)
 
     def _run_job(cls, job_session, req, resp):
-        params = req.context['parameters']['query_string']
-        items_indices_map = ItemsIndicesMap(job_session, cls._get_model(params))
-        return items_indices_map.update()
+        query_string = req.context['parameters']['query_string']
+        store_id = query_string['store_id']
+        items_model = cls._get_model(query_string)
+        items_indices_map = ItemsIndicesMap(items_model)
+        items_indices_map_ret = items_indices_map.update(job_session)
+
+        filters_factory = FiltersFactory()
+        enabled_filters = cls._get_enabled_filters(job_session, store_id)
+        filters_ret = dict()
+        items_indices_map = items_indices_map.get_all(job_session)
+        items = cls._get_items_with_indices(job_session, items_model, items_indices_map)
+
+        stock_filter = BooleanFilterBy(items_model, 'stock')
+        stock_items = []
+        for item in items:
+            stock_item = items_model(item)
+            stock_item.index = item.index
+            stock_item['stock'] = True
+            stock_items.append(stock_item)
+        stock_filter.update(job_session, stock_items)
+
+        for eng_var, schema in enabled_filters:
+            filter_ = filters_factory.make(items_model, eng_var, schema)
+            filters_ret[filter_.name] = filter_.update(job_session, items)
+
+        return {'items_indices_map': items_indices_map_ret, 'filters': filters_ret}
+
+    def _get_enabled_filters(cls, session, store_id):
+        engines_managers_model = cls.__all_models__['engines_managers']
+        engines_managers = engines_managers_model.get(session, {'store_id': store_id})
+        filters_variables = []
+
+        # used to aggregate filters inclusive and exclusive with same property
+        filters_names_set = set()
+
+        for eng_manager in engines_managers:
+            if cls.__item_type__['id'] == eng_manager['engine']['item_type_id']:
+                for engine_var in eng_manager['engine_variables']:
+                    if engine_var['is_filter']:
+                        filter_name = engine_var['inside_engine_name']
+                        if filter_name not in filters_names_set:
+                            schema = cls.__item_type__['schema']['properties'][filter_name]
+                            filters_variables.append((engine_var, schema))
+                            filters_names_set.add(filter_name)
+
+        return filters_variables
+
+    def _get_items_with_indices(cls, job_session, items_model, items_indices_map):
+        items = []
+        page = 1
+        items_part = items_model.get(job_session, page=page)
+
+        while items_part:
+            for item in items_part:
+                index = items_indices_map.get(item)
+                if index is not None:
+                    item = items_model(item)
+                    item.index = index
+                    items.append(item)
+
+            page += 1
+            items_part = items_model.get(job_session, page=page)
+
+        return items
 
 
 def build_items_types_stores_table(metadata, **kwargs):

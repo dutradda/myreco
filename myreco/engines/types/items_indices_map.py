@@ -23,12 +23,12 @@
 
 class ItemsIndicesDict(dict):
 
-    def __init__(self, items_indices_map, item_model):
-        self._item_model = item_model
+    def __init__(self, items_indices_map, items_model):
+        self._items_model = items_model
         dict.__init__(self, items_indices_map)
 
     def get(self, keys, default=None):
-        key = self._item_model(keys).get_key().encode()
+        key = self._items_model(keys).get_key().encode()
         value = dict.get(self, key, default)
         if value is not default:
             return int(value.decode())
@@ -36,32 +36,25 @@ class ItemsIndicesDict(dict):
 
 class ItemsIndicesMap(object):
 
-    def __init__(self, session, item_model):
-        self.session = session
-        self.item_model = item_model
+    def __init__(self, items_model):
+        self.items_model = items_model
+        self.key = items_model.__key__ + '_indices_map'
+        self.indices_items_key = items_model.__key__ + '_items_map'
 
-    def get_all(self):
-        items_indices_map = self.session.redis_bind.hgetall(self._build_key())
-        return ItemsIndicesDict(items_indices_map, self.item_model)
+    def get_all(self, session):
+        items_indices_map = session.redis_bind.hgetall(self.key)
+        return ItemsIndicesDict(items_indices_map, self.items_model)
 
-    def _build_key(self):
-        return self.item_model.__key__ + '_indices_map'
-
-    def get_indices_items_map(self):
-        map_ = self.session.redis_bind.hgetall(self._build_indices_items_key())
+    def get_indices_items_map(self, session):
+        map_ = session.redis_bind.hgetall(self.indices_items_key)
         return {int(k): v.decode() for k, v in map_.items()}
 
-    def _build_indices_items_key(self):
-        return self.item_model.__key__ + '_items_map'
+    def update(self, session):
+        items_indices_map = session.redis_bind.hgetall(self.key)
+        indices_items_map = session.redis_bind.hgetall(self.indices_items_key)
 
-    def update(self):
-        redis_key = self._build_key()
-        indices_items_key = self._build_indices_items_key()
-        items_indices_map = self.session.redis_bind.hgetall(redis_key)
-        indices_items_map = self.session.redis_bind.hgetall(indices_items_key)
-
-        items = self.item_model.get(self.session)
-        items_keys = set([self.item_model(item).get_key().encode() for item in items])
+        items = self.items_model.get(session)
+        items_keys = set([self.items_model(item).get_key().encode() for item in items])
 
         new_keys = [key for key in items_keys if key not in items_indices_map]
         old_keys = set([key for key in items_keys if key in items_indices_map])
@@ -88,14 +81,18 @@ class ItemsIndicesMap(object):
             counter += 1
 
         if keys_to_delete:
-            self.session.redis_bind.hdel(redis_key, *keys_to_delete)
-            self.session.redis_bind.hdel(indices_items_key, *free_indices)
+            session.redis_bind.hdel(self.key, *keys_to_delete)
+            session.redis_bind.hdel(self.indices_items_key, *free_indices)
 
         if items_indices_map:
-            self.session.redis_bind.hmset(redis_key, items_indices_map)
-            self.session.redis_bind.hmset(indices_items_key, indices_items_map)
+            session.redis_bind.hmset(self.key, items_indices_map)
+            session.redis_bind.hmset(self.indices_items_key, indices_items_map)
 
-        return self._format_output(self.get_all())
+        return self._format_output(self.get_all(session))
 
     def _format_output(self, output):
-        return {' | '.join(eval(k)): int(v.decode()) for k, v in output.items()}
+        return {' | '.join([str(i) for i in eval(k)]): int(v.decode()) for k, v in output.items()}
+
+    def get_items(self, session, indices):
+        return [item.decode() for item in \
+            session.redis_bind.hmget(self.indices_items_key, indices) if item is not None]

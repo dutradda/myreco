@@ -22,16 +22,18 @@
 
 
 from tests.integration.fixtures_models import UsersModel, StoresModel, SQLAlchemyRedisModelBase
-from tests.integration.fixtures_models import ItemsTypesModel
+from tests.integration.fixtures_models import ItemsTypesModel, EnginesManagersModel
 from falconswagger.http_api import HttpAPI
 from myreco.factory import ModelsFactory
+from myreco.engines.types.items_indices_map import ItemsIndicesMap
 from base64 import b64encode
 from fakeredis import FakeStrictRedis
 from unittest import mock
 from pytest_falcon.plugin import Client
-from time import sleep
 import pytest
 import json
+import numpy as np
+import zlib
 
 
 @pytest.fixture
@@ -40,7 +42,13 @@ def model_base():
 
 
 @pytest.fixture
-def app(session):
+def redis():
+    FakeStrictRedis().flushall()
+    return FakeStrictRedis()
+
+
+@pytest.fixture
+def app(redis, session):
     user = {
         'name': 'test',
         'email': 'test',
@@ -56,7 +64,7 @@ def app(session):
     }
     StoresModel.insert(session, store)
 
-    return HttpAPI([ItemsTypesModel], session.bind, FakeStrictRedis())
+    return HttpAPI([ItemsTypesModel], session.bind, redis)
 
 
 @pytest.fixture
@@ -417,11 +425,13 @@ class TestItemsModelSchema(object):
                     'parameters': [{
                         'name': 'page',
                         'in': 'query',
-                        'type': 'integer'
+                        'type': 'integer',
+                        'default': 1
                     },{
                         'name': 'items_per_page',
                         'in': 'query',
-                        'type': 'integer'
+                        'type': 'integer',
+                        'default': 1000
                     },{
                         'name': 'id',
                         'in': 'query',
@@ -533,11 +543,13 @@ class TestItemsModelSchema(object):
                     'parameters': [{
                         'name': 'page',
                         'in': 'query',
-                        'type': 'integer'
+                        'type': 'integer',
+                        'default': 1
                     },{
                         'name': 'items_per_page',
                         'in': 'query',
-                        'type': 'integer'
+                        'type': 'integer',
+                        'default': 1000
                     },{
                         'name': 'id',
                         'in': 'query',
@@ -634,7 +646,7 @@ class TestItemsModelPatch(object):
         client.post('/items_types/', headers=headers, body=json.dumps(body))
 
         body = [{'id': 'test', 't1': 1}]
-        client.post('/test/', headers=headers, body=json.dumps(body))
+        client.post('/test?store_id=1', headers=headers, body=json.dumps(body))
 
         body = [{'id': 'test', 't1': 2}]
         resp = client.patch('/test?store_id=1', headers=headers, body=json.dumps(body))
@@ -695,9 +707,30 @@ class TestItemsModelPatch(object):
             }
         }
 
+    def test_if_items_patch_updates_stock_filter(self, client, headers, redis, app, session):
+        redis.flushall()
+        body = [{
+            'name': 'test',
+            'stores': [{'id': 1}],
+            'schema': {'properties': {'id': {'type': 'string'}}, 'type': 'object', 'id_names': ['id']}
+        }]
+        client.post('/items_types/', headers=headers, body=json.dumps(body))
+
+        body = [{'id': 'test'}]
+        client.post('/test?store_id=1', headers=headers, body=json.dumps(body))
+
+        test_model = app.models['test'].__models__[1]
+        ItemsIndicesMap(test_model).update(session)
+
+        body = [{'id': 'test', '_operation': 'delete'}]
+        resp = client.patch('/test?store_id=1', headers=headers, body=json.dumps(body))
+        stock_filter = np.fromstring(
+            zlib.decompress(redis.get('test_1_stock_filter')), dtype=np.bool).tolist()
+        assert stock_filter == [False]
+
 
 @pytest.fixture
-def indices_updater_app(session):
+def filters_updater_app(redis, session):
     table_args = {'mysql_engine':'innodb'}
     factory = ModelsFactory('myreco', commons_models_attributes={'__table_args__': table_args},
                             commons_tables_attributes=table_args)
@@ -724,10 +757,83 @@ def indices_updater_app(session):
         'schema': {
             'type': 'object',
             'id_names': ['sku'],
-            "properties": {"sku": {"type": "string"}}
+            'properties': {
+                'sku': {'type': 'string'},
+                'filter1': {'type': 'integer'},
+                'filter2': {'type': 'boolean'},
+                'filter3': {'type': 'string'},
+                'filter4': {
+                    'type': 'object',
+                    'id_names': ['id'],
+                    'properties': {'id': {'type': 'integer'}}
+                },
+                'filter5': {
+                    'type': 'array',
+                    'items': {'type': 'integer'}
+                }
+            }
         }
     }
     models['items_types'].insert(session, item_type)
+
+    models['engines_types_names'].insert(session, {'name': 'top_seller'})
+
+    engine = {
+        'name': 'Top Seller',
+        'configuration_json': json.dumps({
+            'days_interval': 7,
+            'data_importer_path': 'myreco.engines.types.base.AbstractDataImporter'
+        }),
+        'store_id': 1,
+        'type_name_id': 1,
+        'item_type_id': 1
+    }
+    models['engines'].insert(session, engine)
+
+    models['variables'].insert(session, {'name': 'test', 'store_id': 1})
+
+    engine_manager = {
+        'max_recos': 10,
+        'store_id': 1,
+        'engine_id': 1,
+        'engine_variables': [{
+            '_operation': 'insert',
+            'variable_id': 1,
+            'is_filter': True,
+            'is_inclusive_filter': True,
+            'filter_type': 'By Property',
+            'inside_engine_name': 'filter1'
+        },{
+            '_operation': 'insert',
+            'variable_id': 1,
+            'is_filter': True,
+            'is_inclusive_filter': True,
+            'filter_type': 'By Property',
+            'inside_engine_name': 'filter2'
+        },{
+            '_operation': 'insert',
+            'variable_id': 1,
+            'is_filter': True,
+            'is_inclusive_filter': True,
+            'filter_type': 'By Property',
+            'inside_engine_name': 'filter3'
+        },{
+            '_operation': 'insert',
+            'variable_id': 1,
+            'is_filter': True,
+            'is_inclusive_filter': True,
+            'filter_type': 'By Property',
+            'inside_engine_name': 'filter4'
+        },{
+            '_operation': 'insert',
+            'variable_id': 1,
+            'is_filter': True,
+            'is_inclusive_filter': True,
+            'filter_type': 'By Property',
+            'inside_engine_name': 'filter5'
+        }]
+    }
+    models['engines_managers'].insert(session, engine_manager)
 
     api = HttpAPI([models['items_types']], session.bind, FakeStrictRedis())
     models['items_types'].associate_all_items(session)
@@ -736,28 +842,377 @@ def indices_updater_app(session):
 
 
 @pytest.fixture
-def indices_updater_client(indices_updater_app):
-    return Client(indices_updater_app)
+def filters_updater_client(filters_updater_app):
+    return Client(filters_updater_app)
 
 
 @mock.patch('falconswagger.models.base.random.getrandbits',
     new=mock.MagicMock(return_value=131940827655846590526331314439483569710))
-class TestItemsTypesModelIndicesUpdater(object):
+class TestItemsTypesModelFiltersUpdater(object):
 
-    def test_indices_updater_post(self, indices_updater_client, headers):
-        products = [{'sku': 'test'}]
-        indices_updater_client.post('/products?store_id=1',
+    def test_filters_updater_post(self, filters_updater_client, headers):
+        products = [{
+            'sku': 'test', 'filter1': 1, 'filter2': True,
+            'filter3': 'test', 'filter4': {'id': 1}, 'filter5': [1]}]
+        filters_updater_client.post('/products?store_id=1',
                                     body=json.dumps(products), headers=headers)
 
-        resp = indices_updater_client.post('/products/update_indices?store_id=1', headers=headers)
+        resp = filters_updater_client.post('/products/update_filters?store_id=1', headers=headers)
         assert json.loads(resp.body) == {'hash': '6342e10bd7dca3240c698aa79c98362e'}
 
-    def test_indices_updater_get_done(self, indices_updater_client, headers):
-        products = [{'sku': 'test'}]
-        indices_updater_client.post('/products?store_id=1',
+    def test_filters_updater_get_done(self, filters_updater_client, headers):
+        products = [{
+            'sku': 'test', 'filter1': 1, 'filter2': True,
+            'filter3': 'test', 'filter4': {'id': 1}, 'filter5': [1]}]
+        filters_updater_client.post('/products?store_id=1',
                                     body=json.dumps(products), headers=headers)
-        resp = indices_updater_client.post('/products/update_indices?store_id=1', headers=headers)
-        resp = indices_updater_client.get(
-            '/products/update_indices?store_id=1&hash=6342e10bd7dca3240c698aa79c98362e',
+        resp = filters_updater_client.post('/products/update_filters?store_id=1', headers=headers)
+
+        while True:
+            resp = filters_updater_client.get(
+                '/products/update_filters?store_id=1&hash=6342e10bd7dca3240c698aa79c98362e',
+                headers=headers)
+            if json.loads(resp.body)['status'] != 'running':
+                break
+
+        resp = filters_updater_client.get(
+            '/products/update_filters?store_id=1&hash=6342e10bd7dca3240c698aa79c98362e',
             headers=headers)
-        assert json.loads(resp.body) == {'status': 'done', 'result': {'test': 0}}
+        assert json.loads(resp.body) == {
+            'status': 'done',
+            'result': {
+                'items_indices_map': {'test': 0},
+                'filters': {
+                    'filter1': {'1': ['test']},
+                    'filter2': {'test': True},
+                    'filter3': {'test': ['test']},
+                    'filter4': {"(1,)": ['test']},
+                    'filter5': {'1': ['test']}
+                }
+            }
+        }
+
+    def test_if_update_filters_builds_stock_filter(self, filters_updater_client, headers, redis):
+        products = {
+            'test': {
+                'sku': 'test',
+                'filter1': 1,
+                'filter2': True,
+                'filter3': 'test',
+                'filter4': {'id': 1},
+                'filter5': [1]
+            },
+            'test2': {
+                'sku': 'test2',
+                'filter1': 1,
+                'filter2': True,
+                'filter3': 'test',
+                'filter4': {'id': 1},
+                'filter5': [1,2]
+            },
+            'test3': {
+                'sku': 'test3',
+                'filter1': 2,
+                'filter2': False,
+                'filter3': 'test2',
+                'filter4': {'id': 2},
+                'filter5': [2,3]
+            }
+        }
+        filters_updater_client.post('/products?store_id=1',
+                                    body=json.dumps(list(products.values())), headers=headers)
+        filters_updater_client.post('/products/update_filters?store_id=1', headers=headers)
+
+        while True:
+            resp = filters_updater_client.get(
+                '/products/update_filters?store_id=1&hash=6342e10bd7dca3240c698aa79c98362e',
+                headers=headers)
+            if json.loads(resp.body)['status'] != 'running':
+                break
+
+        stock_filter = np.fromstring(
+            zlib.decompress(redis.get('products_1_stock_filter')), dtype=np.bool).tolist()
+        assert stock_filter == [True, True, True]
+
+    def test_if_update_filters_builds_boolean_filter(self, filters_updater_client, headers, redis, session):
+        products = {
+            'test': {
+                'sku': 'test',
+                'filter1': 1,
+                'filter2': True,
+                'filter3': 'test',
+                'filter4': {'id': 1},
+                'filter5': [1]
+            },
+            'test2': {
+                'sku': 'test2',
+                'filter1': 1,
+                'filter2': True,
+                'filter3': 'test',
+                'filter4': {'id': 1},
+                'filter5': [1,2]
+            },
+            'test3': {
+                'sku': 'test3',
+                'filter1': 2,
+                'filter2': False,
+                'filter3': 'test2',
+                'filter4': {'id': 2},
+                'filter5': [2,3]
+            }
+        }
+        filters_updater_client.post('/products?store_id=1',
+                                    body=json.dumps(list(products.values())), headers=headers)
+        filters_updater_client.post('/products/update_filters?store_id=1', headers=headers)
+
+        while True:
+            resp = filters_updater_client.get(
+                '/products/update_filters?store_id=1&hash=6342e10bd7dca3240c698aa79c98362e',
+                headers=headers)
+            if json.loads(resp.body)['status'] != 'running':
+                break
+
+        products_model = filters_updater_client.app.models['products'].__models__[1]
+        indices_items_map = ItemsIndicesMap(products_model).get_indices_items_map(session)
+
+        expected = [None, None, None]
+        for k, v in indices_items_map.items():
+            expected[k] = True if eval(v)[0] == 'test' or eval(v)[0] == 'test2' else False
+
+        filter_ = redis.get('products_1_filter2_filter')
+        filter_ = np.fromstring(zlib.decompress(filter_), dtype=np.bool).tolist()
+        assert filter_ == expected
+
+    def test_if_update_filters_builds_integer_filter(self, filters_updater_client, headers, redis, session):
+        products = {
+            'test': {
+                'sku': 'test',
+                'filter1': 1,
+                'filter2': True,
+                'filter3': 'test',
+                'filter4': {'id': 1},
+                'filter5': [1]
+            },
+            'test2': {
+                'sku': 'test2',
+                'filter1': 1,
+                'filter2': True,
+                'filter3': 'test',
+                'filter4': {'id': 1},
+                'filter5': [1,2]
+            },
+            'test3': {
+                'sku': 'test3',
+                'filter1': 2,
+                'filter2': False,
+                'filter3': 'test2',
+                'filter4': {'id': 2},
+                'filter5': [2,3]
+            }
+        }
+        filters_updater_client.post('/products?store_id=1',
+                                    body=json.dumps(list(products.values())), headers=headers)
+        filters_updater_client.post('/products/update_filters?store_id=1', headers=headers)
+
+        while True:
+            resp = filters_updater_client.get(
+                '/products/update_filters?store_id=1&hash=6342e10bd7dca3240c698aa79c98362e',
+                headers=headers)
+            if json.loads(resp.body)['status'] != 'running':
+                break
+
+        products_model = filters_updater_client.app.models['products'].__models__[1]
+        indices_items_map = ItemsIndicesMap(products_model).get_indices_items_map(session)
+
+        expected1 = [None, None, None]
+        for k, v in indices_items_map.items():
+            expected1[k] = True if eval(v)[0] == 'test' or eval(v)[0] == 'test2' else False
+
+        expected2 = [None, None, None]
+        for k, v in indices_items_map.items():
+            expected2[k] = False if eval(v)[0] == 'test' or eval(v)[0] == 'test2' else True
+
+        filter_ = redis.hgetall('products_1_filter1_filter')
+        key1 = '1'.encode()
+        key2 = '2'.encode()
+        filter_[key1] = np.fromstring(zlib.decompress(filter_[key1]), dtype=np.bool).tolist()
+        filter_[key2] = np.fromstring(zlib.decompress(filter_[key2]), dtype=np.bool).tolist()
+
+        assert filter_ == {key1: expected1, key2: expected2}
+
+    def test_if_update_filters_builds_string_filter(self, filters_updater_client, headers, redis, session):
+        products = {
+            'test': {
+                'sku': 'test',
+                'filter1': 1,
+                'filter2': True,
+                'filter3': 'test',
+                'filter4': {'id': 1},
+                'filter5': [1]
+            },
+            'test2': {
+                'sku': 'test2',
+                'filter1': 1,
+                'filter2': True,
+                'filter3': 'test',
+                'filter4': {'id': 1},
+                'filter5': [1,2]
+            },
+            'test3': {
+                'sku': 'test3',
+                'filter1': 2,
+                'filter2': False,
+                'filter3': 'test2',
+                'filter4': {'id': 2},
+                'filter5': [2,3]
+            }
+        }
+        filters_updater_client.post('/products?store_id=1',
+                                    body=json.dumps(list(products.values())), headers=headers)
+        filters_updater_client.post('/products/update_filters?store_id=1', headers=headers)
+
+        while True:
+            resp = filters_updater_client.get(
+                '/products/update_filters?store_id=1&hash=6342e10bd7dca3240c698aa79c98362e',
+                headers=headers)
+            if json.loads(resp.body)['status'] != 'running':
+                break
+
+        products_model = filters_updater_client.app.models['products'].__models__[1]
+        indices_items_map = ItemsIndicesMap(products_model).get_indices_items_map(session)
+
+        expected1 = [None, None, None]
+        for k, v in indices_items_map.items():
+            expected1[k] = True if eval(v)[0] == 'test' or eval(v)[0] == 'test2' else False
+
+        expected2 = [None, None, None]
+        for k, v in indices_items_map.items():
+            expected2[k] = False if eval(v)[0] == 'test' or eval(v)[0] == 'test2' else True
+
+        filter_ = redis.hgetall('products_1_filter3_filter')
+        key1 = 'test'.encode()
+        key2 = 'test2'.encode()
+        filter_[key1] = np.fromstring(zlib.decompress(filter_[key1]), dtype=np.bool).tolist()
+        filter_[key2] = np.fromstring(zlib.decompress(filter_[key2]), dtype=np.bool).tolist()
+
+        assert filter_ == {key1: expected1, key2: expected2}
+
+    def test_if_update_filters_builds_object_filter(self, filters_updater_client, headers, redis, session):
+        products = {
+            'test': {
+                'sku': 'test',
+                'filter1': 1,
+                'filter2': True,
+                'filter3': 'test',
+                'filter4': {'id': 1},
+                'filter5': [1]
+            },
+            'test2': {
+                'sku': 'test2',
+                'filter1': 1,
+                'filter2': True,
+                'filter3': 'test',
+                'filter4': {'id': 1},
+                'filter5': [1,2]
+            },
+            'test3': {
+                'sku': 'test3',
+                'filter1': 2,
+                'filter2': False,
+                'filter3': 'test2',
+                'filter4': {'id': 2},
+                'filter5': [2,3]
+            }
+        }
+        filters_updater_client.post('/products?store_id=1',
+                                    body=json.dumps(list(products.values())), headers=headers)
+        filters_updater_client.post('/products/update_filters?store_id=1', headers=headers)
+
+        while True:
+            resp = filters_updater_client.get(
+                '/products/update_filters?store_id=1&hash=6342e10bd7dca3240c698aa79c98362e',
+                headers=headers)
+            if json.loads(resp.body)['status'] != 'running':
+                break
+
+        products_model = filters_updater_client.app.models['products'].__models__[1]
+        indices_items_map = ItemsIndicesMap(products_model).get_indices_items_map(session)
+
+        expected1 = [None, None, None]
+        for k, v in indices_items_map.items():
+            expected1[k] = True if eval(v)[0] == 'test' or eval(v)[0] == 'test2' else False
+
+        expected2 = [None, None, None]
+        for k, v in indices_items_map.items():
+            expected2[k] = False if eval(v)[0] == 'test' or eval(v)[0] == 'test2' else True
+
+        filter_ = redis.hgetall('products_1_filter4_filter')
+        key1 = '(1,)'.encode()
+        key2 = '(2,)'.encode()
+        filter_[key1] = np.fromstring(zlib.decompress(filter_[key1]), dtype=np.bool).tolist()
+        filter_[key2] = np.fromstring(zlib.decompress(filter_[key2]), dtype=np.bool).tolist()
+
+        assert filter_ == {key1: expected1, key2: expected2}
+
+    def test_if_update_filters_builds_array_filter(self, filters_updater_client, headers, redis, session):
+        products = {
+            'test': {
+                'sku': 'test',
+                'filter1': 1,
+                'filter2': True,
+                'filter3': 'test',
+                'filter4': {'id': 1},
+                'filter5': [1]
+            },
+            'test2': {
+                'sku': 'test2',
+                'filter1': 1,
+                'filter2': True,
+                'filter3': 'test',
+                'filter4': {'id': 1},
+                'filter5': [1,2]
+            },
+            'test3': {
+                'sku': 'test3',
+                'filter1': 2,
+                'filter2': False,
+                'filter3': 'test2',
+                'filter4': {'id': 2},
+                'filter5': [2,3]
+            }
+        }
+        filters_updater_client.post('/products?store_id=1',
+                                    body=json.dumps(list(products.values())), headers=headers)
+        filters_updater_client.post('/products/update_filters?store_id=1', headers=headers)
+
+        while True:
+            resp = filters_updater_client.get(
+                '/products/update_filters?store_id=1&hash=6342e10bd7dca3240c698aa79c98362e',
+                headers=headers)
+            if json.loads(resp.body)['status'] != 'running':
+                break
+
+        products_model = filters_updater_client.app.models['products'].__models__[1]
+        indices_items_map = ItemsIndicesMap(products_model).get_indices_items_map(session)
+
+        expected1 = [None, None, None]
+        for k, v in indices_items_map.items():
+            expected1[k] = True if eval(v)[0] == 'test' or eval(v)[0] == 'test2' else False
+
+        expected2 = [None, None, None]
+        for k, v in indices_items_map.items():
+            expected2[k] = True if eval(v)[0] == 'test2' or eval(v)[0] == 'test3' else False
+
+        expected3 = [None, None, None]
+        for k, v in indices_items_map.items():
+            expected3[k] = True if eval(v)[0] == 'test3' else False
+
+        filter_ = redis.hgetall('products_1_filter5_filter')
+        key1 = '1'.encode()
+        key2 = '2'.encode()
+        key3 = '3'.encode()
+        filter_[key1] = np.fromstring(zlib.decompress(filter_[key1]), dtype=np.bool).tolist()
+        filter_[key2] = np.fromstring(zlib.decompress(filter_[key2]), dtype=np.bool).tolist()
+        filter_[key3] = np.fromstring(zlib.decompress(filter_[key3]), dtype=np.bool).tolist()
+
+        assert filter_ == {key1: expected1, key2: expected2, key3: expected3}
