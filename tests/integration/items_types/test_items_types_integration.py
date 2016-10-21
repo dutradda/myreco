@@ -83,27 +83,25 @@ class TestItemsTypesModelPost(object):
                 'schema': {
                     'type': 'object',
                     'additionalProperties': False,
-                    'required': ['name', 'id_names', 'schema', 'stores'],
+                    'required': ['name', 'schema', 'stores'],
                     'properties': {
                         'name': {'type': 'string'},
                         'stores': {'$ref': '#/definitions/stores'},
-                        'id_names': {
-                            'type': 'array',
-                            'minItems': 1,
-                            'items': {'type': 'string'}
-                        },
-                        'schema': {'$ref': 'http://json-schema.org/draft-04/schema#'}
+                        'schema': {'$ref': '#/definitions/items'}
                     }
                 }
             }
         }
 
-    def test_post(self, client, headers):
+    def test_post_valid(self, client, headers):
         body = [{
             'name': 'test',
             'stores': [{'id': 1}],
-            'id_names': ['id'],
-            'schema': {'properties': {'id': {'type': 'integer'}}}
+            'schema': {
+                'properties': {'id': {'type': 'integer'}},
+                'type': 'object',
+                'id_names': ['id']
+            }
         }]
         resp = client.post('/items_types/', headers=headers, body=json.dumps(body))
         body[0]['id'] = 1
@@ -122,18 +120,16 @@ class TestItemsTypesModelPost(object):
         body = [{
             'name': 'test',
             'stores': [{'id': 1}],
-            'id_names': ['test'],
-            'schema': {'properties': {'id': {'type': 'integer'}}}
+            'schema': {'properties': {'id': {'type': 'integer'}}, 'type': 'object', 'id_names': ['id']}
         }]
         resp = client.post('/items_types/', headers={'Authorization': 'invalid'}, body=json.dumps(body))
         assert resp.status_code == 401
         assert json.loads(resp.body) ==  {'error': 'Invalid authorization'}
 
-    def test_post_with_invalid_id_name(self, client, headers):
+    def test_post_with_invalid_schema_type(self, client, headers):
         body = [{
             'name': 'test',
             'stores': [{'id': 1}],
-            'id_names': ['id', 'id2'],
             'schema': {
                 'properties': {
                     'id': {'type': 'string'}
@@ -144,9 +140,47 @@ class TestItemsTypesModelPost(object):
         assert resp.status_code == 400
         assert json.loads(resp.body) == {
             'error': {
-                'input': ['id', 'id2'],
-                'message': "Invalid id_name 'id2'",
+                'input': {
+                    'properties': {'id': {'type': 'string'}}
+                },
+                'message': "'type' is a required property",
                 'schema': {
+                    'type': 'object',
+                    'required': ['type', 'id_names', 'properties'],
+                    'properties': {
+                        'type': {'enum': ['object']},
+                        'id_names': {
+                            'items': {'minLength': 1, 'type': 'string'},
+                            'minItems': 1,
+                            'type': 'array'
+                        },
+                        'properties': {'$ref': 'items_schema.json#/definitions/baseObject/properties/properties'}
+                    }
+                }
+            }
+        }
+
+    def test_post_with_invalid_id_name(self, client, headers):
+        body = [{
+            'name': 'test',
+            'stores': [{'id': 1}],
+            'schema': {
+                'type': 'object',
+                'id_names': ['test'],
+                'properties': {
+                    'id': {'type': 'string'}
+                }
+            }
+        }]
+        resp = client.post('/items_types/', headers=headers, body=json.dumps(body))
+        assert resp.status_code == 400
+        assert json.loads(resp.body) == {
+            'error': {
+                'input': ['test'],
+                'message': "id_name 'test' was not found in schema properties",
+                'schema': {
+                    'type': 'object',
+                    'id_names': ['test'],
                     'properties': {
                         'id': {'type': 'string'}
                     }
@@ -170,8 +204,7 @@ class TestItemsTypesModelGet(object):
         body = [{
             'name': 'test',
             'stores': [{'id': 1}],
-            'id_names': ['test'],
-            'schema': {'properties': {'test': {'type': 'string'}}}
+            'schema': {'properties': {'test': {'type': 'string'}}, 'type': 'object', 'id_names': ['test']}
         }]
         client.post('/items_types/', headers=headers, body=json.dumps(body))
         body[0]['id'] = 1
@@ -209,12 +242,7 @@ class TestItemsTypesModelUriTemplatePatch(object):
                     'properties': {
                         'name': {'type': 'string'},
                         'stores': {'$ref': '#/definitions/stores'},
-                        'id_names': {
-                            'type': 'array',
-                            'minItems': 1,
-                            'items': {'type': 'string'}
-                        },
-                        'schema': {'$ref': 'http://json-schema.org/draft-04/schema#'}
+                        'schema': {'$ref': '#/definitions/items'}
                     }
                 }
             }
@@ -224,8 +252,7 @@ class TestItemsTypesModelUriTemplatePatch(object):
         body = {
             'name': 'test',
             'stores': [{'id': 1}],
-            'id_names': ['test'],
-            'schema': {'properties': {'test': {'type': 'string'}}}
+            'schema': {'properties': {'test': {'type': 'string'}}, 'type': 'object', 'id_names': ['test']}
         }
         resp = client.patch('/items_types/1/', headers=headers, body=json.dumps(body))
         assert resp.status_code == 404
@@ -234,8 +261,7 @@ class TestItemsTypesModelUriTemplatePatch(object):
         body = [{
             'name': 'test',
             'stores': [{'id': 1}],
-            'id_names': ['test'],
-            'schema': {'properties': {'test': {'type': 'string'}}}
+            'schema': {'properties': {'test': {'type': 'string'}}, 'type': 'object', 'id_names': ['test']}
         }]
         obj = json.loads(client.post('/items_types/', headers=headers, body=json.dumps(body)).body)[0]
 
@@ -249,34 +275,6 @@ class TestItemsTypesModelUriTemplatePatch(object):
         assert resp.status_code == 200
         assert json.loads(resp.body) ==  obj
 
-    def test_patch_with_invalid_id_name(self, client, headers):
-        body = [{
-            'name': 'test',
-            'stores': [{'id': 1}],
-            'id_names': ['id'],
-            'schema': {
-                'properties': {
-                    'id': {'type': 'string'}
-                }
-            }
-        }]
-        client.post('/items_types/', headers=headers, body=json.dumps(body))
-
-        body = {'id_names': ['id', 'id2']}
-        resp = client.patch('/items_types/1/', headers=headers, body=json.dumps(body))
-        assert resp.status_code == 400
-        assert json.loads(resp.body) == {
-            'error': {
-                'input': ['id', 'id2'],
-                'message': "Invalid id_name 'id2'",
-                'schema': {
-                    'properties': {
-                        'id': {'type': 'string'}
-                    }
-                }
-            }
-        }
-
 
 class TestItemsTypesModelUriTemplateDelete(object):
 
@@ -289,8 +287,7 @@ class TestItemsTypesModelUriTemplateDelete(object):
         body = [{
             'name': 'test',
             'stores': [{'id': 1}],
-            'id_names': ['test'],
-            'schema': {'properties': {'test': {'type': 'string'}}}
+            'schema': {'properties': {'test': {'type': 'string'}}, 'type': 'object', 'id_names': ['test']}
         }]
         client.post('/items_types/', headers=headers, body=json.dumps(body))
 
@@ -307,8 +304,7 @@ class TestItemsTypesModelUriTemplateDelete(object):
         body = [{
             'name': 'test',
             'stores': [{'id': 1}],
-            'id_names': ['test'],
-            'schema': {'properties': {'test': {'type': 'string'}}}
+            'schema': {'properties': {'test': {'type': 'string'}}, 'type': 'object', 'id_names': ['test']}
         }]
         client.post('/items_types/', headers=headers, body=json.dumps(body))
 
@@ -336,8 +332,7 @@ class TestItemsTypesModelUriTemplateGet(object):
         body = [{
             'name': 'test',
             'stores': [{'id': 1}],
-            'id_names': ['test'],
-            'schema': {'properties': {'test': {'type': 'string'}}}
+            'schema': {'properties': {'test': {'type': 'string'}}, 'type': 'object', 'id_names': ['test']}
         }]
         client.post('/items_types/', headers=headers, body=json.dumps(body))
         resp = client.get('/items_types/1/', headers=headers)
@@ -360,8 +355,7 @@ class TestItemsModelSchema(object):
         body = [{
             'name': 'test',
             'stores': [{'id': 1}],
-            'id_names': ['id'],
-            'schema': {'properties': {'id': {'type': 'string'}}}
+            'schema': {'properties': {'id': {'type': 'string'}}, 'type': 'object', 'id_names': ['id']}
         }]
         resp = client.post('/items_types/', headers=headers, body=json.dumps(body))
 
@@ -388,7 +382,11 @@ class TestItemsModelSchema(object):
                         'schema': {
                             'type': 'array',
                             'minItems': 1,
-                            'items': {'properties': {'id': {'type': 'string'}}}
+                            'items': {
+                                'type': 'object',
+                                'id_names': ['id'],
+                                'properties': {'id': {'type': 'string'}}
+                            }
                         }
                     }],
                     'operationId': 'post_by_body',
@@ -403,6 +401,8 @@ class TestItemsModelSchema(object):
                             'type': 'array',
                             'minItems': 1,
                             'items': {
+                                'type': 'object',
+                                'id_names': ['id'],
                                 'properties': {
                                     'id': {'type': 'string'},
                                     '_operation': {'enum': ['delete', 'update']}
@@ -460,8 +460,9 @@ class TestItemsModelSchema(object):
         body = [{
             'name': 'test',
             'stores': [{'id': 1}],
-            'id_names': ['id', 'id2'],
             'schema': {
+                'type': 'object',
+                'id_names': ['id', 'id2'],
                 'properties': {
                     'id': {'type': 'string'},
                     'id2': {'type': 'integer'}
@@ -494,6 +495,8 @@ class TestItemsModelSchema(object):
                             'type': 'array',
                             'minItems': 1,
                             'items': {
+                                'type': 'object',
+                                'id_names': ['id', 'id2'],
                                 'properties': {
                                     'id': {'type': 'string'},
                                     'id2': {'type': 'integer'}
@@ -513,6 +516,8 @@ class TestItemsModelSchema(object):
                             'type': 'array',
                             'minItems': 1,
                             'items': {
+                                'type': 'object',
+                                'id_names': ['id', 'id2'],
                                 'properties': {
                                     'id': {'type': 'string'},
                                     'id2': {'type': 'integer'},
@@ -582,12 +587,7 @@ class TestItemsModelPost(object):
         body = [{
             'name': 'test',
             'stores': [{'id': 1}],
-            'id_names': ['id'],
-            'schema': {
-                'properties': {
-                    'id': {'type': 'string'}
-                }
-            }
+            'schema': {'properties': {'id': {'type': 'string'}}, 'type': 'object', 'id_names': ['id']}
         }]
         client.post('/items_types/', headers=headers, body=json.dumps(body))
 
@@ -600,12 +600,7 @@ class TestItemsModelPost(object):
         body = [{
             'name': 'test',
             'stores': [{'id': 1}],
-            'id_names': ['id'],
-            'schema': {
-                'properties': {
-                    'id': {'type': 'string'}
-                }
-            }
+            'schema': {'properties': {'id': {'type': 'string'}}, 'type': 'object', 'id_names': ['id']}
         }]
         client.post('/items_types/', headers=headers, body=json.dumps(body))
 
@@ -627,12 +622,13 @@ class TestItemsModelPatch(object):
         body = [{
             'name': 'test',
             'stores': [{'id': 1}],
-            'id_names': ['id'],
             'schema': {
                 'properties': {
                     'id': {'type': 'string'},
                     't1': {'type': 'integer'}
-                }
+                },
+                'type': 'object',
+                'id_names': ['id']
             }
         }]
         client.post('/items_types/', headers=headers, body=json.dumps(body))
@@ -652,12 +648,13 @@ class TestItemsModelPatch(object):
         body = [{
             'name': 'test',
             'stores': [{'id': 1}],
-            'id_names': ['id'],
             'schema': {
                 'properties': {
                     'id': {'type': 'string'},
                     't1': {'type': 'integer'}
-                }
+                },
+                'type': 'object',
+                'id_names': ['id']
             }
         }]
         client.post('/items_types/', headers=headers, body=json.dumps(body))
@@ -677,11 +674,12 @@ class TestItemsModelPatch(object):
         body = [{
             'name': 'test',
             'stores': [{'id': 1}],
-            'id_names': ['id'],
             'schema': {
                 'properties': {
                     'id': {'type': 'string'}
-                }
+                },
+                'type': 'object',
+                'id_names': ['id']
             }
         }]
         client.post('/items_types/', headers=headers, body=json.dumps(body))
@@ -723,8 +721,11 @@ def indices_updater_app(session):
     item_type = {
         'name': 'products',
         'stores': [{'id': 1}],
-        'id_names_json': '["sku"]',
-        'schema_json': '{"properties": {"sku": {"type": "string"}}}'
+        'schema': {
+            'type': 'object',
+            'id_names': ['sku'],
+            "properties": {"sku": {"type": "string"}}
+        }
     }
     models['items_types'].insert(session, item_type)
 

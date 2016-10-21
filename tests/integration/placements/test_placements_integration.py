@@ -61,34 +61,36 @@ def app(session):
     EnginesTypesNamesModel.insert(session, {'name': 'visual_similarity'})
     EnginesTypesNamesModel.insert(session, {'name': 'top_seller'})
 
-    schema_json = json.dumps({
+    schema = {
         'type': 'object',
+        'id_names': ['item_id'],
         'properties': {
             'filter_test': {'type': 'string'},
             'item_id': {'type': 'integer'}
         }
-    })
+    }
 
     ItemsTypesModel.__api__ = None
     item_type = {
         'name': 'products',
         'stores': [{'id': 1}],
-        'id_names_json': '["item_id"]',
-        'schema_json': schema_json
+        'schema': schema
     }
     ItemsTypesModel.insert(session, item_type)
     item_type = {
         'name': 'categories',
         'stores': [{'id': 1}],
-        'id_names_json': '["item_id"]',
-        'schema_json': schema_json
+        'schema': schema
     }
     ItemsTypesModel.insert(session, item_type)
     item_type = {
         'name': 'invalid',
         'stores': [{'id': 1}],
-        'id_names_json': '["item_id"]',
-        'schema_json': '{"type": "object", "properties": {"item_id": {"type": "string"}}}'
+        'schema': {
+            'type': 'object',
+            'id_names': ['item_id'],
+            'properties': {'item_id': {'type': 'string'}}
+        }
     }
     ItemsTypesModel.insert(session, item_type)
 
@@ -220,10 +222,11 @@ class TestPlacementsModelPost(object):
                             }],
                             'schema': {
                                 'type': 'object',
+                                'id_names': ['item_id'],
                                 'properties': {
                                     'filter_test': {'type': 'string'},
                                     'item_id': {'type': 'integer'}
-                                },
+                                }
                             },
                             'available_filters': [{
                                 'name': 'filter_test',
@@ -232,10 +235,7 @@ class TestPlacementsModelPost(object):
                                 'name': 'item_id',
                                 'schema': {'type': 'integer'}
                             }],
-                            'name': 'products',
-                            'id_names': [
-                                'item_id'
-                            ]
+                            'name': 'products'
                         },
                         'item_type_id': 1,
                         'name': 'Visual Similarity',
@@ -346,10 +346,11 @@ class TestPlacementsModelGet(object):
                             }],
                             'schema': {
                                 'type': 'object',
+                                'id_names': ['item_id'],
                                 'properties': {
                                     'filter_test': {'type': 'string'},
                                     'item_id': {'type': 'integer'}
-                                },
+                                }
                             },
                             'available_filters': [{
                                 'name': 'filter_test',
@@ -358,10 +359,7 @@ class TestPlacementsModelGet(object):
                                 'name': 'item_id',
                                 'schema': {'type': 'integer'}
                             }],
-                            'name': 'products',
-                            'id_names': [
-                                'item_id'
-                            ]
+                            'name': 'products'
                         },
                         'item_type_id': 1,
                         'name': 'Visual Similarity',
@@ -558,10 +556,11 @@ class TestPlacementsModelUriTemplateGet(object):
                             }],
                             'schema': {
                                 'type': 'object',
+                                'id_names': ['item_id'],
                                 'properties': {
                                     'filter_test': {'type': 'string'},
                                     'item_id': {'type': 'integer'}
-                                },
+                                }
                             },
                             'available_filters': [{
                                 'name': 'filter_test',
@@ -570,10 +569,7 @@ class TestPlacementsModelUriTemplateGet(object):
                                 'name': 'item_id',
                                 'schema': {'type': 'integer'}
                             }],
-                            'name': 'products',
-                            'id_names': [
-                                'item_id'
-                            ]
+                            'name': 'products'
                         },
                         'item_type_id': 1,
                         'name': 'Visual Similarity',

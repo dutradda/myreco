@@ -62,8 +62,11 @@ def app(session):
 
     item_type = {
         'name': 'products',
-        'id_names_json': '["sku"]',
-        'schema_json': '{"properties": {"sku": {"type": "string"}}}',
+        'schema': {
+            'type': 'object',
+            'id_names': ['sku'],
+            'properties': {'sku': {'type': 'string'}}
+        },
         'stores': [{'id': 1}]
     }
     ItemsTypesModel.insert(session, item_type)
@@ -143,8 +146,11 @@ class TestEnginesModelPost(object):
                 'name': 'test'
             }],
             'name': 'products',
-            'id_names': ['sku'],
-            'schema': {'properties': {'sku': {'type': 'string'}}},
+            'schema': {
+                'type': 'object',
+                'id_names': ['sku'],
+                'properties': {'sku': {'type': 'string'}}
+            },
             'available_filters': [{'name': 'sku', 'schema': {'type': 'string'}}]
         }
 
@@ -186,8 +192,11 @@ class TestEnginesModelGet(object):
                 'name': 'test'
             }],
             'name': 'products',
-            'id_names': ["sku"],
-            'schema': {'properties': {'sku': {'type': 'string'}}},
+            'schema': {
+                'type': 'object',
+                'id_names': ['sku'],
+                'properties': {'sku': {'type': 'string'}}
+            },
             'available_filters': [{'name': 'sku', 'schema': {'type': 'string'}}]
         }
 
@@ -345,8 +354,11 @@ class TestEnginesModelUriTemplateGet(object):
                 'name': 'test'
             }],
             'name': 'products',
-            'id_names': ["sku"],
-            'schema': {'properties': {'sku': {'type': 'string'}}},
+            'schema': {
+                'type': 'object',
+                'id_names': ['sku'],
+                'properties': {'sku': {'type': 'string'}}
+            },
             'available_filters': [{'name': 'sku', 'schema': {'type': 'string'}}]
         }
 
@@ -380,8 +392,11 @@ def data_importer_app(session):
     item_type = {
         'name': 'products',
         'stores': [{'id': 1}],
-        'id_names_json': '["sku"]',
-        'schema_json': '{"properties": {"sku": {"type": "string"}}}'
+        'schema': {
+            'type': 'object',
+            'id_names': ['sku'],
+            'properties': {'sku': {'type': 'string'}}
+        }
     }
     models['items_types'].insert(session, item_type)
 
@@ -483,8 +498,11 @@ def objects_exporter_app(session):
     item_type = {
         'name': 'products',
         'stores': [{'id': 1}],
-        'id_names_json': '["sku"]',
-        'schema_json': '{"properties": {"sku": {"type": "string"}}}'
+        'schema': {
+            'type': 'object',
+            'id_names': ['sku'],
+            'properties': {'sku': {'type': 'string'}}
+        }
     }
     models['items_types'].insert(session, item_type)
 

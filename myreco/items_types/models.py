@@ -23,9 +23,10 @@
 
 from myreco.engines.types.items_indices_map import ItemsIndicesMap
 from falconswagger.models.redis import RedisModelMeta, RedisModelBuilder
-from falconswagger.models.base import get_model_schema, ModelBase
+from falconswagger.models.base import get_model_schema, ModelBase, get_dir_path
+from falconswagger.exceptions import ModelBaseError
 from sqlalchemy.ext.declarative import AbstractConcreteBase, declared_attr
-from jsonschema import ValidationError
+from jsonschema import ValidationError, Draft4Validator
 from copy import deepcopy
 from falcon import HTTPNotFound
 import sqlalchemy as sa
@@ -46,7 +47,6 @@ class ItemsTypesModelBase(AbstractConcreteBase):
 
     id = sa.Column(sa.Integer, primary_key=True)
     name = sa.Column(sa.String(255), unique=True, nullable=False)
-    id_names_json = sa.Column(sa.String(255), nullable=False)
     schema_json = sa.Column(sa.Text, nullable=False)
 
     @declared_attr
@@ -54,42 +54,23 @@ class ItemsTypesModelBase(AbstractConcreteBase):
         return sa.orm.relationship('StoresModel', uselist=True, secondary='items_types_stores')
 
     def _setattr(self, attr_name, value, session, input_):
-        if attr_name == 'id_names':
-            value = json.dumps(value)
-            attr_name = 'id_names_json'
-
-        elif attr_name == 'schema':
+        if attr_name == 'schema':
+            self._validate_input(value)
             value = json.dumps(value)
             attr_name = 'schema_json'
 
         super()._setattr(attr_name, value, session, input_)
 
-    def __setattr__(self, name, value):
-        if name == 'id_names_json' and getattr(self, 'schema_json', None):
-            id_names = json.loads(value)
-            schema = json.loads(self.schema_json)
-            self._validate_input(id_names, schema)
+    def _validate_input(self, schema):
+        Draft4Validator.check_schema(schema)
 
-        elif name == 'schema_json' and getattr(self, 'id_names_json', None):
-            schema = json.loads(value)
-            id_names = json.loads(self.id_names_json)
-            self._validate_input(id_names, schema)
-
-        super().__setattr__(name, value)
-
-    def _validate_input(self, id_names, schema):
-        for id_name in id_names:
+        for id_name in schema['id_names']:
             if id_name not in schema.get('properties', {}):
                 raise ValidationError(
-                    "Invalid id_name '{}'".format(id_name),
-                    instance=id_names,
-                    schema=schema)
+                    "id_name '{}' was not found in schema properties".format(id_name),
+                    instance=schema['id_names'], schema=schema)
 
     def _format_output_json(self, dict_inst, todict_schema):
-        if todict_schema.get('id_names') is not False:
-            if 'id_names_json' in dict_inst:
-                dict_inst['id_names'] = json.loads(dict_inst.pop('id_names_json'))
-
         if todict_schema.get('schema') is not False:
             if 'schema_json' in dict_inst:
                 dict_inst['schema'] = json.loads(dict_inst.pop('schema_json'))
@@ -112,7 +93,8 @@ class ItemsTypesModelBase(AbstractConcreteBase):
     @classmethod
     def _build_items_collections_model(cls, item_type):
         if cls.__api__:
-            name, schema, id_names = item_type['name'], item_type['schema'], item_type['id_names']
+            name, schema = item_type['name'], item_type['schema']
+            id_names = schema['id_names']
             class_name = cls._build_class_name(name)
             key = build_item_key(name)
             items_models = {store['id']: cls._build_item_model(item_type, store) \
@@ -139,7 +121,8 @@ class ItemsTypesModelBase(AbstractConcreteBase):
     def _build_item_model(cls, item_type, store):
         class_name = cls._build_class_name(item_type['name'], store['name'])
         key = build_item_key(item_type['name'], store['id'])
-        return RedisModelBuilder(class_name, key, item_type['id_names'], None, metaclass=ItemsModelBaseMeta)
+        id_names = item_type['schema']['id_names']
+        return RedisModelBuilder(class_name, key, id_names, None, metaclass=ItemsModelBaseMeta)
 
     @classmethod
     def _build_items_collections_schema(cls, key, schema, id_names):
@@ -289,6 +272,10 @@ class ItemsTypesModelBase(AbstractConcreteBase):
         items_types = cls.get(session, ids=ids)
         type(cls).delete(cls, session, ids, commit=commit, **kwargs)
         [cls._disassociate_item(item_type) for item_type in items_types]
+
+    @staticmethod
+    def get_module_path():
+        return get_dir_path(__file__)
 
 
 class ItemsTypesModelIndicesUpdaterBase(ItemsTypesModelBase):

@@ -57,33 +57,35 @@ def app(session):
     EnginesTypesNamesModel.insert(session, {'name': 'visual_similarity'})
     EnginesTypesNamesModel.insert(session, {'name': 'top_seller'})
 
-    schema_json = json.dumps({
+    schema = {
         'type': 'object',
+        'id_names': ['item_id'],
         'properties': {
             'filter_test': {'type': 'string'},
             'item_id': {'type': 'integer'}
         }
-    })
+    }
 
     item_type = {
         'name': 'products',
         'stores': [{'id': 1}],
-        'id_names_json': '["item_id"]',
-        'schema_json': schema_json
+        'schema': schema
     }
     ItemsTypesModel.insert(session, item_type)
     item_type = {
         'name': 'categories',
         'stores': [{'id': 1}],
-        'id_names_json': '["item_id"]',
-        'schema_json': schema_json
+        'schema': schema
     }
     ItemsTypesModel.insert(session, item_type)
     item_type = {
         'name': 'invalid',
         'stores': [{'id': 1}],
-        'id_names_json': '["item_id"]',
-        'schema_json': '{"type": "object", "properties": {"item_id": {"type": "string"}}}'
+        'schema': {
+            'type': 'object',
+            'id_names': ['item_id'],
+            'properties': {'item_id': {'type': 'string'}}
+        }
     }
     ItemsTypesModel.insert(session, item_type)
 
@@ -282,10 +284,11 @@ class TestEnginesManagersModelPost(object):
                     }],
                     'schema': {
                         'type': 'object',
+                        'id_names': ['item_id'],
                         'properties': {
                             'filter_test': {'type': 'string'},
                             'item_id': {'type': 'integer'}
-                        },
+                        }
                     },
                     'available_filters': [{
                         'name': 'filter_test',
@@ -294,10 +297,7 @@ class TestEnginesManagersModelPost(object):
                         'name': 'item_id',
                         'schema': {'type': 'integer'}
                     }],
-                    'name': 'products',
-                    'id_names': [
-                        'item_id'
-                    ]
+                    'name': 'products'
                 },
                 'store_id': 1,
                 'name': 'Visual Similarity',
@@ -373,10 +373,11 @@ class TestEnginesManagersModelPost(object):
                     }],
                     'schema': {
                         'type': 'object',
+                        'id_names': ['item_id'],
                         'properties': {
                             'filter_test': {'type': 'string'},
                             'item_id': {'type': 'integer'}
-                        },
+                        }
                     },
                     'available_filters': [{
                         'name': 'filter_test',
@@ -385,10 +386,7 @@ class TestEnginesManagersModelPost(object):
                         'name': 'item_id',
                         'schema': {'type': 'integer'}
                     }],
-                    'name': 'products',
-                    'id_names': [
-                        'item_id'
-                    ]
+                    'name': 'products'
                 },
                 'store_id': 1,
                 'name': 'Visual Similarity',
@@ -475,10 +473,11 @@ class TestEnginesManagersModelPost(object):
                         }],
                         'schema': {
                             'type': 'object',
+                            'id_names': ['item_id'],
                             'properties': {
                                 'filter_test': {'type': 'string'},
                                 'item_id': {'type': 'integer'}
-                            },
+                            }
                         },
                         'available_filters': [{
                             'name': 'filter_test',
@@ -487,10 +486,7 @@ class TestEnginesManagersModelPost(object):
                             'name': 'item_id',
                             'schema': {'type': 'integer'}
                         }],
-                        'name': 'products',
-                        'id_names': [
-                            'item_id'
-                        ]
+                        'name': 'products'
                     },
                     'store_id': 1,
                     'name': 'Visual Similarity',
@@ -549,10 +545,11 @@ class TestEnginesManagersModelPost(object):
                     }],
                     'schema': {
                         'type': 'object',
+                        'id_names': ['item_id'],
                         'properties': {
                             'filter_test': {'type': 'string'},
                             'item_id': {'type': 'integer'}
-                        },
+                        }
                     },
                     'available_filters': [{
                         'name': 'filter_test',
@@ -561,10 +558,7 @@ class TestEnginesManagersModelPost(object):
                         'name': 'item_id',
                         'schema': {'type': 'integer'}
                     }],
-                    'name': 'products',
-                    'id_names': [
-                        'item_id'
-                    ]
+                    'name': 'products'
                 },
                 'store_id': 1,
                 'name': 'Visual Similarity',
@@ -666,10 +660,11 @@ class TestEnginesManagersModelGet(object):
                     }],
                     'schema': {
                         'type': 'object',
+                        'id_names': ['item_id'],
                         'properties': {
                             'filter_test': {'type': 'string'},
                             'item_id': {'type': 'integer'}
-                        },
+                        }
                     },
                     'available_filters': [{
                         'name': 'filter_test',
@@ -678,10 +673,7 @@ class TestEnginesManagersModelGet(object):
                         'name': 'item_id',
                         'schema': {'type': 'integer'}
                     }],
-                    'name': 'products',
-                    'id_names': [
-                        'item_id'
-                    ]
+                    'name': 'products'
                 },
                 'store_id': 1,
                 'name': 'Visual Similarity',
@@ -911,10 +903,11 @@ class TestEnginesManagersModelUriTemplatePatch(object):
                     }],
                     'schema': {
                         'type': 'object',
+                        'id_names': ['item_id'],
                         'properties': {
                             'filter_test': {'type': 'string'},
                             'item_id': {'type': 'integer'}
-                        },
+                        }
                     },
                     'available_filters': [{
                         'name': 'filter_test',
@@ -923,10 +916,7 @@ class TestEnginesManagersModelUriTemplatePatch(object):
                         'name': 'item_id',
                         'schema': {'type': 'integer'}
                     }],
-                    'name': 'products',
-                    'id_names': [
-                        'item_id'
-                    ]
+                    'name': 'products'
                 },
                 'store_id': 1,
                 'name': 'Visual Similarity',
@@ -1043,10 +1033,11 @@ class TestEnginesManagersModelUriTemplateGet(object):
                     }],
                     'schema': {
                         'type': 'object',
+                        'id_names': ['item_id'],
                         'properties': {
                             'filter_test': {'type': 'string'},
                             'item_id': {'type': 'integer'}
-                        },
+                        }
                     },
                     'available_filters': [{
                         'name': 'filter_test',
@@ -1055,10 +1046,7 @@ class TestEnginesManagersModelUriTemplateGet(object):
                         'name': 'item_id',
                         'schema': {'type': 'integer'}
                     }],
-                    'name': 'products',
-                    'id_names': [
-                        'item_id'
-                    ]
+                    'name': 'products'
                 },
                 'store_id': 1,
                 'name': 'Visual Similarity',
