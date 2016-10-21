@@ -98,7 +98,7 @@
                 "type": "object",
                 "additionalProperties": false,
                 "minProperties": 2,
-                "anyOf": [
+                "oneOf": [
                     {"required": ["id", "_operation"]},
                     {"required": ["variable_id", "inside_engine_name"]},
                     {"required": ["variable", "inside_engine_name"]}
@@ -110,6 +110,8 @@
                     "_operation": {"enum": ["remove", "update", "insert", "get"]},
                     "inside_engine_name": {"type": "string"},
                     "is_filter": {"type": "boolean"},
+                    "filter_type": {"enum": ["By Property", "By Property Of"]},
+                    "is_inclusive_filter": {"type": "boolean"},
                     "override": {"type": "boolean"},
                     "override_value": {"type": "string"},
                     "variable": {

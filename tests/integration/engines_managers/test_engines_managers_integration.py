@@ -211,7 +211,9 @@ class TestEnginesManagersModelPost(object):
                 '_operation': 'insert',
                 'variable_id': 1,
                 'inside_engine_name': 'test',
-                'is_filter': True
+                'is_filter': True,
+                'filter_type': 'By Property',
+                'is_inclusive_filter': True
             }]
         }]
         resp = client.post('/engines_managers/', headers=headers, body=json.dumps(body))
@@ -226,6 +228,8 @@ class TestEnginesManagersModelPost(object):
                         '_operation': 'insert',
                         'inside_engine_name': 'test',
                         'is_filter': True,
+                        'is_inclusive_filter': True,
+                        'filter_type': 'By Property',
                         'variable_id': 1
                     }]
                 }],
@@ -238,6 +242,38 @@ class TestEnginesManagersModelPost(object):
                         'schema': {"type": "integer"}
                     }]
                 }
+            }
+        }
+
+    def test_post_with_invalid_filter_missing_properties(self, client, headers):
+        body = [{
+            'store_id': 1,
+            'engine_id': 1,
+            'engine_variables': [{
+                '_operation': 'insert',
+                'variable_id': 1,
+                'inside_engine_name': 'filter_test',
+                'is_filter': True,
+                'filter_type': 'By Property'
+            }]
+        }]
+        resp = client.post('/engines_managers/', headers=headers, body=json.dumps(body))
+        assert resp.status_code == 400
+        assert json.loads(resp.body) ==  {
+            'error': {
+                'message': "When 'is_filter' is 'true' the properties "\
+                "'is_inclusive_filter' and 'filter_type' must be setted",
+                'input': [{
+                    'engine_id': 1,
+                    'store_id': 1,
+                    'engine_variables': [{
+                        '_operation': 'insert',
+                        'filter_type': 'By Property',
+                        'inside_engine_name': 'filter_test',
+                        'is_filter': True,
+                        'variable_id': 1
+                    }]
+                }]
             }
         }
 
@@ -270,7 +306,9 @@ class TestEnginesManagersModelPost(object):
                     'override': False,
                     'override_value_json': None,
                     'variable_id': 1,
-                    'is_filter': False
+                    'is_filter': False,
+                    'is_inclusive_filter': None,
+                    'filter_type': None
                 }
             ],
             'engine': {
@@ -337,6 +375,8 @@ class TestEnginesManagersModelPost(object):
                 '_operation': 'insert',
                 'variable_id': 1,
                 'is_filter': True,
+                'is_inclusive_filter': True,
+                'filter_type': 'By Property',
                 'inside_engine_name': 'filter_test'
             }]
         }]
@@ -359,7 +399,9 @@ class TestEnginesManagersModelPost(object):
                     'override': False,
                     'override_value_json': None,
                     'variable_id': 1,
-                    'is_filter': True
+                    'is_filter': True,
+                    'is_inclusive_filter': True,
+                    'filter_type': 'By Property'
                 }
             ],
             'engine': {
@@ -459,7 +501,9 @@ class TestEnginesManagersModelPost(object):
                         'override': False,
                         'override_value_json': None,
                         'variable_id': 1,
-                        'is_filter': False
+                        'is_filter': False,
+                        'is_inclusive_filter': None,
+                        'filter_type': None
                     }
                 ],
                 'engine': {
@@ -531,7 +575,9 @@ class TestEnginesManagersModelPost(object):
                     'override': False,
                     'override_value_json': None,
                     'variable_id': 1,
-                    'is_filter': False
+                    'is_filter': False,
+                    'is_inclusive_filter': None,
+                    'filter_type': None
                 }
             ],
             'engine': {
@@ -646,7 +692,9 @@ class TestEnginesManagersModelGet(object):
                     'override': False,
                     'override_value_json': None,
                     'variable_id': 1,
-                    'is_filter': False
+                    'is_filter': False,
+                    'is_inclusive_filter': None,
+                    'filter_type': None
                 }
             ],
             'engine': {
@@ -889,7 +937,9 @@ class TestEnginesManagersModelUriTemplatePatch(object):
                     'override': False,
                     'override_value_json': None,
                     'variable_id': 1,
-                    'is_filter': False
+                    'is_filter': False,
+                    'is_inclusive_filter': None,
+                    'filter_type': None
                 }
             ],
             'engine': {
@@ -1019,7 +1069,9 @@ class TestEnginesManagersModelUriTemplateGet(object):
                     'override': False,
                     'override_value_json': None,
                     'variable_id': 1,
-                    'is_filter': False
+                    'is_filter': False,
+                    'is_inclusive_filter': None,
+                    'filter_type': None
                 }
             ],
             'engine': {

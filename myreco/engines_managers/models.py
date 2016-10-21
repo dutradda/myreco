@@ -34,6 +34,8 @@ class EnginesManagersVariablesModelBase(AbstractConcreteBase):
 
     id = sa.Column(sa.Integer, primary_key=True)
     is_filter = sa.Column(sa.Boolean, default=False)
+    filter_type = sa.Column(sa.String(255))
+    is_inclusive_filter = sa.Column(sa.Boolean)
     override = sa.Column(sa.Boolean, default=False)
     override_value_json = sa.Column(sa.Text)
     inside_engine_name = sa.Column(sa.String(255), nullable=False)
@@ -119,7 +121,13 @@ class EnginesManagersModelBase(AbstractConcreteBase):
                             message, instance=input_, schema=schema)
 
                 else:
-                    if var_name not in available_filters_map:
+                    if engine_variable.is_inclusive_filter is None \
+                            or engine_variable.filter_type is None:
+                        raise ModelBaseError(
+                            "When 'is_filter' is 'true' the properties 'is_inclusive_filter'"
+                            " and 'filter_type' must be setted", input_)
+
+                    elif var_name not in available_filters_map:
                         message = message.format('filter')
                         schema = {
                             'available_filters':

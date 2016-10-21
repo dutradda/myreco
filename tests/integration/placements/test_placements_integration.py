@@ -142,7 +142,14 @@ def app(session):
         'engine_variables': [{
             '_operation': 'insert',
             'variable_id': 1,
+            'is_filter': True,
+            'is_inclusive_filter': True,
+            'filter_type': 'By Property',
             'inside_engine_name': 'filter_test'
+        },{
+            '_operation': 'insert',
+            'variable_id': 2,
+            'inside_engine_name': 'item_id'
         }]
     }
     EnginesManagersModel.insert(session, engine_manager)
@@ -259,7 +266,9 @@ class TestPlacementsModelPost(object):
                     },
                     'engine_id': 1,
                     'engine_variables': [{
-                        'is_filter': False,
+                        'is_filter': True,
+                        'is_inclusive_filter': True,
+                        'filter_type': 'By Property',
                         'engine_manager_id': 1,
                         'id': 1,
                         'inside_engine_name': 'filter_test',
@@ -271,6 +280,21 @@ class TestPlacementsModelPost(object):
                             'store_id': 1
                         },
                         'variable_id': 1
+                    },{
+                        'is_filter': False,
+                        'is_inclusive_filter': None,
+                        'filter_type': None,
+                        'engine_manager_id': 1,
+                        'id': 2,
+                        'inside_engine_name': 'item_id',
+                        'override': False,
+                        'override_value_json': None,
+                        'variable': {
+                            'id': 2,
+                            'name': 'test2',
+                            'store_id': 1
+                        },
+                        'variable_id': 2
                     }],
                     'fallbacks': [],
                     'id': 1,
@@ -383,7 +407,9 @@ class TestPlacementsModelGet(object):
                     },
                     'engine_id': 1,
                     'engine_variables': [{
-                        'is_filter': False,
+                        'is_filter': True,
+                        'is_inclusive_filter': True,
+                        'filter_type': 'By Property',
                         'engine_manager_id': 1,
                         'id': 1,
                         'inside_engine_name': 'filter_test',
@@ -395,6 +421,21 @@ class TestPlacementsModelGet(object):
                             'store_id': 1
                         },
                         'variable_id': 1
+                    },{
+                        'is_filter': False,
+                        'is_inclusive_filter': None,
+                        'filter_type': None,
+                        'engine_manager_id': 1,
+                        'id': 2,
+                        'inside_engine_name': 'item_id',
+                        'override': False,
+                        'override_value_json': None,
+                        'variable': {
+                            'id': 2,
+                            'name': 'test2',
+                            'store_id': 1
+                        },
+                        'variable_id': 2
                     }],
                     'fallbacks': [],
                     'id': 1,
@@ -593,7 +634,9 @@ class TestPlacementsModelUriTemplateGet(object):
                     },
                     'engine_id': 1,
                     'engine_variables': [{
-                        'is_filter': False,
+                        'is_filter': True,
+                        'is_inclusive_filter': True,
+                        'filter_type': 'By Property',
                         'engine_manager_id': 1,
                         'id': 1,
                         'inside_engine_name': 'filter_test',
@@ -605,6 +648,21 @@ class TestPlacementsModelUriTemplateGet(object):
                             'store_id': 1
                         },
                         'variable_id': 1
+                    },{
+                        'is_filter': False,
+                        'is_inclusive_filter': None,
+                        'filter_type': None,
+                        'engine_manager_id': 1,
+                        'id': 2,
+                        'inside_engine_name': 'item_id',
+                        'override': False,
+                        'override_value_json': None,
+                        'variable': {
+                            'id': 2,
+                            'name': 'test2',
+                            'store_id': 1
+                        },
+                        'variable_id': 2
                     }],
                     'fallbacks': [],
                     'id': 1,
@@ -637,7 +695,7 @@ class TestPlacementsGetRecomendations(object):
         assert resp.status_code == 404
 
     @mock.patch('myreco.placements.models.EngineTypeChooser')
-    def test_get_recommendations(self, engine_chooser, client, headers):
+    def test_get_recommendations_valid(self, engine_chooser, client, headers):
         engine_chooser()().get_recommendations.return_value = [1, 2, 3]
         body = [{
             'store_id': 1,
