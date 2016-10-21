@@ -137,6 +137,7 @@ def app(session):
 
     EnginesManagersModel.__api__ = None
     engine_manager = {
+        'max_recos': 10,
         'store_id': 1,
         'engine_id': 1,
         'engine_variables': [{
@@ -212,6 +213,7 @@ class TestPlacementsModelPost(object):
             'store_id': 1,
             'variations': [{
                 'engines_managers': [{
+                    'max_recos': 10,
                     'engine': {
                         'configuration': {
                             'aggregators_ids_name': 'filter_test',
@@ -353,6 +355,7 @@ class TestPlacementsModelGet(object):
             'store_id': 1,
             'variations': [{
                 'engines_managers': [{
+                    'max_recos': 10,
                     'engine': {
                         'configuration': {
                             'aggregators_ids_name': 'filter_test',
@@ -580,6 +583,7 @@ class TestPlacementsModelUriTemplateGet(object):
             'store_id': 1,
             'variations': [{
                 'engines_managers': [{
+                    'max_recos': 10,
                     'engine': {
                         'configuration': {
                             'aggregators_ids_name': 'filter_test',

@@ -58,6 +58,7 @@ class EnginesManagersModelBase(AbstractConcreteBase):
     __schema__ = get_model_schema(__file__)
 
     id = sa.Column(sa.Integer, primary_key=True)
+    max_recos = sa.Column(sa.Integer, nullable=False)
 
     @declared_attr
     def engine_id(cls):

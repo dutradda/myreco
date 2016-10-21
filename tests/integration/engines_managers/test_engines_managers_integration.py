@@ -156,8 +156,9 @@ class TestEnginesManagersModelPost(object):
                 'schema': {
                     'type': 'object',
                     'additionalProperties': False,
-                    'required': ['engine_id', 'store_id', 'engine_variables'],
+                    'required': ['engine_id', 'store_id', 'engine_variables', 'max_recos'],
                     'properties': {
+                        'max_recos': {'type': 'integer'},
                         'store_id': {'type': 'integer'},
                         'engine_id': {'type': 'integer'},
                         'fallbacks': {'$ref': '#/definitions/fallbacks'},
@@ -169,6 +170,7 @@ class TestEnginesManagersModelPost(object):
 
     def test_post_with_invalid_variable_engine(self, client, headers):
         body = [{
+            'max_recos': 10,
             'store_id': 1,
             'engine_id': 1,
             'engine_variables': [{
@@ -183,6 +185,7 @@ class TestEnginesManagersModelPost(object):
             'error': {
                 'message': "Invalid engine variable with 'inside_engine_name' value 'test'",
                 'input': [{
+                    'max_recos': 10,
                     'engine_id': 1,
                     'store_id': 1,
                     'engine_variables': [{
@@ -205,6 +208,7 @@ class TestEnginesManagersModelPost(object):
 
     def test_post_with_invalid_filter(self, client, headers):
         body = [{
+            'max_recos': 10,
             'store_id': 1,
             'engine_id': 1,
             'engine_variables': [{
@@ -222,6 +226,7 @@ class TestEnginesManagersModelPost(object):
             'error': {
                 'message': "Invalid filter with 'inside_engine_name' value 'test'",
                 'input': [{
+                    'max_recos': 10,
                     'engine_id': 1,
                     'store_id': 1,
                     'engine_variables': [{
@@ -247,6 +252,7 @@ class TestEnginesManagersModelPost(object):
 
     def test_post_with_invalid_filter_missing_properties(self, client, headers):
         body = [{
+            'max_recos': 10,
             'store_id': 1,
             'engine_id': 1,
             'engine_variables': [{
@@ -264,6 +270,7 @@ class TestEnginesManagersModelPost(object):
                 'message': "When 'is_filter' is 'true' the properties "\
                 "'is_inclusive_filter' and 'filter_type' must be setted",
                 'input': [{
+                    'max_recos': 10,
                     'engine_id': 1,
                     'store_id': 1,
                     'engine_variables': [{
@@ -279,6 +286,7 @@ class TestEnginesManagersModelPost(object):
 
     def test_post_with_insert_engine_variable_engine_var(self, client, headers):
         body = [{
+            'max_recos': 10,
             'store_id': 1,
             'engine_id': 1,
             'engine_variables': [{
@@ -291,6 +299,7 @@ class TestEnginesManagersModelPost(object):
 
         assert resp.status_code == 201
         assert json.loads(resp.body) == [{
+            'max_recos': 10,
             'fallbacks': [],
             'id': 1,
             'engine_variables': [
@@ -369,6 +378,7 @@ class TestEnginesManagersModelPost(object):
 
     def test_post_with_insert_engine_variable_engine_filter(self, client, headers):
         body = [{
+            'max_recos': 10,
             'store_id': 1,
             'engine_id': 1,
             'engine_variables': [{
@@ -386,6 +396,7 @@ class TestEnginesManagersModelPost(object):
         assert json.loads(resp.body) == [{
             'fallbacks': [],
             'id': 1,
+            'max_recos': 10,
             'engine_variables': [
                 {
                     'variable': {
@@ -462,6 +473,7 @@ class TestEnginesManagersModelPost(object):
 
     def test_post_with_fallback(self, client, headers):
         body = [{
+            'max_recos': 10,
             'store_id': 1,
             'engine_id': 1,
             'engine_variables': [{
@@ -473,6 +485,7 @@ class TestEnginesManagersModelPost(object):
         client.post('/engines_managers/', headers=headers, body=json.dumps(body))
 
         body = [{
+            'max_recos': 10,
             'store_id': 1,
             'engine_id': 1,
             'engine_variables': [{
@@ -487,6 +500,7 @@ class TestEnginesManagersModelPost(object):
         assert resp.status_code == 201
         assert json.loads(resp.body) == [{
             'fallbacks': [{
+                'max_recos': 10,
                 'id': 1,
                 'engine_variables': [
                     {
@@ -562,6 +576,7 @@ class TestEnginesManagersModelPost(object):
                 'engine_id': 1
             }],
             'id': 2,
+            'max_recos': 10,
             'engine_variables': [
                 {
                     'variable': {
@@ -638,6 +653,7 @@ class TestEnginesManagersModelPost(object):
 
     def test_post_with_invalid_grant(self, client):
         body = [{
+            'max_recos': 10,
             'store_id': 1,
             'engine_id': 1,
             'engine_variables': [{
@@ -664,6 +680,7 @@ class TestEnginesManagersModelGet(object):
 
     def test_get(self, client, headers):
         body = [{
+            'max_recos': 10,
             'store_id': 1,
             'engine_id': 1,
             'engine_variables': [{
@@ -679,6 +696,7 @@ class TestEnginesManagersModelGet(object):
         assert json.loads(resp.body) ==  [{
             'fallbacks': [],
             'id': 1,
+            'max_recos': 10,
             'engine_variables': [
                 {
                     'variable': {
@@ -771,6 +789,9 @@ class TestEnginesManagersModelUriTemplatePatch(object):
                     'additionalProperties': False,
                     'minProperties': 1,
                     'properties': {
+                        'max_recos': {
+                            'type': 'integer'
+                        },
                         'engine_id': {
                             'type': 'integer'
                         },
@@ -793,6 +814,7 @@ class TestEnginesManagersModelUriTemplatePatch(object):
 
     def test_patch_with_invalid_engine_variable(self, client, headers):
         body = [{
+            'max_recos': 10,
             'store_id': 1,
             'engine_id': 1,
             'engine_variables': [{
@@ -837,6 +859,7 @@ class TestEnginesManagersModelUriTemplatePatch(object):
 
     def test_patch_with_invalid_fallback_id(self, client, headers):
         body = [{
+            'max_recos': 10,
             'store_id': 1,
             'engine_id': 1,
             'engine_variables': [{
@@ -861,6 +884,7 @@ class TestEnginesManagersModelUriTemplatePatch(object):
 
     def test_patch_with_invalid_fallback_item_type(self, client, headers):
         body = [{
+            'max_recos': 10,
             'store_id': 1,
             'engine_id': 1,
             'engine_variables': [{
@@ -869,6 +893,7 @@ class TestEnginesManagersModelUriTemplatePatch(object):
                 'inside_engine_name': 'filter_test'
             }]
         },{
+            'max_recos': 10,
             'store_id': 1,
             'engine_id': 2,
             'engine_variables': [{
@@ -901,6 +926,7 @@ class TestEnginesManagersModelUriTemplatePatch(object):
 
     def test_patch(self, client, headers):
         body = [{
+            'max_recos': 10,
             'store_id': 1,
             'engine_id': 1,
             'engine_variables': [{
@@ -924,6 +950,7 @@ class TestEnginesManagersModelUriTemplatePatch(object):
         assert json.loads(resp.body) ==  {
             'fallbacks': [],
             'id': 1,
+            'max_recos': 10,
             'engine_variables': [
                 {
                     'variable': {
@@ -1008,6 +1035,7 @@ class TestEnginesManagersModelUriTemplateDelete(object):
 
     def test_delete(self, client, headers):
         body = [{
+            'max_recos': 10,
             'store_id': 1,
             'engine_id': 1,
             'engine_variables': [{
@@ -1040,6 +1068,7 @@ class TestEnginesManagersModelUriTemplateGet(object):
 
     def test_get(self, client, headers):
         body = [{
+            'max_recos': 10,
             'store_id': 1,
             'engine_id': 1,
             'engine_variables': [{
@@ -1056,6 +1085,7 @@ class TestEnginesManagersModelUriTemplateGet(object):
         assert json.loads(resp.body) == {
             'fallbacks': [],
             'id': 1,
+            'max_recos': 10,
             'engine_variables': [
                 {
                     'variable': {
