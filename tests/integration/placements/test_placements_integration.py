@@ -24,18 +24,25 @@
 from tests.integration.fixtures_models import (
     SQLAlchemyRedisModelBase, EnginesManagersModel, PlacementsModel,
     UsersModel, StoresModel, VariablesModel, ItemsTypesModel,
-    EnginesModel, EnginesTypesNamesModel)
+    EnginesModel, EnginesTypesNamesModel, DataImporter)
 from pytest_falcon.plugin import Client
 from myreco.engines.types.base import EngineType
 from myreco.engines.types.items_indices_map import ItemsIndicesMap
+from myreco.engines.types.utils import build_data_path
+from myreco.engines.types.top_seller.engine import build_data_pattern as build_top_seller_data_pattern
 from myreco.factory import ModelsFactory
 from falconswagger.http_api import HttpAPI
 from base64 import b64encode
 from fakeredis import FakeStrictRedis
 from unittest import mock
+from tempfile import TemporaryDirectory
+from csv import DictWriter
+from os import makedirs
 import pytest
 import json
 import numpy as np
+import gzip
+import os.path
 
 
 @pytest.fixture
@@ -49,7 +56,11 @@ def redis():
 
 
 @pytest.fixture
-def app(redis, session):
+def temp_dir():
+    return TemporaryDirectory()
+
+@pytest.fixture
+def app(redis, session, temp_dir):
     UsersModel.__api__ = None
     user = {
         'name': 'test',
@@ -63,7 +74,7 @@ def app(redis, session):
     store = {
         'name': 'test',
         'country': 'test',
-        'configuration': {'data_path': '/test'}
+        'configuration': {'data_path': temp_dir.name}
     }
     StoresModel.insert(session, store)
 
@@ -100,6 +111,33 @@ def app(redis, session):
             'type': 'object',
             'id_names': ['item_id'],
             'properties': {'item_id': {'type': 'string'}}
+        }
+    }
+    ItemsTypesModel.insert(session, item_type)
+    item_type = {
+        'name': 'products_new',
+        'stores': [{'id': 1}],
+        'schema': {
+            'type': 'object',
+            'id_names': ['item_id', 'sku'],
+            'properties': {
+                'filter_string': {'type': 'string'},
+                'filter_integer': {'type': 'integer'},
+                'filter_boolean': {'type': 'boolean'},
+                'filter_array': {
+                    'type': 'array',
+                    'items': {'type': 'string'}
+                },
+                'filter_object': {
+                    'type': 'object',
+                    'id_names': ['id'],
+                    'properties': {
+                        'id': {'type': 'integer'}
+                    }
+                },
+                'item_id': {'type': 'integer'},
+                'sku': {'type': 'string'}
+            }
         }
     }
     ItemsTypesModel.insert(session, item_type)
@@ -140,11 +178,42 @@ def app(redis, session):
         'item_type_id': 3
     }
     EnginesModel.insert(session, engine)
+    engine = {
+        'name': 'Top Seller',
+        'configuration_json': json.dumps({
+            'days_interval': 7,
+            'data_importer_path': 'tests.integration.fixtures_models.DataImporter'
+        }),
+        'store_id': 1,
+        'type_name_id': 2,
+        'item_type_id': 4
+    }
+    EnginesModel.insert(session, engine)
 
     VariablesModel.__api__ = None
     VariablesModel.insert(session, {'name': 'test', 'store_id': 1})
     VariablesModel.insert(session, {'name': 'test2', 'store_id': 1})
     VariablesModel.insert(session, {'name': 'test3', 'store_id': 1})
+    VariablesModel.insert(session, {'name': 'filter_string_inclusive', 'store_id': 1})
+    VariablesModel.insert(session, {'name': 'filter_integer_inclusive', 'store_id': 1})
+    VariablesModel.insert(session, {'name': 'filter_boolean_inclusive', 'store_id': 1})
+    VariablesModel.insert(session, {'name': 'filter_array_inclusive', 'store_id': 1})
+    VariablesModel.insert(session, {'name': 'filter_object_inclusive', 'store_id': 1})
+    VariablesModel.insert(session, {'name': 'filter_string_exclusive', 'store_id': 1})
+    VariablesModel.insert(session, {'name': 'filter_integer_exclusive', 'store_id': 1})
+    VariablesModel.insert(session, {'name': 'filter_boolean_exclusive', 'store_id': 1})
+    VariablesModel.insert(session, {'name': 'filter_array_exclusive', 'store_id': 1})
+    VariablesModel.insert(session, {'name': 'filter_object_exclusive', 'store_id': 1})
+    VariablesModel.insert(session, {'name': 'filter_string_inclusive_of', 'store_id': 1})
+    VariablesModel.insert(session, {'name': 'filter_integer_inclusive_of', 'store_id': 1})
+    VariablesModel.insert(session, {'name': 'filter_boolean_inclusive_of', 'store_id': 1})
+    VariablesModel.insert(session, {'name': 'filter_array_inclusive_of', 'store_id': 1})
+    VariablesModel.insert(session, {'name': 'filter_object_inclusive_of', 'store_id': 1})
+    VariablesModel.insert(session, {'name': 'filter_string_exclusive_of', 'store_id': 1})
+    VariablesModel.insert(session, {'name': 'filter_integer_exclusive_of', 'store_id': 1})
+    VariablesModel.insert(session, {'name': 'filter_boolean_exclusive_of', 'store_id': 1})
+    VariablesModel.insert(session, {'name': 'filter_array_exclusive_of', 'store_id': 1})
+    VariablesModel.insert(session, {'name': 'filter_object_exclusive_of', 'store_id': 1})
 
     EnginesManagersModel.__api__ = None
     engine_manager = {
@@ -169,6 +238,153 @@ def app(redis, session):
             '_operation': 'insert',
             'variable_id': 2,
             'inside_engine_name': 'item_id'
+        }]
+    }
+    EnginesManagersModel.insert(session, engine_manager)
+    engine_manager = {
+        'max_recos': 10,
+        'store_id': 1,
+        'engine_id': 4,
+        'engine_variables': [{
+            '_operation': 'insert',
+            'variable_id': 4,
+            'is_filter': True,
+            'is_inclusive_filter': True,
+            'filter_type': 'By Property',
+            'inside_engine_name': 'filter_string'
+        },{
+            '_operation': 'insert',
+            'variable_id': 5,
+            'is_filter': True,
+            'is_inclusive_filter': True,
+            'filter_type': 'By Property',
+            'inside_engine_name': 'filter_integer'
+        },{
+            '_operation': 'insert',
+            'variable_id': 6,
+            'is_filter': True,
+            'is_inclusive_filter': True,
+            'filter_type': 'By Property',
+            'inside_engine_name': 'filter_boolean'
+        },{
+            '_operation': 'insert',
+            'variable_id': 7,
+            'is_filter': True,
+            'is_inclusive_filter': True,
+            'filter_type': 'By Property',
+            'inside_engine_name': 'filter_array'
+        },{
+            '_operation': 'insert',
+            'variable_id': 8,
+            'is_filter': True,
+            'is_inclusive_filter': True,
+            'filter_type': 'By Property',
+            'inside_engine_name': 'filter_object'
+        },{
+            '_operation': 'insert',
+            'variable_id': 9,
+            'is_filter': True,
+            'is_inclusive_filter': False,
+            'filter_type': 'By Property',
+            'inside_engine_name': 'filter_string'
+        },{
+            '_operation': 'insert',
+            'variable_id': 10,
+            'is_filter': True,
+            'is_inclusive_filter': False,
+            'filter_type': 'By Property',
+            'inside_engine_name': 'filter_integer'
+        },{
+            '_operation': 'insert',
+            'variable_id': 11,
+            'is_filter': True,
+            'is_inclusive_filter': False,
+            'filter_type': 'By Property',
+            'inside_engine_name': 'filter_boolean'
+        },{
+            '_operation': 'insert',
+            'variable_id': 12,
+            'is_filter': True,
+            'is_inclusive_filter': False,
+            'filter_type': 'By Property',
+            'inside_engine_name': 'filter_array'
+        },{
+            '_operation': 'insert',
+            'variable_id': 13,
+            'is_filter': True,
+            'is_inclusive_filter': False,
+            'filter_type': 'By Property',
+            'inside_engine_name': 'filter_object'
+        },{
+            '_operation': 'insert',
+            'variable_id': 14,
+            'is_filter': True,
+            'is_inclusive_filter': True,
+            'filter_type': 'Property Of',
+            'inside_engine_name': 'filter_string'
+        },{
+            '_operation': 'insert',
+            'variable_id': 15,
+            'is_filter': True,
+            'is_inclusive_filter': True,
+            'filter_type': 'Property Of',
+            'inside_engine_name': 'filter_integer'
+        },{
+            '_operation': 'insert',
+            'variable_id': 16,
+            'is_filter': True,
+            'is_inclusive_filter': True,
+            'filter_type': 'Property Of',
+            'inside_engine_name': 'filter_boolean'
+        },{
+            '_operation': 'insert',
+            'variable_id': 17,
+            'is_filter': True,
+            'is_inclusive_filter': True,
+            'filter_type': 'Property Of',
+            'inside_engine_name': 'filter_array'
+        },{
+            '_operation': 'insert',
+            'variable_id': 18,
+            'is_filter': True,
+            'is_inclusive_filter': True,
+            'filter_type': 'Property Of',
+            'inside_engine_name': 'filter_object'
+        },{
+            '_operation': 'insert',
+            'variable_id': 19,
+            'is_filter': True,
+            'is_inclusive_filter': False,
+            'filter_type': 'Property Of',
+            'inside_engine_name': 'filter_string'
+        },{
+            '_operation': 'insert',
+            'variable_id': 20,
+            'is_filter': True,
+            'is_inclusive_filter': False,
+            'filter_type': 'Property Of',
+            'inside_engine_name': 'filter_integer'
+        },{
+            '_operation': 'insert',
+            'variable_id': 21,
+            'is_filter': True,
+            'is_inclusive_filter': False,
+            'filter_type': 'Property Of',
+            'inside_engine_name': 'filter_boolean'
+        },{
+            '_operation': 'insert',
+            'variable_id': 22,
+            'is_filter': True,
+            'is_inclusive_filter': False,
+            'filter_type': 'Property Of',
+            'inside_engine_name': 'filter_array'
+        },{
+            '_operation': 'insert',
+            'variable_id': 23,
+            'is_filter': True,
+            'is_inclusive_filter': False,
+            'filter_type': 'Property Of',
+            'inside_engine_name': 'filter_object'
         }]
     }
     EnginesManagersModel.insert(session, engine_manager)
@@ -214,7 +430,7 @@ class TestPlacementsModelPost(object):
             }
         }
 
-    def test_post(self, client, headers):
+    def test_post(self, client, headers, temp_dir):
         body = [{
             'store_id': 1,
             'name': 'Placement Test',
@@ -244,7 +460,7 @@ class TestPlacementsModelPost(object):
                         'item_type': {
                             'id': 1,
                             'stores': [{
-                                'configuration': {'data_path': '/test'},
+                                'configuration': {'data_path': temp_dir.name},
                                 'country': 'test',
                                 'id': 1,
                                 'name': 'test'
@@ -272,7 +488,7 @@ class TestPlacementsModelPost(object):
                             'country': 'test',
                             'id': 1,
                             'name': 'test',
-                            'configuration': {'data_path': '/test'}
+                            'configuration': {'data_path': temp_dir.name}
                         },
                         'store_id': 1,
                         'type_name': {
@@ -369,7 +585,7 @@ class TestPlacementsModelGet(object):
         assert resp.status_code == 400
         assert json.loads(resp.body) == {'error': 'Request body is not acceptable'}
 
-    def test_get(self, client, headers):
+    def test_get(self, client, headers, temp_dir):
         body = [{
             'store_id': 1,
             'name': 'Placement Test',
@@ -401,7 +617,7 @@ class TestPlacementsModelGet(object):
                         'item_type': {
                             'id': 1,
                             'stores': [{
-                                'configuration': {'data_path': '/test'},
+                                'configuration': {'data_path': temp_dir.name},
                                 'country': 'test',
                                 'id': 1,
                                 'name': 'test'
@@ -429,7 +645,7 @@ class TestPlacementsModelGet(object):
                             'country': 'test',
                             'id': 1,
                             'name': 'test',
-                            'configuration': {'data_path': '/test'}
+                            'configuration': {'data_path': temp_dir.name}
                         },
                         'store_id': 1,
                         'type_name': {
@@ -611,7 +827,7 @@ class TestPlacementsModelUriTemplateGet(object):
         resp = client.get('/placements/1/', headers=headers)
         assert resp.status_code == 404
 
-    def test_get_valid(self, client, headers):
+    def test_get_valid(self, client, headers, temp_dir):
         body = [{
             'store_id': 1,
             'name': 'Placement Test',
@@ -644,7 +860,7 @@ class TestPlacementsModelUriTemplateGet(object):
                         'item_type': {
                             'id': 1,
                             'stores': [{
-                                'configuration': {'data_path': '/test'},
+                                'configuration': {'data_path': temp_dir.name},
                                 'country': 'test',
                                 'id': 1,
                                 'name': 'test'
@@ -672,7 +888,7 @@ class TestPlacementsModelUriTemplateGet(object):
                             'country': 'test',
                             'id': 1,
                             'name': 'test',
-                            'configuration': {'data_path': '/test'}
+                            'configuration': {'data_path': temp_dir.name}
                         },
                         'store_id': 1,
                         'type_name': {
@@ -750,7 +966,7 @@ def filters_updater_app(session):
     factory = ModelsFactory('myreco', commons_models_attributes={'__table_args__': table_args},
                             commons_tables_attributes=table_args)
     models = factory.make_all_models('exporter')
-    api = HttpAPI([models['items_types']], session.bind, FakeStrictRedis())
+    api = HttpAPI([models['items_types'], models['engines']], session.bind, FakeStrictRedis())
     models['items_types'].associate_all_items(session)
 
     return api
@@ -761,42 +977,52 @@ def filters_updater_client(filters_updater_app):
     return Client(filters_updater_app)
 
 
+@pytest.fixture
+def top_seller_data_importer(request):
+    def get_data(engine, items_indices_map, session):
+        data_path = build_data_path(engine)
+        if not os.path.isdir(data_path):
+            makedirs(data_path)
+
+        filename_prefix = build_top_seller_data_pattern(engine['configuration'])
+        data = [{'item_id': 2, 'sku': 'test2', 'value': 1},
+                {'item_id': 1, 'sku': 'test1', 'value': 3},
+                {'item_id': 3, 'sku': 'test3', 'value': 2}]
+        file_ = gzip.open(os.path.join(data_path, filename_prefix) + '-000000001.gz', 'wt')
+        writer = DictWriter(file_, ['sku', 'value', 'item_id'])
+        writer.writeheader()
+        writer.writerows(data)
+        file_.close()
+        return {'lines_count': len(data)}
+
+    def finalizer():
+        DataImporter.get_data = mock.MagicMock()
+
+    DataImporter.get_data = get_data
+    request.addfinalizer(finalizer)
+    return DataImporter
+
+
+@mock.patch('falconswagger.models.base.random.getrandbits',
+    new=mock.MagicMock(return_value=131940827655846590526331314439483569710))
 class TestPlacementsGetRecomendations(object):
 
-    @mock.patch('myreco.placements.models.EngineTypeChooser')
-    def test_get_recommendations_not_found(self, engine_chooser, client, headers):
+    def test_get_recommendations_not_found(self, client, headers):
         body = [{
             'store_id': 1,
             'name': 'Placement Test',
             'variations': [{
                 '_operation': 'insert',
-                'engines_managers': [{'id': 1}]
+                'engines_managers': [{'id': 2}]
             }]
         }]
         obj = json.loads(client.post('/placements/', headers=headers, body=json.dumps(body)).body)[0]
-        engine_chooser()().get_recommendations.return_value = []
         resp = client.get('/placements/{}/recommendations'.format(obj['small_hash']), headers=headers)
         assert resp.status_code == 404
 
     def test_get_recommendations_placement_not_found(self, client, headers):
         resp = client.get('/placements/123/recommendations', headers=headers)
         assert resp.status_code == 404
-
-    @mock.patch('myreco.placements.models.EngineTypeChooser')
-    def test_get_recommendations_valid(self, engine_chooser, client, headers):
-        engine_chooser()().get_recommendations.return_value = [1, 2, 3]
-        body = [{
-            'store_id': 1,
-            'name': 'Placement Test',
-            'variations': [{
-                '_operation': 'insert',
-                'engines_managers': [{'id': 1}]
-            }]
-        }]
-        obj = json.loads(client.post('/placements/', headers=headers, body=json.dumps(body)).body)[0]
-        resp = client.get('/placements/{}/recommendations'.format(obj['small_hash']), headers=headers)
-        assert resp.status_code == 200
-        assert resp.body == json.dumps([1, 2, 3])
 
     @mock.patch('myreco.placements.models.EngineTypeChooser')
     def test_get_recommendations_with_variable_valid(self, engine_chooser, client, headers):
@@ -815,127 +1041,1013 @@ class TestPlacementsGetRecomendations(object):
         assert engine_chooser()().get_recommendations.call_count == 1
         assert engine_chooser()().get_recommendations.call_args_list[0][1] == {'item_id': 1}
 
-    @mock.patch('myreco.placements.models.EngineTypeChooser')
-    @mock.patch('myreco.engines.types.filters.factory.SimpleFilterBy')
-    def test_get_recommendations_with_filter_valid(self, simple_filter, engine_chooser, client, headers):
-        engine_chooser()().get_recommendations.return_value = [1, 2, 3]
-        body = [{
-            'store_id': 1,
-            'name': 'Placement Test',
-            'variations': [{
-                '_operation': 'insert',
-                'engines_managers': [{'id': 1}]
-            }]
-        }]
-        obj = json.loads(client.post('/placements/', headers=headers, body=json.dumps(body)).body)[0]
-        resp = client.get('/placements/{}/recommendations?test=testing'.format(obj['small_hash']), headers=headers)
-        assert engine_chooser()().get_recommendations.call_count == 1
-        assert engine_chooser()().get_recommendations.call_args_list[0][0][1] == {simple_filter(): 'testing'}
-        assert engine_chooser()().get_recommendations.call_args_list[0][1] == {}
-
-    @mock.patch('myreco.placements.models.EngineTypeChooser')
-    @mock.patch('falconswagger.models.base.random.getrandbits',
-    new=mock.MagicMock(return_value=131940827655846590526331314439483569710))
-    def test_get_recommendations_with_simple_filter_by_property_valid(
-            self, engine_chooser, client, headers, app, session, redis, filters_updater_client):
-        redis.flushall()
+    def test_get_recommendations_valid(self, client, app, headers, top_seller_data_importer, filters_updater_client):
         items_model = app.models['products'].__models__[1]
-        products = {
-            1: {
-                'filter_test': 'testing1',
-                'item_id': 1
-            },
-            2: {
-                'filter_test': 'testing2',
-                'item_id': 2
-            },
-            3: {
-                'filter_test': 'testing3',
-                'item_id': 3
-            }
-        }
+        products = [{
+            'item_id': 1,
+            'sku': 'test1'
+        },{
+            'item_id': 2,
+            'sku': 'test2'
+        },{
+            'item_id': 3,
+            'sku': 'test3'
+        }]
+        client.post('/products_new/?store_id=1', headers=headers, body=json.dumps(products))
 
-        client.post('/products/?store_id=1', headers=headers, body=json.dumps(list(products.values())))
-        filters_updater_client.post('/products/update_filters?store_id=1', headers=headers)
-
+        filters_updater_client.post('/products_new/update_filters?store_id=1', headers=headers)
         while True:
             resp = filters_updater_client.get(
-                '/products/update_filters?store_id=1&hash=6342e10bd7dca3240c698aa79c98362e',
+                '/products_new/update_filters?store_id=1&hash=6342e10bd7dca3240c698aa79c98362e',
                 headers=headers)
             if json.loads(resp.body)['status'] != 'running':
                 break
 
-        items_indices_map = ItemsIndicesMap(items_model).get_all(session)
-        rec_vector = [0, 0, 0]
-        rec_vector[items_indices_map.get(products[1])] = 1
-        rec_vector[items_indices_map.get(products[2])] = 2
-        rec_vector[items_indices_map.get(products[3])] = 3
-
-
-        engine_chooser().return_value = EngineType(items_model=items_model)
-        engine_chooser()()._build_rec_vector = mock.MagicMock(return_value=np.array(rec_vector, dtype=np.float32))
-        body = [{
-            'store_id': 1,
-            'name': 'Placement Test',
-            'variations': [{
-                '_operation': 'insert',
-                'engines_managers': [{'id': 1}]
-            }]
-        }]
-        obj = json.loads(client.post('/placements/', headers=headers, body=json.dumps(body)).body)[0]
-        resp = client.get('/placements/{}/recommendations?test=testing1'.format(obj['small_hash']), headers=headers)
-        assert resp.status_code == 200
-        assert json.loads(resp.body) == [{"item_id": 1, "filter_test": "testing1"}]
-
-    @mock.patch('myreco.placements.models.EngineTypeChooser')
-    @mock.patch('falconswagger.models.base.random.getrandbits',
-    new=mock.MagicMock(return_value=131940827655846590526331314439483569710))
-    def test_get_recommendations_with_simple_filter_property_of_valid(
-            self, engine_chooser, client, headers, app, session, redis, filters_updater_client):
-        redis.flushall()
-        items_model = app.models['products'].__models__[1]
-        products = {
-            1: {
-                'filter_test': 'testing1',
-                'item_id': 1
-            },
-            2: {
-                'filter_test': 'testing2',
-                'item_id': 2
-            },
-            3: {
-                'filter_test': 'testing3',
-                'item_id': 3
-            }
-        }
-
-        client.post('/products/?store_id=1', headers=headers, body=json.dumps(list(products.values())))
-        filters_updater_client.post('/products/update_filters?store_id=1', headers=headers)
-
+        filters_updater_client.post('/engines/4/export_objects?import_data=true', headers=headers)
         while True:
             resp = filters_updater_client.get(
-                '/products/update_filters?store_id=1&hash=6342e10bd7dca3240c698aa79c98362e',
+                '/engines/1/export_objects?hash=6342e10bd7dca3240c698aa79c98362e',
                 headers=headers)
             if json.loads(resp.body)['status'] != 'running':
                 break
 
-        items_indices_map = ItemsIndicesMap(items_model).get_all(session)
-        rec_vector = [0, 0, 0]
-        rec_vector[items_indices_map.get(products[1])] = 1
-        rec_vector[items_indices_map.get(products[2])] = 2
-        rec_vector[items_indices_map.get(products[3])] = 3
-
-        engine_chooser().return_value = EngineType(items_model=items_model)
-        engine_chooser()()._build_rec_vector = mock.MagicMock(return_value=np.array(rec_vector, dtype=np.float32))
         body = [{
             'store_id': 1,
             'name': 'Placement Test',
             'variations': [{
                 '_operation': 'insert',
-                'engines_managers': [{'id': 1}]
+                'engines_managers': [{'id': 2}]
             }]
         }]
         obj = json.loads(client.post('/placements/', headers=headers, body=json.dumps(body)).body)[0]
-        resp = client.get('/placements/{}/recommendations?test3=1'.format(obj['small_hash']), headers=headers)
+        resp = client.get('/placements/{}/recommendations'.format(obj['small_hash']), headers=headers)
         assert resp.status_code == 200
-        assert json.loads(resp.body) == [{"item_id": 1, "filter_test": "testing1"}]
+        assert json.loads(resp.body) == [{'sku': 'test1', 'item_id': 1},
+            {'sku': 'test3', 'item_id': 3}, {'sku': 'test2', 'item_id': 2}]
+
+
+@mock.patch('falconswagger.models.base.random.getrandbits',
+    new=mock.MagicMock(return_value=131940827655846590526331314439483569710))
+class TestPlacementsGetRecomendationsFilters(object):
+
+    def test_get_recommendations_by_string_inclusive(self, client, app, headers, top_seller_data_importer, filters_updater_client, redis):
+        items_model = app.models['products'].__models__[1]
+        products = [{
+            'item_id': 1,
+            'sku': 'test1',
+            'filter_string': 'test'
+        },{
+            'item_id': 2,
+            'sku': 'test2',
+            'filter_string': 'test2'
+        },{
+            'item_id': 3,
+            'sku': 'test3'
+        }]
+        client.post('/products_new/?store_id=1', headers=headers, body=json.dumps(products))
+
+        filters_updater_client.post('/products_new/update_filters?store_id=1', headers=headers)
+        while True:
+            resp = filters_updater_client.get(
+                '/products_new/update_filters?store_id=1&hash=6342e10bd7dca3240c698aa79c98362e',
+                headers=headers)
+            if json.loads(resp.body)['status'] != 'running':
+                break
+
+        filters_updater_client.post('/engines/4/export_objects?import_data=true', headers=headers)
+        while True:
+            resp = filters_updater_client.get(
+                '/engines/1/export_objects?hash=6342e10bd7dca3240c698aa79c98362e',
+                headers=headers)
+            if json.loads(resp.body)['status'] != 'running':
+                break
+
+        body = [{
+            'store_id': 1,
+            'name': 'Placement Test',
+            'variations': [{
+                '_operation': 'insert',
+                'engines_managers': [{'id': 2}]
+            }]
+        }]
+        obj = json.loads(client.post('/placements/', headers=headers, body=json.dumps(body)).body)[0]
+        resp = client.get('/placements/{}/recommendations?filter_string_inclusive=test,test2'.format(obj['small_hash']), headers=headers)
+        assert resp.status_code == 200
+        assert json.loads(resp.body) == [{'sku': 'test1', 'item_id': 1, 'filter_string': 'test'},
+            {'sku': 'test2', 'item_id': 2, 'filter_string': 'test2'}]
+
+    def test_get_recommendations_by_string_exclusive(self, client, app, headers, top_seller_data_importer, filters_updater_client):
+        items_model = app.models['products'].__models__[1]
+        products = [{
+            'item_id': 1,
+            'sku': 'test1',
+            'filter_string': 'test'
+        },{
+            'item_id': 2,
+            'sku': 'test2',
+            'filter_string': 'test2'
+        },{
+            'item_id': 3,
+            'sku': 'test3'
+        }]
+        client.post('/products_new/?store_id=1', headers=headers, body=json.dumps(products))
+
+        filters_updater_client.post('/products_new/update_filters?store_id=1', headers=headers)
+        while True:
+            resp = filters_updater_client.get(
+                '/products_new/update_filters?store_id=1&hash=6342e10bd7dca3240c698aa79c98362e',
+                headers=headers)
+            if json.loads(resp.body)['status'] != 'running':
+                break
+
+        filters_updater_client.post('/engines/4/export_objects?import_data=true', headers=headers)
+        while True:
+            resp = filters_updater_client.get(
+                '/engines/1/export_objects?hash=6342e10bd7dca3240c698aa79c98362e',
+                headers=headers)
+            if json.loads(resp.body)['status'] != 'running':
+                break
+
+        body = [{
+            'store_id': 1,
+            'name': 'Placement Test',
+            'variations': [{
+                '_operation': 'insert',
+                'engines_managers': [{'id': 2}]
+            }]
+        }]
+        obj = json.loads(client.post('/placements/', headers=headers, body=json.dumps(body)).body)[0]
+        resp = client.get('/placements/{}/recommendations?filter_string_exclusive=test,test2'.format(obj['small_hash']), headers=headers)
+        assert resp.status_code == 200
+        assert resp.body == json.dumps([{'sku': 'test3', 'item_id': 3}])
+
+    def test_get_recommendations_by_integer_inclusive(self, client, app, headers, top_seller_data_importer, filters_updater_client):
+        items_model = app.models['products'].__models__[1]
+        products = [{
+            'item_id': 1,
+            'sku': 'test1',
+            'filter_integer': 1
+        },{
+            'item_id': 2,
+            'sku': 'test2',
+            'filter_integer': 2
+        },{
+            'item_id': 3,
+            'sku': 'test3'
+        }]
+        client.post('/products_new/?store_id=1', headers=headers, body=json.dumps(products))
+
+        filters_updater_client.post('/products_new/update_filters?store_id=1', headers=headers)
+        while True:
+            resp = filters_updater_client.get(
+                '/products_new/update_filters?store_id=1&hash=6342e10bd7dca3240c698aa79c98362e',
+                headers=headers)
+            if json.loads(resp.body)['status'] != 'running':
+                break
+
+        filters_updater_client.post('/engines/4/export_objects?import_data=true', headers=headers)
+        while True:
+            resp = filters_updater_client.get(
+                '/engines/1/export_objects?hash=6342e10bd7dca3240c698aa79c98362e',
+                headers=headers)
+            if json.loads(resp.body)['status'] != 'running':
+                break
+
+        body = [{
+            'store_id': 1,
+            'name': 'Placement Test',
+            'variations': [{
+                '_operation': 'insert',
+                'engines_managers': [{'id': 2}]
+            }]
+        }]
+        obj = json.loads(client.post('/placements/', headers=headers, body=json.dumps(body)).body)[0]
+        resp = client.get('/placements/{}/recommendations?filter_integer_inclusive=1,2'.format(obj['small_hash']), headers=headers)
+        assert resp.status_code == 200
+        assert json.loads(resp.body) == [{'sku': 'test1', 'item_id': 1, 'filter_integer': 1},
+            {'sku': 'test2', 'item_id': 2, 'filter_integer': 2}]
+
+    def test_get_recommendations_by_integer_exclusive(self, client, app, headers, top_seller_data_importer, filters_updater_client):
+        items_model = app.models['products'].__models__[1]
+        products = [{
+            'item_id': 1,
+            'sku': 'test1',
+            'filter_integer': 1
+        },{
+            'item_id': 2,
+            'sku': 'test2',
+            'filter_integer': 2
+        },{
+            'item_id': 3,
+            'sku': 'test3'
+        }]
+        client.post('/products_new/?store_id=1', headers=headers, body=json.dumps(products))
+
+        filters_updater_client.post('/products_new/update_filters?store_id=1', headers=headers)
+        while True:
+            resp = filters_updater_client.get(
+                '/products_new/update_filters?store_id=1&hash=6342e10bd7dca3240c698aa79c98362e',
+                headers=headers)
+            if json.loads(resp.body)['status'] != 'running':
+                break
+
+        filters_updater_client.post('/engines/4/export_objects?import_data=true', headers=headers)
+        while True:
+            resp = filters_updater_client.get(
+                '/engines/1/export_objects?hash=6342e10bd7dca3240c698aa79c98362e',
+                headers=headers)
+            if json.loads(resp.body)['status'] != 'running':
+                break
+
+        body = [{
+            'store_id': 1,
+            'name': 'Placement Test',
+            'variations': [{
+                '_operation': 'insert',
+                'engines_managers': [{'id': 2}]
+            }]
+        }]
+        obj = json.loads(client.post('/placements/', headers=headers, body=json.dumps(body)).body)[0]
+        resp = client.get('/placements/{}/recommendations?filter_integer_exclusive=1,2'.format(obj['small_hash']), headers=headers)
+        assert resp.status_code == 200
+        assert json.loads(resp.body) == [{'sku': 'test3', 'item_id': 3}]
+
+    def test_get_recommendations_by_boolean_inclusive(self, client, app, headers, top_seller_data_importer, filters_updater_client):
+        items_model = app.models['products'].__models__[1]
+        products = [{
+            'item_id': 1,
+            'sku': 'test1',
+            'filter_boolean': True
+        },{
+            'item_id': 2,
+            'sku': 'test2',
+            'filter_boolean': True
+        },{
+            'item_id': 3,
+            'sku': 'test3'
+        }]
+        client.post('/products_new/?store_id=1', headers=headers, body=json.dumps(products))
+
+        filters_updater_client.post('/products_new/update_filters?store_id=1', headers=headers)
+        while True:
+            resp = filters_updater_client.get(
+                '/products_new/update_filters?store_id=1&hash=6342e10bd7dca3240c698aa79c98362e',
+                headers=headers)
+            if json.loads(resp.body)['status'] != 'running':
+                break
+
+        filters_updater_client.post('/engines/4/export_objects?import_data=true', headers=headers)
+        while True:
+            resp = filters_updater_client.get(
+                '/engines/1/export_objects?hash=6342e10bd7dca3240c698aa79c98362e',
+                headers=headers)
+            if json.loads(resp.body)['status'] != 'running':
+                break
+
+        body = [{
+            'store_id': 1,
+            'name': 'Placement Test',
+            'variations': [{
+                '_operation': 'insert',
+                'engines_managers': [{'id': 2}]
+            }]
+        }]
+        obj = json.loads(client.post('/placements/', headers=headers, body=json.dumps(body)).body)[0]
+        resp = client.get('/placements/{}/recommendations?filter_boolean_inclusive=null,1'.format(obj['small_hash']), headers=headers)
+        assert resp.status_code == 200
+        assert json.loads(resp.body) == [{'sku': 'test1', 'item_id': 1, 'filter_boolean': True},
+            {'sku': 'test2', 'item_id': 2, 'filter_boolean': True}]
+
+    def test_get_recommendations_by_boolean_exclusive(self, client, app, headers, top_seller_data_importer, filters_updater_client):
+        items_model = app.models['products'].__models__[1]
+        products = [{
+            'item_id': 1,
+            'sku': 'test1',
+            'filter_boolean': True
+        },{
+            'item_id': 2,
+            'sku': 'test2',
+            'filter_boolean': True
+        },{
+            'item_id': 3,
+            'sku': 'test3'
+        }]
+        client.post('/products_new/?store_id=1', headers=headers, body=json.dumps(products))
+
+        filters_updater_client.post('/products_new/update_filters?store_id=1', headers=headers)
+        while True:
+            resp = filters_updater_client.get(
+                '/products_new/update_filters?store_id=1&hash=6342e10bd7dca3240c698aa79c98362e',
+                headers=headers)
+            if json.loads(resp.body)['status'] != 'running':
+                break
+
+        filters_updater_client.post('/engines/4/export_objects?import_data=true', headers=headers)
+        while True:
+            resp = filters_updater_client.get(
+                '/engines/1/export_objects?hash=6342e10bd7dca3240c698aa79c98362e',
+                headers=headers)
+            if json.loads(resp.body)['status'] != 'running':
+                break
+
+        body = [{
+            'store_id': 1,
+            'name': 'Placement Test',
+            'variations': [{
+                '_operation': 'insert',
+                'engines_managers': [{'id': 2}]
+            }]
+        }]
+        obj = json.loads(client.post('/placements/', headers=headers, body=json.dumps(body)).body)[0]
+        resp = client.get('/placements/{}/recommendations?filter_boolean_exclusive=null:1'.format(obj['small_hash']), headers=headers)
+        assert resp.status_code == 200
+        assert json.loads(resp.body) == [{'sku': 'test3', 'item_id': 3}]
+
+    def test_get_recommendations_by_array_inclusive(self, client, app, headers, top_seller_data_importer, filters_updater_client):
+        items_model = app.models['products'].__models__[1]
+        products = [{
+            'item_id': 1,
+            'sku': 'test1',
+            'filter_array': ['t1', 't2']
+        },{
+            'item_id': 2,
+            'sku': 'test2',
+            'filter_array': ['t2', 't3']
+        },{
+            'item_id': 3,
+            'sku': 'test3'
+        }]
+        client.post('/products_new/?store_id=1', headers=headers, body=json.dumps(products))
+
+        filters_updater_client.post('/products_new/update_filters?store_id=1', headers=headers)
+        while True:
+            resp = filters_updater_client.get(
+                '/products_new/update_filters?store_id=1&hash=6342e10bd7dca3240c698aa79c98362e',
+                headers=headers)
+            if json.loads(resp.body)['status'] != 'running':
+                break
+
+        filters_updater_client.post('/engines/4/export_objects?import_data=true', headers=headers)
+        while True:
+            resp = filters_updater_client.get(
+                '/engines/1/export_objects?hash=6342e10bd7dca3240c698aa79c98362e',
+                headers=headers)
+            if json.loads(resp.body)['status'] != 'running':
+                break
+
+        body = [{
+            'store_id': 1,
+            'name': 'Placement Test',
+            'variations': [{
+                '_operation': 'insert',
+                'engines_managers': [{'id': 2}]
+            }]
+        }]
+        obj = json.loads(client.post('/placements/', headers=headers, body=json.dumps(body)).body)[0]
+        resp = client.get('/placements/{}/recommendations?filter_array_inclusive=t2,t3'.format(obj['small_hash']), headers=headers)
+        assert resp.status_code == 200
+        assert json.loads(resp.body) == [{'sku': 'test1', 'item_id': 1, 'filter_array': ['t1', 't2']},
+            {'sku': 'test2', 'item_id': 2, 'filter_array': ['t2', 't3']}]
+
+    def test_get_recommendations_by_array_exclusive(self, client, app, headers, top_seller_data_importer, filters_updater_client):
+        items_model = app.models['products'].__models__[1]
+        products = [{
+            'item_id': 1,
+            'sku': 'test1',
+            'filter_array': ['t1', 't2']
+        },{
+            'item_id': 2,
+            'sku': 'test2',
+            'filter_array': ['t2', 't3']
+        },{
+            'item_id': 3,
+            'sku': 'test3'
+        }]
+        client.post('/products_new/?store_id=1', headers=headers, body=json.dumps(products))
+
+        filters_updater_client.post('/products_new/update_filters?store_id=1', headers=headers)
+        while True:
+            resp = filters_updater_client.get(
+                '/products_new/update_filters?store_id=1&hash=6342e10bd7dca3240c698aa79c98362e',
+                headers=headers)
+            if json.loads(resp.body)['status'] != 'running':
+                break
+
+        filters_updater_client.post('/engines/4/export_objects?import_data=true', headers=headers)
+        while True:
+            resp = filters_updater_client.get(
+                '/engines/1/export_objects?hash=6342e10bd7dca3240c698aa79c98362e',
+                headers=headers)
+            if json.loads(resp.body)['status'] != 'running':
+                break
+
+        body = [{
+            'store_id': 1,
+            'name': 'Placement Test',
+            'variations': [{
+                '_operation': 'insert',
+                'engines_managers': [{'id': 2}]
+            }]
+        }]
+        obj = json.loads(client.post('/placements/', headers=headers, body=json.dumps(body)).body)[0]
+        resp = client.get('/placements/{}/recommendations?filter_array_exclusive=t2,t3'.format(obj['small_hash']), headers=headers)
+        assert resp.status_code == 200
+        assert json.loads(resp.body) == [{'sku': 'test3', 'item_id': 3}]
+
+    def test_get_recommendations_by_object_inclusive(self, client, app, headers, top_seller_data_importer, filters_updater_client):
+        items_model = app.models['products'].__models__[1]
+        products = [{
+            'item_id': 1,
+            'sku': 'test1',
+            'filter_object': {'id': 1}
+        },{
+            'item_id': 2,
+            'sku': 'test2',
+            'filter_object': {'id': 2}
+        },{
+            'item_id': 3,
+            'sku': 'test3'
+        }]
+        client.post('/products_new/?store_id=1', headers=headers, body=json.dumps(products))
+
+        filters_updater_client.post('/products_new/update_filters?store_id=1', headers=headers)
+        while True:
+            resp = filters_updater_client.get(
+                '/products_new/update_filters?store_id=1&hash=6342e10bd7dca3240c698aa79c98362e',
+                headers=headers)
+            if json.loads(resp.body)['status'] != 'running':
+                break
+
+        filters_updater_client.post('/engines/4/export_objects?import_data=true', headers=headers)
+        while True:
+            resp = filters_updater_client.get(
+                '/engines/1/export_objects?hash=6342e10bd7dca3240c698aa79c98362e',
+                headers=headers)
+            if json.loads(resp.body)['status'] != 'running':
+                break
+
+        body = [{
+            'store_id': 1,
+            'name': 'Placement Test',
+            'variations': [{
+                '_operation': 'insert',
+                'engines_managers': [{'id': 2}]
+            }]
+        }]
+        obj = json.loads(client.post('/placements/', headers=headers, body=json.dumps(body)).body)[0]
+        resp = client.get('/placements/{}/recommendations?filter_object_inclusive=id:1,id:2'.format(obj['small_hash']), headers=headers)
+        assert resp.status_code == 200
+        assert json.loads(resp.body) == [{'sku': 'test1', 'item_id': 1, 'filter_object': {'id': 1}},
+            {'sku': 'test2', 'item_id': 2, 'filter_object': {'id': 2}}]
+
+    def test_get_recommendations_by_object_exclusive(self, client, app, headers, top_seller_data_importer, filters_updater_client):
+        items_model = app.models['products'].__models__[1]
+        products = [{
+            'item_id': 1,
+            'sku': 'test1',
+            'filter_object': {'id': 1}
+        },{
+            'item_id': 2,
+            'sku': 'test2',
+            'filter_object': {'id': 2}
+        },{
+            'item_id': 3,
+            'sku': 'test3'
+        }]
+        client.post('/products_new/?store_id=1', headers=headers, body=json.dumps(products))
+
+        filters_updater_client.post('/products_new/update_filters?store_id=1', headers=headers)
+        while True:
+            resp = filters_updater_client.get(
+                '/products_new/update_filters?store_id=1&hash=6342e10bd7dca3240c698aa79c98362e',
+                headers=headers)
+            if json.loads(resp.body)['status'] != 'running':
+                break
+
+        filters_updater_client.post('/engines/4/export_objects?import_data=true', headers=headers)
+        while True:
+            resp = filters_updater_client.get(
+                '/engines/1/export_objects?hash=6342e10bd7dca3240c698aa79c98362e',
+                headers=headers)
+            if json.loads(resp.body)['status'] != 'running':
+                break
+
+        body = [{
+            'store_id': 1,
+            'name': 'Placement Test',
+            'variations': [{
+                '_operation': 'insert',
+                'engines_managers': [{'id': 2}]
+            }]
+        }]
+        obj = json.loads(client.post('/placements/', headers=headers, body=json.dumps(body)).body)[0]
+        resp = client.get('/placements/{}/recommendations?filter_object_exclusive=id:1,id:2'.format(obj['small_hash']), headers=headers)
+        assert resp.status_code == 200
+        assert json.loads(resp.body) == [{'sku': 'test3', 'item_id': 3}]
+
+
+@mock.patch('falconswagger.models.base.random.getrandbits',
+    new=mock.MagicMock(return_value=131940827655846590526331314439483569710))
+class TestPlacementsGetRecomendationsFiltersOf(object):
+
+    def test_get_recommendations_of_string_inclusive(self, client, app, headers, top_seller_data_importer, filters_updater_client, redis):
+        items_model = app.models['products'].__models__[1]
+        products = [{
+            'item_id': 1,
+            'sku': 'test1',
+            'filter_string': 'test1'
+        },{
+            'item_id': 2,
+            'sku': 'test2',
+            'filter_string': 'test2'
+        },{
+            'item_id': 3,
+            'sku': 'test3'
+        }]
+        client.post('/products_new/?store_id=1', headers=headers, body=json.dumps(products))
+
+        filters_updater_client.post('/products_new/update_filters?store_id=1', headers=headers)
+        while True:
+            resp = filters_updater_client.get(
+                '/products_new/update_filters?store_id=1&hash=6342e10bd7dca3240c698aa79c98362e',
+                headers=headers)
+            if json.loads(resp.body)['status'] != 'running':
+                break
+
+        filters_updater_client.post('/engines/4/export_objects?import_data=true', headers=headers)
+        while True:
+            resp = filters_updater_client.get(
+                '/engines/1/export_objects?hash=6342e10bd7dca3240c698aa79c98362e',
+                headers=headers)
+            if json.loads(resp.body)['status'] != 'running':
+                break
+
+        body = [{
+            'store_id': 1,
+            'name': 'Placement Test',
+            'variations': [{
+                '_operation': 'insert',
+                'engines_managers': [{'id': 2}]
+            }]
+        }]
+        obj = json.loads(client.post('/placements/', headers=headers, body=json.dumps(body)).body)[0]
+        resp = client.get('/placements/{}/recommendations?filter_string_inclusive_of=item_id:1|sku:test1,item_id:2|sku:test2'.format(obj['small_hash']), headers=headers)
+        assert resp.status_code == 200
+        assert json.loads(resp.body) == [{'sku': 'test1', 'item_id': 1, 'filter_string': 'test1'},
+            {'sku': 'test2', 'item_id': 2, 'filter_string': 'test2'}]
+
+    def test_get_recommendations_of_string_exclusive(self, client, app, headers, top_seller_data_importer, filters_updater_client, redis):
+        items_model = app.models['products'].__models__[1]
+        products = [{
+            'item_id': 1,
+            'sku': 'test1',
+            'filter_string': 'test1'
+        },{
+            'item_id': 2,
+            'sku': 'test2',
+            'filter_string': 'test2'
+        },{
+            'item_id': 3,
+            'sku': 'test3'
+        }]
+        client.post('/products_new/?store_id=1', headers=headers, body=json.dumps(products))
+
+        filters_updater_client.post('/products_new/update_filters?store_id=1', headers=headers)
+        while True:
+            resp = filters_updater_client.get(
+                '/products_new/update_filters?store_id=1&hash=6342e10bd7dca3240c698aa79c98362e',
+                headers=headers)
+            if json.loads(resp.body)['status'] != 'running':
+                break
+
+        filters_updater_client.post('/engines/4/export_objects?import_data=true', headers=headers)
+        while True:
+            resp = filters_updater_client.get(
+                '/engines/1/export_objects?hash=6342e10bd7dca3240c698aa79c98362e',
+                headers=headers)
+            if json.loads(resp.body)['status'] != 'running':
+                break
+
+        body = [{
+            'store_id': 1,
+            'name': 'Placement Test',
+            'variations': [{
+                '_operation': 'insert',
+                'engines_managers': [{'id': 2}]
+            }]
+        }]
+        obj = json.loads(client.post('/placements/', headers=headers, body=json.dumps(body)).body)[0]
+        resp = client.get('/placements/{}/recommendations?filter_string_exclusive_of=item_id:1|sku:test1,item_id:2|sku:test2'.format(obj['small_hash']), headers=headers)
+        assert resp.status_code == 200
+        assert json.loads(resp.body) == [{'sku': 'test3', 'item_id': 3}]
+
+    def test_get_recommendations_of_integer_inclusive(self, client, app, headers, top_seller_data_importer, filters_updater_client, redis):
+        items_model = app.models['products'].__models__[1]
+        products = [{
+            'item_id': 1,
+            'sku': 'test1',
+            'filter_integer': 1
+        },{
+            'item_id': 2,
+            'sku': 'test2',
+            'filter_integer': 2
+        },{
+            'item_id': 3,
+            'sku': 'test3'
+        }]
+        client.post('/products_new/?store_id=1', headers=headers, body=json.dumps(products))
+
+        filters_updater_client.post('/products_new/update_filters?store_id=1', headers=headers)
+        while True:
+            resp = filters_updater_client.get(
+                '/products_new/update_filters?store_id=1&hash=6342e10bd7dca3240c698aa79c98362e',
+                headers=headers)
+            if json.loads(resp.body)['status'] != 'running':
+                break
+
+        filters_updater_client.post('/engines/4/export_objects?import_data=true', headers=headers)
+        while True:
+            resp = filters_updater_client.get(
+                '/engines/1/export_objects?hash=6342e10bd7dca3240c698aa79c98362e',
+                headers=headers)
+            if json.loads(resp.body)['status'] != 'running':
+                break
+
+        body = [{
+            'store_id': 1,
+            'name': 'Placement Test',
+            'variations': [{
+                '_operation': 'insert',
+                'engines_managers': [{'id': 2}]
+            }]
+        }]
+        obj = json.loads(client.post('/placements/', headers=headers, body=json.dumps(body)).body)[0]
+        resp = client.get('/placements/{}/recommendations?filter_integer_inclusive_of=item_id:1|sku:test1,item_id:2|sku:test2'.format(obj['small_hash']), headers=headers)
+        assert resp.status_code == 200
+        assert json.loads(resp.body) == [{'sku': 'test1', 'item_id': 1, 'filter_integer': 1},
+            {'sku': 'test2', 'item_id': 2, 'filter_integer': 2}]
+
+    def test_get_recommendations_of_integer_exclusive(self, client, app, headers, top_seller_data_importer, filters_updater_client, redis):
+        items_model = app.models['products'].__models__[1]
+        products = [{
+            'item_id': 1,
+            'sku': 'test1',
+            'filter_integer': 1
+        },{
+            'item_id': 2,
+            'sku': 'test2',
+            'filter_integer': 2
+        },{
+            'item_id': 3,
+            'sku': 'test3'
+        }]
+        client.post('/products_new/?store_id=1', headers=headers, body=json.dumps(products))
+
+        filters_updater_client.post('/products_new/update_filters?store_id=1', headers=headers)
+        while True:
+            resp = filters_updater_client.get(
+                '/products_new/update_filters?store_id=1&hash=6342e10bd7dca3240c698aa79c98362e',
+                headers=headers)
+            if json.loads(resp.body)['status'] != 'running':
+                break
+
+        filters_updater_client.post('/engines/4/export_objects?import_data=true', headers=headers)
+        while True:
+            resp = filters_updater_client.get(
+                '/engines/1/export_objects?hash=6342e10bd7dca3240c698aa79c98362e',
+                headers=headers)
+            if json.loads(resp.body)['status'] != 'running':
+                break
+
+        body = [{
+            'store_id': 1,
+            'name': 'Placement Test',
+            'variations': [{
+                '_operation': 'insert',
+                'engines_managers': [{'id': 2}]
+            }]
+        }]
+        obj = json.loads(client.post('/placements/', headers=headers, body=json.dumps(body)).body)[0]
+        resp = client.get('/placements/{}/recommendations?filter_integer_exclusive_of=item_id:1|sku:test1,item_id:2|sku:test2'.format(obj['small_hash']), headers=headers)
+        assert resp.status_code == 200
+        assert json.loads(resp.body) == [{'sku': 'test3', 'item_id': 3}]
+
+    def test_get_recommendations_of_boolean_inclusive(self, client, app, headers, top_seller_data_importer, filters_updater_client, redis):
+        items_model = app.models['products'].__models__[1]
+        products = [{
+            'item_id': 1,
+            'sku': 'test1',
+            'filter_boolean': True
+        },{
+            'item_id': 2,
+            'sku': 'test2',
+            'filter_boolean': True
+        },{
+            'item_id': 3,
+            'sku': 'test3'
+        }]
+        client.post('/products_new/?store_id=1', headers=headers, body=json.dumps(products))
+
+        filters_updater_client.post('/products_new/update_filters?store_id=1', headers=headers)
+        while True:
+            resp = filters_updater_client.get(
+                '/products_new/update_filters?store_id=1&hash=6342e10bd7dca3240c698aa79c98362e',
+                headers=headers)
+            if json.loads(resp.body)['status'] != 'running':
+                break
+
+        filters_updater_client.post('/engines/4/export_objects?import_data=true', headers=headers)
+        while True:
+            resp = filters_updater_client.get(
+                '/engines/1/export_objects?hash=6342e10bd7dca3240c698aa79c98362e',
+                headers=headers)
+            if json.loads(resp.body)['status'] != 'running':
+                break
+
+        body = [{
+            'store_id': 1,
+            'name': 'Placement Test',
+            'variations': [{
+                '_operation': 'insert',
+                'engines_managers': [{'id': 2}]
+            }]
+        }]
+        obj = json.loads(client.post('/placements/', headers=headers, body=json.dumps(body)).body)[0]
+        resp = client.get('/placements/{}/recommendations?filter_boolean_inclusive_of=item_id:1|sku:test1,item_id:2|sku:test2'.format(obj['small_hash']), headers=headers)
+        assert resp.status_code == 200
+        assert json.loads(resp.body) == [{'sku': 'test1', 'item_id': 1, 'filter_boolean': True},
+            {'sku': 'test2', 'item_id': 2, 'filter_boolean': True}]
+
+    def test_get_recommendations_of_boolean_inclusive_with_false(self, client, app, headers, top_seller_data_importer, filters_updater_client, redis):
+        items_model = app.models['products'].__models__[1]
+        products = [{
+            'item_id': 1,
+            'sku': 'test1',
+            'filter_boolean': True
+        },{
+            'item_id': 2,
+            'sku': 'test2',
+            'filter_boolean': True
+        },{
+            'item_id': 3,
+            'sku': 'test3',
+            'filter_boolean': False
+        }]
+        client.post('/products_new/?store_id=1', headers=headers, body=json.dumps(products))
+
+        filters_updater_client.post('/products_new/update_filters?store_id=1', headers=headers)
+        while True:
+            resp = filters_updater_client.get(
+                '/products_new/update_filters?store_id=1&hash=6342e10bd7dca3240c698aa79c98362e',
+                headers=headers)
+            if json.loads(resp.body)['status'] != 'running':
+                break
+
+        filters_updater_client.post('/engines/4/export_objects?import_data=true', headers=headers)
+        while True:
+            resp = filters_updater_client.get(
+                '/engines/1/export_objects?hash=6342e10bd7dca3240c698aa79c98362e',
+                headers=headers)
+            if json.loads(resp.body)['status'] != 'running':
+                break
+
+        body = [{
+            'store_id': 1,
+            'name': 'Placement Test',
+            'variations': [{
+                '_operation': 'insert',
+                'engines_managers': [{'id': 2}]
+            }]
+        }]
+        obj = json.loads(client.post('/placements/', headers=headers, body=json.dumps(body)).body)[0]
+        resp = client.get('/placements/{}/recommendations?filter_boolean_inclusive_of=item_id:1|sku:test1,item_id:2|sku:test2'.format(obj['small_hash']), headers=headers)
+        assert resp.status_code == 200
+        assert json.loads(resp.body) == [{'sku': 'test1', 'item_id': 1, 'filter_boolean': True},
+            {'sku': 'test2', 'item_id': 2, 'filter_boolean': True}]
+
+    def test_get_recommendations_of_boolean_exclusive(self, client, app, headers, top_seller_data_importer, filters_updater_client, redis):
+        items_model = app.models['products'].__models__[1]
+        products = [{
+            'item_id': 1,
+            'sku': 'test1',
+            'filter_boolean': True
+        },{
+            'item_id': 2,
+            'sku': 'test2',
+            'filter_boolean': True
+        },{
+            'item_id': 3,
+            'sku': 'test3'
+        }]
+        client.post('/products_new/?store_id=1', headers=headers, body=json.dumps(products))
+
+        filters_updater_client.post('/products_new/update_filters?store_id=1', headers=headers)
+        while True:
+            resp = filters_updater_client.get(
+                '/products_new/update_filters?store_id=1&hash=6342e10bd7dca3240c698aa79c98362e',
+                headers=headers)
+            if json.loads(resp.body)['status'] != 'running':
+                break
+
+        filters_updater_client.post('/engines/4/export_objects?import_data=true', headers=headers)
+        while True:
+            resp = filters_updater_client.get(
+                '/engines/1/export_objects?hash=6342e10bd7dca3240c698aa79c98362e',
+                headers=headers)
+            if json.loads(resp.body)['status'] != 'running':
+                break
+
+        body = [{
+            'store_id': 1,
+            'name': 'Placement Test',
+            'variations': [{
+                '_operation': 'insert',
+                'engines_managers': [{'id': 2}]
+            }]
+        }]
+        obj = json.loads(client.post('/placements/', headers=headers, body=json.dumps(body)).body)[0]
+        resp = client.get('/placements/{}/recommendations?filter_boolean_exclusive_of=item_id:1|sku:test1,item_id:2|sku:test2'.format(obj['small_hash']), headers=headers)
+        assert resp.status_code == 200
+        assert json.loads(resp.body) == [{'sku': 'test3', 'item_id': 3}]
+
+    def test_get_recommendations_of_array_inclusive(self, client, app, headers, top_seller_data_importer, filters_updater_client, redis):
+        items_model = app.models['products'].__models__[1]
+        products = [{
+            'item_id': 1,
+            'sku': 'test1',
+            'filter_array': ['t1', 't2']
+        },{
+            'item_id': 2,
+            'sku': 'test2',
+            'filter_array': ['t2', 't3']
+        },{
+            'item_id': 3,
+            'sku': 'test3'
+        }]
+        client.post('/products_new/?store_id=1', headers=headers, body=json.dumps(products))
+
+        filters_updater_client.post('/products_new/update_filters?store_id=1', headers=headers)
+        while True:
+            resp = filters_updater_client.get(
+                '/products_new/update_filters?store_id=1&hash=6342e10bd7dca3240c698aa79c98362e',
+                headers=headers)
+            if json.loads(resp.body)['status'] != 'running':
+                break
+
+        filters_updater_client.post('/engines/4/export_objects?import_data=true', headers=headers)
+        while True:
+            resp = filters_updater_client.get(
+                '/engines/1/export_objects?hash=6342e10bd7dca3240c698aa79c98362e',
+                headers=headers)
+            if json.loads(resp.body)['status'] != 'running':
+                break
+
+        body = [{
+            'store_id': 1,
+            'name': 'Placement Test',
+            'variations': [{
+                '_operation': 'insert',
+                'engines_managers': [{'id': 2}]
+            }]
+        }]
+        obj = json.loads(client.post('/placements/', headers=headers, body=json.dumps(body)).body)[0]
+        resp = client.get('/placements/{}/recommendations?filter_array_inclusive_of=item_id:1|sku:test1,item_id:2|sku:test2'.format(obj['small_hash']), headers=headers)
+        assert resp.status_code == 200
+        assert json.loads(resp.body) == [{'sku': 'test1', 'item_id': 1, 'filter_array': ['t1', 't2']},
+            {'sku': 'test2', 'item_id': 2, 'filter_array': ['t2', 't3']}]
+
+    def test_get_recommendations_of_array_exclusive(self, client, app, headers, top_seller_data_importer, filters_updater_client, redis):
+        items_model = app.models['products'].__models__[1]
+        products = [{
+            'item_id': 1,
+            'sku': 'test1',
+            'filter_array': ['t1', 't2']
+        },{
+            'item_id': 2,
+            'sku': 'test2',
+            'filter_array': ['t2', 't3']
+        },{
+            'item_id': 3,
+            'sku': 'test3'
+        }]
+        client.post('/products_new/?store_id=1', headers=headers, body=json.dumps(products))
+
+        filters_updater_client.post('/products_new/update_filters?store_id=1', headers=headers)
+        while True:
+            resp = filters_updater_client.get(
+                '/products_new/update_filters?store_id=1&hash=6342e10bd7dca3240c698aa79c98362e',
+                headers=headers)
+            if json.loads(resp.body)['status'] != 'running':
+                break
+
+        filters_updater_client.post('/engines/4/export_objects?import_data=true', headers=headers)
+        while True:
+            resp = filters_updater_client.get(
+                '/engines/1/export_objects?hash=6342e10bd7dca3240c698aa79c98362e',
+                headers=headers)
+            if json.loads(resp.body)['status'] != 'running':
+                break
+
+        body = [{
+            'store_id': 1,
+            'name': 'Placement Test',
+            'variations': [{
+                '_operation': 'insert',
+                'engines_managers': [{'id': 2}]
+            }]
+        }]
+        obj = json.loads(client.post('/placements/', headers=headers, body=json.dumps(body)).body)[0]
+        resp = client.get('/placements/{}/recommendations?filter_array_exclusive_of=item_id:1|sku:test1,item_id:2|sku:test2'.format(obj['small_hash']), headers=headers)
+        assert resp.status_code == 200
+        assert json.loads(resp.body) == [{'sku': 'test3', 'item_id': 3}]
+
+    def test_get_recommendations_of_object_inclusive(self, client, app, headers, top_seller_data_importer, filters_updater_client, redis):
+        items_model = app.models['products'].__models__[1]
+        products = [{
+            'item_id': 1,
+            'sku': 'test1',
+            'filter_object': {'id': 1}
+        },{
+            'item_id': 2,
+            'sku': 'test2',
+            'filter_object': {'id': 2}
+        },{
+            'item_id': 3,
+            'sku': 'test3'
+        }]
+        client.post('/products_new/?store_id=1', headers=headers, body=json.dumps(products))
+
+        filters_updater_client.post('/products_new/update_filters?store_id=1', headers=headers)
+        while True:
+            resp = filters_updater_client.get(
+                '/products_new/update_filters?store_id=1&hash=6342e10bd7dca3240c698aa79c98362e',
+                headers=headers)
+            if json.loads(resp.body)['status'] != 'running':
+                break
+
+        filters_updater_client.post('/engines/4/export_objects?import_data=true', headers=headers)
+        while True:
+            resp = filters_updater_client.get(
+                '/engines/1/export_objects?hash=6342e10bd7dca3240c698aa79c98362e',
+                headers=headers)
+            if json.loads(resp.body)['status'] != 'running':
+                break
+
+        body = [{
+            'store_id': 1,
+            'name': 'Placement Test',
+            'variations': [{
+                '_operation': 'insert',
+                'engines_managers': [{'id': 2}]
+            }]
+        }]
+        obj = json.loads(client.post('/placements/', headers=headers, body=json.dumps(body)).body)[0]
+        resp = client.get('/placements/{}/recommendations?filter_object_inclusive_of=item_id:1|sku:test1,item_id:2|sku:test2'.format(obj['small_hash']), headers=headers)
+        assert resp.status_code == 200
+        assert json.loads(resp.body) == [{'sku': 'test1', 'item_id': 1, 'filter_object': {'id': 1}},
+            {'sku': 'test2', 'item_id': 2, 'filter_object': {'id': 2}}]
+
+    def test_get_recommendations_of_object_exclusive(self, client, app, headers, top_seller_data_importer, filters_updater_client, redis):
+        items_model = app.models['products'].__models__[1]
+        products = [{
+            'item_id': 1,
+            'sku': 'test1',
+            'filter_object': {'id': 1}
+        },{
+            'item_id': 2,
+            'sku': 'test2',
+            'filter_object': {'id': 2}
+        },{
+            'item_id': 3,
+            'sku': 'test3'
+        }]
+        client.post('/products_new/?store_id=1', headers=headers, body=json.dumps(products))
+
+        filters_updater_client.post('/products_new/update_filters?store_id=1', headers=headers)
+        while True:
+            resp = filters_updater_client.get(
+                '/products_new/update_filters?store_id=1&hash=6342e10bd7dca3240c698aa79c98362e',
+                headers=headers)
+            if json.loads(resp.body)['status'] != 'running':
+                break
+
+        filters_updater_client.post('/engines/4/export_objects?import_data=true', headers=headers)
+        while True:
+            resp = filters_updater_client.get(
+                '/engines/1/export_objects?hash=6342e10bd7dca3240c698aa79c98362e',
+                headers=headers)
+            if json.loads(resp.body)['status'] != 'running':
+                break
+
+        body = [{
+            'store_id': 1,
+            'name': 'Placement Test',
+            'variations': [{
+                '_operation': 'insert',
+                'engines_managers': [{'id': 2}]
+            }]
+        }]
+        obj = json.loads(client.post('/placements/', headers=headers, body=json.dumps(body)).body)[0]
+        resp = client.get('/placements/{}/recommendations?filter_object_exclusive_of=item_id:1|sku:test1,item_id:2|sku:test2'.format(obj['small_hash']), headers=headers)
+        assert resp.status_code == 200
+        assert json.loads(resp.body) == [{'sku': 'test3', 'item_id': 3}]

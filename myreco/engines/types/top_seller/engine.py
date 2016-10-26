@@ -24,26 +24,33 @@
 from myreco.engines.types.base import EngineType, EngineError
 from myreco.engines.types.utils import build_csv_readers, build_data_path
 from falconswagger.models.base import get_model_schema
+from falconswagger.json_builder import JsonBuilder
 from concurrent.futures import ThreadPoolExecutor
 import numpy as np
 import os.path
 import zlib
 
 
+def build_data_pattern(configuration):
+    return 'days_interval_{}'.format(configuration['days_interval'])
+
+
 class TopSellerEngine(EngineType):
     __configuration_schema__ = get_model_schema(__file__)
 
     def export_objects(self, session, items_indices_map):
-        readers = build_csv_readers(build_data_path(self.engine))
+        pattern = build_data_pattern(self.engine['configuration'])
+        readers = build_csv_readers(build_data_path(self.engine), pattern)
         top_seller_vector = self._build_top_seller_vector(readers, items_indices_map, session)
         redis_key = self._build_redis_key()
         session.redis_bind.set(redis_key, zlib.compress(top_seller_vector.tobytes()))
+
         result = sorted(enumerate(top_seller_vector), key=(lambda x: (x[1], x[0])), reverse=True)
         indices_items_map = items_indices_map.get_indices_items_map(session)
         return [{self._format_output(indices_items_map, r): int(r[1])} for r in result]
 
     def _format_output(self, indices_items_map, r):
-        return ' | '.join(eval(indices_items_map[r[0]]))
+        return ' | '.join([str(i) for i in eval(indices_items_map[r[0]])])
 
     def _build_top_seller_vector(self, readers, items_indices_map, session):
         error_message = "No data found for engine '{}'".format(self.engine['name'])
@@ -74,9 +81,20 @@ class TopSellerEngine(EngineType):
 
         for line in reader:
             value = line.pop('value')
+            for k in line:
+                schema = self.engine['item_type']['schema']['properties'].get(k)
+                if schema is None:
+                    raise EngineError('Invalid Line {}'.format(line))
+
+                line[k] = JsonBuilder(line[k], schema)
             index = items_indices_map.get(line)
             if index is not None:
                 indices_values_map[int(index)] = int(value)
 
     def _build_redis_key(self):
         return '{}_{}'.format(self.engine['type_name']['name'], self.engine['id'])
+
+    def _build_rec_vector(self, session, **variables):
+        rec_vector = session.redis_bind.get(self._build_redis_key())
+        if rec_vector:
+            return np.fromstring(zlib.decompress(rec_vector), dtype=np.int32)

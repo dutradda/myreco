@@ -412,7 +412,7 @@ class ItemsCollectionsModelBaseMeta(RedisModelMeta):
 
     def _get_enabled_filters(cls, session, store_id):
         engines_managers_model = cls.__all_models__['engines_managers']
-        engines_managers = engines_managers_model.get(session, {'store_id': store_id})
+        engines_managers = engines_managers_model.get(session, **{'store_id': store_id})
         filters_variables = []
 
         # used to aggregate filters inclusive and exclusive with same property

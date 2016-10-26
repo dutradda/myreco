@@ -24,11 +24,11 @@
 class ItemsIndicesDict(dict):
 
     def __init__(self, items_indices_map, items_model):
-        self._items_model = items_model
+        self.items_model = items_model
         dict.__init__(self, items_indices_map)
 
     def get(self, keys, default=None):
-        key = self._items_model(keys).get_key().encode()
+        key = self.items_model(keys).get_key().encode()
         value = dict.get(self, key, default)
         if value is not default:
             return int(value.decode())

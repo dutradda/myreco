@@ -28,11 +28,11 @@ import csv
 import gzip
 
 
-def build_csv_readers(path):
+def build_csv_readers(path, pattern=''):
     readers = []
-    for filename in glob(os.path.join(path, '*.gz')):
-        with gzip.open(filename) as csv_file:
-            readers.append(csv.DictReader(csv_file))
+    for filename in glob(os.path.join(path, '{}*.gz'.format(pattern))):
+        csv_file = gzip.open(filename, 'rt')
+        readers.append(csv.DictReader(csv_file))
     return readers
 
 

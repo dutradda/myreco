@@ -60,16 +60,6 @@ class FilterBaseBy(object):
     def _build_output_ids(self, item):
         return ' | '.join([str(i) for i in item.get_ids_values()])
 
-    def _build_items_ids(self, items_ids):
-        new_items_ids = []
-        for ids in items_ids:
-            item = self.items_model()
-            ids = self._list_cast(ids)
-            item.set_ids(ids)
-            new_items_ids.append(item)
-
-        return new_items_ids
-
     def _list_cast(self, obj):
         return obj if isinstance(obj, list) or isinstance(obj, tuple) else (obj,)
 
@@ -81,14 +71,15 @@ class BooleanFilterBy(FilterBaseBy):
         filter_ = self._build_empty_array(len(items))
 
         for item in items:
-            value = item[self.name]
-            filter_[item.index] = value
-            filter_ret[self._build_output_ids(item)] = value
+            value = item.get_(self.name)
+            if value is not None:
+                filter_[item.index] = value
+                filter_ret[self._build_output_ids(item)] = value
 
         session.redis_bind.set(self.key, self._pack_filter(filter_))
         return filter_ret
 
-    def filter(self, session, rec_vector, **kwargs):
+    def filter(self, session, rec_vector, *args, **kwargs):
         filter_ = session.redis_bind.get(self.key)
         if filter_ is not None:
             filter_ = self._unpack_filter(filter_, rec_vector.size)
@@ -122,18 +113,21 @@ class MultipleFilterBy(FilterBaseBy):
             filter_[np.array(items_indices, dtype=np.int32)] = True
             set_data[filter_id] = self._pack_filter(filter_)
 
-        session.redis_bind.hmset(self.key, set_data)
+        if set_data:
+            session.redis_bind.hmset(self.key, set_data)
+
         return filter_ret
 
     def _update_filter(self, filter_map, filter_ret, value, item):
-        filter_map[value].append(item.index)
-        filter_ret[value].append(self._build_output_ids(item))
+        if value is not None:
+            filter_map[value].append(item.index)
+            filter_ret[value].append(self._build_output_ids(item))
 
 
 class SimpleFilterBy(MultipleFilterBy):
 
     def _update_filter(self, filter_map, filter_ret, item):
-        MultipleFilterBy._update_filter(self, filter_map, filter_ret, item[self.name], item)
+        MultipleFilterBy._update_filter(self, filter_map, filter_ret, item.get_(self.name), item)
 
 
 class ObjectFilterBy(MultipleFilterBy):
@@ -143,21 +137,29 @@ class ObjectFilterBy(MultipleFilterBy):
         MultipleFilterBy._update_filter(self, filter_map, filter_ret, value, item)
 
     def _get_id_from_property(self, item):
-        ids = [item[self.name][id_name] for id_name in self.id_names]
-        return repr(tuple([id_ for _, id_ in sorted(zip(self.id_names, ids), key=lambda x: x[0])]))
+        property_obj = item.get_(self.name)
+        if property_obj is not None:
+            ids = [property_obj[id_name] for id_name in self.id_names]
+            return repr(tuple([id_ for _, id_ in sorted(zip(self.id_names, ids), key=lambda x: x[0])]))
+
+    def filter(self, session, rec_vector, properties):
+        properties = self._list_cast(properties)
+        ids = [self._get_id_from_property(self.items_model({self.name: prop})) for prop in properties]
+        MultipleFilterBy.filter(self, session, rec_vector, ids)
 
 
 class ArrayFilterBy(SimpleFilterBy):
 
     def _update_filter(self, filter_map, filter_ret, item):
-        for value in item[self.name]:
+        property_list = item.get_(self.name, [])
+        for value in property_list:
             MultipleFilterBy._update_filter(self, filter_map, filter_ret, value, item)
 
 
 class SimpleFilterOf(SimpleFilterBy):
 
     def filter(self, session, rec_vector, items_ids):
-        items = self.items_model.get(session, self._build_items_ids(items_ids))
+        items = self.items_model.get(session, items_ids)
         filter_ids = [item[self.name] for item in items]
         SimpleFilterBy.filter(self, session, rec_vector, filter_ids)
 
@@ -165,15 +167,15 @@ class SimpleFilterOf(SimpleFilterBy):
 class ObjectFilterOf(ObjectFilterBy):
 
     def filter(self, session, rec_vector, items_ids):
-        items = self.items_model.get(session, self._build_items_ids(items_ids))
-        filter_ids = [self._get_id_from_property(item) for item in items]
+        items = self.items_model.get(session, items_ids)
+        filter_ids = [item.get(self.name) for item in items]
         ObjectFilterBy.filter(self, session, rec_vector, filter_ids)
 
 
 class ArrayFilterOf(ArrayFilterBy):
 
     def filter(self, session, rec_vector, items_ids):
-        items = self.items_model.get(session, self._build_items_ids(items_ids))
+        items = self.items_model.get(session, items_ids)
         filter_ids = []
         [filter_ids.extend(item[self.name]) for item in items]
         ArrayFilterBy.filter(self, session, rec_vector, filter_ids)

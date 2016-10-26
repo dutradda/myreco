@@ -82,7 +82,7 @@ class PlacementsModelRecommenderBase(PlacementsModelBase):
             items_model = cls._get_items_model(engine)
             engine_vars, filters = \
                 cls._get_variables_and_filters(engine_manager, items_model, input_variables)
-            engine_type = EngineTypeChooser(engine['type_name']['name'])(items_model=items_model)
+            engine_type = EngineTypeChooser(engine['type_name']['name'])(engine, items_model)
             max_recos = engine_manager['max_recos']
             eng_recos = engine_type.get_recommendations(session, filters, max_recos, **engine_vars)
             recommendations.extend(eng_recos)
@@ -114,10 +114,10 @@ class PlacementsModelRecommenderBase(PlacementsModelBase):
             var_engine_name = engine_var['inside_engine_name']
 
             if var_name in input_variables:
-                schema, schema_ids = cls._get_variable_schema(engine, engine_var)
+                schema, filter_input_schema = cls._get_variable_schema(engine, engine_var)
 
-                schema_ids = schema if schema_ids is None else schema_ids
-                var_value = JsonBuilder(input_variables[var_name], schema_ids)
+                filter_input_schema = schema if filter_input_schema is None else filter_input_schema
+                var_value = JsonBuilder(input_variables[var_name], filter_input_schema)
 
                 if not engine_var['is_filter']:
                     engine_vars[var_engine_name] = var_value
@@ -129,17 +129,23 @@ class PlacementsModelRecommenderBase(PlacementsModelBase):
 
     @classmethod
     def _get_variable_schema(cls, engine, engine_var):
+        filter_input_schema = None
+
         if engine_var['is_filter']:
+            if engine_var['filter_type'] == 'Property Of':
+                filter_input_schema = {'type': 'array', 'items': engine['item_type']['schema']}
+
             variables = engine['item_type']['available_filters']
         else:
             variables = engine['variables']
 
         for var in variables:
             if var['name'] == engine_var['inside_engine_name']:
-                if engine_var['is_filter'] and engine_var['filter_type'] == 'Property Of':
-                    return var['schema'], cls._build_id_names_schema(engine)
-                else:
-                    return var['schema'], None
+                if engine_var['is_filter'] and var['schema'].get('type') != 'array' \
+                        and engine_var['filter_type'] != 'Property Of':
+                    filter_input_schema = {'type': 'array', 'items': var['schema']}
+
+                return var['schema'], filter_input_schema
 
     @classmethod
     def _build_id_names_schema(cls, engine):

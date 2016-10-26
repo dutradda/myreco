@@ -99,6 +99,10 @@ class EnginesModelBase(AbstractConcreteBase):
 
         super()._setattr(attr_name, value, session, input_)
 
+    def _validate(self):
+        if self.type_name is not None:
+            self.type_.validate_config()
+
     def _format_output_json(self, dict_inst, schema):
         if schema.get('configuration') is not False:
             dict_inst.pop('configuration_json')
@@ -116,7 +120,7 @@ class EnginesModelDataImporterBase(EnginesModelBase):
         engine = cls._get_engine(req, job_session)
         data_importer = cls._get_data_importer(engine.configuration['data_importer_path'])
         items_indices_map = cls._build_items_indices_map(engine)
-        return data_importer.get_data(engine, items_indices_map, job_session)
+        return data_importer.get_data(engine.todict(), items_indices_map, job_session)
 
     @classmethod
     def _get_data_importer(cls, path):
@@ -158,7 +162,7 @@ class EnginesModelObjectsExporterBase(EnginesModelDataImporterBase):
 
         if import_data:
             data_importer = cls._get_data_importer(engine.configuration['data_importer_path'])
-            data_importer.get_data(engine, items_indices_map, job_session)
+            data_importer.get_data(engine.todict(), items_indices_map, job_session)
             return engine.type_.export_objects(job_session, items_indices_map)
         else:
             return engine.type_.export_objects(job_session, items_indices_map)

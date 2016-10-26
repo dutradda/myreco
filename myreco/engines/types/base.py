@@ -44,26 +44,27 @@ class EngineTypeMeta(type):
 class EngineType(metaclass=EngineTypeMeta):
 
     def __init__(self, engine=None, items_model=None):
-        if engine is not None:
-            self.validate_config(engine)
-
         self.engine = engine
         self.items_model = items_model
 
     def get_variables(self):
         return []
 
-    def validate_config(self, engine):
-        self.__config_validator__.validate(engine['configuration'])
-        self._validate_config(engine)
+    def validate_config(self):
+        self.__config_validator__.validate(self.engine['configuration'])
+        self._validate_config(self.engine)
 
     def _validate_config(self, engine):
         pass
 
     def get_recommendations(self, session, filters, max_recos, **variables):
         rec_vector = self._build_rec_vector(session, **variables)
-        [filter_.filter(session, rec_vector, ids) for filter_, ids in filters.items()]
-        return self._build_rec_list(session, rec_vector, max_recos)
+
+        if rec_vector is not None:
+            [filter_.filter(session, rec_vector, ids) for filter_, ids in filters.items()]
+            return self._build_rec_list(session, rec_vector, max_recos)
+
+        return []
 
     def _build_rec_vector(self, session, **variables):
         pass
@@ -82,7 +83,7 @@ class EngineType(metaclass=EngineTypeMeta):
         best_indices = argpartition(-rec_vector, max_recos-1)[:max_recos]
         best_values = rec_vector[best_indices]
         return [i for i, v in
-            sorted(zip(best_indices, best_values), key=lambda x: x[1]) if v > 0.0]
+            sorted(zip(best_indices, best_values), key=lambda x: x[1], reverse=True) if v > 0.0]
 
     def export_objects(self, session):
         pass
