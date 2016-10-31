@@ -22,7 +22,7 @@
 
 
 from tests.integration.fixtures_models import UsersModel, StoresModel, SQLAlchemyRedisModelBase
-from tests.integration.fixtures_models import ItemsTypesModel, EnginesManagersModel
+from tests.integration.fixtures_models import ItemsTypesModel, SlotsModel
 from falconswagger.http_api import HttpAPI
 from myreco.factory import ModelsFactory
 from myreco.engines.types.items_indices_map import ItemsIndicesMap
@@ -792,7 +792,7 @@ def filters_updater_app(redis, session):
 
     models['variables'].insert(session, {'name': 'test', 'store_id': 1})
 
-    engine_manager = {
+    slot = {
         'max_recos': 10,
         'store_id': 1,
         'engine_id': 1,
@@ -833,7 +833,7 @@ def filters_updater_app(redis, session):
             'inside_engine_name': 'filter5'
         }]
     }
-    models['engines_managers'].insert(session, engine_manager)
+    models['slots'].insert(session, slot)
 
     api = HttpAPI([models['items_types']], session.bind, FakeStrictRedis())
     models['items_types'].associate_all_items(session)

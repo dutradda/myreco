@@ -22,7 +22,7 @@
 
 
 from tests.integration.fixtures_models import (
-    SQLAlchemyRedisModelBase, EnginesManagersModel,
+    SQLAlchemyRedisModelBase, SlotsModel,
     StoresModel, UsersModel, VariablesModel, ItemsTypesModel,
     EnginesModel, EnginesTypesNamesModel)
 from falconswagger.http_api import HttpAPI
@@ -66,6 +66,7 @@ def app(session):
         }
     }
 
+    ItemsTypesModel.__api__ = None
     item_type = {
         'name': 'products',
         'stores': [{'id': 1}],
@@ -128,7 +129,7 @@ def app(session):
     VariablesModel.insert(session, {'name': 'test', 'store_id': 1})
     VariablesModel.insert(session, {'name': 'test2', 'store_id': 1})
 
-    return HttpAPI([EnginesManagersModel], session.bind, FakeStrictRedis())
+    return HttpAPI([SlotsModel], session.bind, FakeStrictRedis())
 
 
 @pytest.fixture
@@ -139,15 +140,15 @@ def headers():
 
 
 
-class TestEnginesManagersModelPost(object):
+class TestSlotsModelPost(object):
 
     def test_post_without_body(self, client, headers):
-        resp = client.post('/engines_managers/', headers=headers)
+        resp = client.post('/slots/', headers=headers)
         assert resp.status_code == 400
         assert json.loads(resp.body) == {'error': 'Request body is missing'}
 
     def test_post_with_invalid_body(self, client, headers):
-        resp = client.post('/engines_managers/', headers=headers, body='[{}]')
+        resp = client.post('/slots/', headers=headers, body='[{}]')
         assert resp.status_code == 400
         assert json.loads(resp.body) ==  {
             'error': {
@@ -179,7 +180,7 @@ class TestEnginesManagersModelPost(object):
                 'inside_engine_name': 'test'
             }]
         }]
-        resp = client.post('/engines_managers/', headers=headers, body=json.dumps(body))
+        resp = client.post('/slots/', headers=headers, body=json.dumps(body))
         assert resp.status_code == 400
         assert json.loads(resp.body) ==  {
             'error': {
@@ -220,7 +221,7 @@ class TestEnginesManagersModelPost(object):
                 'is_inclusive_filter': True
             }]
         }]
-        resp = client.post('/engines_managers/', headers=headers, body=json.dumps(body))
+        resp = client.post('/slots/', headers=headers, body=json.dumps(body))
         assert resp.status_code == 400
         assert json.loads(resp.body) ==  {
             'error': {
@@ -263,7 +264,7 @@ class TestEnginesManagersModelPost(object):
                 'filter_type': 'By Property'
             }]
         }]
-        resp = client.post('/engines_managers/', headers=headers, body=json.dumps(body))
+        resp = client.post('/slots/', headers=headers, body=json.dumps(body))
         assert resp.status_code == 400
         assert json.loads(resp.body) ==  {
             'error': {
@@ -295,7 +296,7 @@ class TestEnginesManagersModelPost(object):
                 'inside_engine_name': 'filter_test'
             }]
         }]
-        resp = client.post('/engines_managers/', headers=headers, body=json.dumps(body))
+        resp = client.post('/slots/', headers=headers, body=json.dumps(body))
 
         assert resp.status_code == 201
         assert json.loads(resp.body) == [{
@@ -311,7 +312,7 @@ class TestEnginesManagersModelPost(object):
                     },
                     'id': 1,
                     'inside_engine_name': 'filter_test',
-                    'engine_manager_id': 1,
+                    'slot_id': 1,
                     'override': False,
                     'override_value_json': None,
                     'variable_id': 1,
@@ -390,7 +391,7 @@ class TestEnginesManagersModelPost(object):
                 'inside_engine_name': 'filter_test'
             }]
         }]
-        resp = client.post('/engines_managers/', headers=headers, body=json.dumps(body))
+        resp = client.post('/slots/', headers=headers, body=json.dumps(body))
 
         assert resp.status_code == 201
         assert json.loads(resp.body) == [{
@@ -406,7 +407,7 @@ class TestEnginesManagersModelPost(object):
                     },
                     'id': 1,
                     'inside_engine_name': 'filter_test',
-                    'engine_manager_id': 1,
+                    'slot_id': 1,
                     'override': False,
                     'override_value_json': None,
                     'variable_id': 1,
@@ -482,7 +483,7 @@ class TestEnginesManagersModelPost(object):
                 'inside_engine_name': 'item_id'
             }]
         }]
-        client.post('/engines_managers/', headers=headers, body=json.dumps(body))
+        client.post('/slots/', headers=headers, body=json.dumps(body))
 
         body = [{
             'max_recos': 10,
@@ -495,7 +496,7 @@ class TestEnginesManagersModelPost(object):
             }],
             'fallbacks': [{'id': 1}]
         }]
-        resp = client.post('/engines_managers/', headers=headers, body=json.dumps(body))
+        resp = client.post('/slots/', headers=headers, body=json.dumps(body))
 
         assert resp.status_code == 201
         assert json.loads(resp.body) == [{
@@ -511,7 +512,7 @@ class TestEnginesManagersModelPost(object):
                         },
                         'id': 1,
                         'inside_engine_name': 'item_id',
-                        'engine_manager_id': 1,
+                        'slot_id': 1,
                         'override': False,
                         'override_value_json': None,
                         'variable_id': 1,
@@ -586,7 +587,7 @@ class TestEnginesManagersModelPost(object):
                     },
                     'id': 2,
                     'inside_engine_name': 'item_id',
-                    'engine_manager_id': 2,
+                    'slot_id': 2,
                     'override': False,
                     'override_value_json': None,
                     'variable_id': 1,
@@ -662,19 +663,19 @@ class TestEnginesManagersModelPost(object):
                 'inside_engine_name': 'item_id'
             }]
         }]
-        resp = client.post('/engines_managers/', headers={'Authorization': 'invalid'}, body=json.dumps(body))
+        resp = client.post('/slots/', headers={'Authorization': 'invalid'}, body=json.dumps(body))
         assert resp.status_code == 401
         assert json.loads(resp.body) ==  {'error': 'Invalid authorization'}
 
 
-class TestEnginesManagersModelGet(object):
+class TestSlotsModelGet(object):
 
     def test_get_not_found(self, client, headers):
-        resp = client.get('/engines_managers/', headers=headers)
+        resp = client.get('/slots/', headers=headers)
         assert resp.status_code == 404
 
     def test_get_invalid_with_body(self, client, headers):
-        resp = client.get('/engines_managers/', headers=headers, body='{}')
+        resp = client.get('/slots/', headers=headers, body='{}')
         assert resp.status_code == 400
         assert json.loads(resp.body) == {'error': 'Request body is not acceptable'}
 
@@ -689,9 +690,9 @@ class TestEnginesManagersModelGet(object):
                 'inside_engine_name': 'filter_test'
             }]
         }]
-        client.post('/engines_managers/', headers=headers, body=json.dumps(body))
+        client.post('/slots/', headers=headers, body=json.dumps(body))
 
-        resp = client.get('/engines_managers/', headers=headers)
+        resp = client.get('/slots/', headers=headers)
         assert resp.status_code == 200
         assert json.loads(resp.body) ==  [{
             'fallbacks': [],
@@ -706,7 +707,7 @@ class TestEnginesManagersModelGet(object):
                     },
                     'id': 1,
                     'inside_engine_name': 'filter_test',
-                    'engine_manager_id': 1,
+                    'slot_id': 1,
                     'override': False,
                     'override_value_json': None,
                     'variable_id': 1,
@@ -772,15 +773,15 @@ class TestEnginesManagersModelGet(object):
         }]
 
 
-class TestEnginesManagersModelUriTemplatePatch(object):
+class TestSlotsModelUriTemplatePatch(object):
 
     def test_patch_without_body(self, client, headers):
-        resp = client.patch('/engines_managers/1/', headers=headers, body='')
+        resp = client.patch('/slots/1/', headers=headers, body='')
         assert resp.status_code == 400
         assert json.loads(resp.body) == {'error': 'Request body is missing'}
 
     def test_patch_with_invalid_body(self, client, headers):
-        resp = client.patch('/engines_managers/1/', headers=headers, body='{}')
+        resp = client.patch('/slots/1/', headers=headers, body='{}')
         assert resp.status_code == 400
         assert json.loads(resp.body) ==  {
             'error': {
@@ -823,7 +824,7 @@ class TestEnginesManagersModelUriTemplatePatch(object):
                 'inside_engine_name': 'filter_test'
             }]
         }]
-        resp = client.post('/engines_managers/', headers=headers, body=json.dumps(body))
+        resp = client.post('/slots/', headers=headers, body=json.dumps(body))
 
         body = {
             'engine_variables': [{
@@ -832,7 +833,7 @@ class TestEnginesManagersModelUriTemplatePatch(object):
                 'inside_engine_name': 'invalid'
             }]
         }
-        resp = client.patch('/engines_managers/1/', headers=headers, body=json.dumps(body))
+        resp = client.patch('/slots/1/', headers=headers, body=json.dumps(body))
         assert resp.status_code == 400
         assert json.loads(resp.body) ==  {
             'error': {
@@ -868,12 +869,12 @@ class TestEnginesManagersModelUriTemplatePatch(object):
                 'inside_engine_name': 'filter_test'
             }]
         }]
-        resp = client.post('/engines_managers/', headers=headers, body=json.dumps(body))
+        resp = client.post('/slots/', headers=headers, body=json.dumps(body))
 
         body = {
             'fallbacks': [{'id': 1}]
         }
-        resp = client.patch('/engines_managers/1/', headers=headers, body=json.dumps(body))
+        resp = client.patch('/slots/1/', headers=headers, body=json.dumps(body))
         assert resp.status_code == 400
         assert json.loads(resp.body) == {
             'error': {
@@ -902,12 +903,12 @@ class TestEnginesManagersModelUriTemplatePatch(object):
                 'inside_engine_name': 'item_id'
             }]
         }]
-        resp = client.post('/engines_managers/', headers=headers, body=json.dumps(body))
+        resp = client.post('/slots/', headers=headers, body=json.dumps(body))
 
         body = {
             'fallbacks': [{'id': 2}]
         }
-        resp = client.patch('/engines_managers/1/', headers=headers, body=json.dumps(body))
+        resp = client.patch('/slots/1/', headers=headers, body=json.dumps(body))
         assert resp.status_code == 400
         assert json.loads(resp.body) == {
             'error': {
@@ -935,7 +936,7 @@ class TestEnginesManagersModelUriTemplatePatch(object):
                 'inside_engine_name': 'item_id'
             }]
         }]
-        obj = json.loads(client.post('/engines_managers/', headers=headers, body=json.dumps(body)).body)[0]
+        obj = json.loads(client.post('/slots/', headers=headers, body=json.dumps(body)).body)[0]
 
         body = {
             'engine_variables': [{
@@ -944,7 +945,7 @@ class TestEnginesManagersModelUriTemplatePatch(object):
                 'inside_engine_name': 'filter_test'
             }]
         }
-        resp = client.patch('/engines_managers/1/', headers=headers, body=json.dumps(body))
+        resp = client.patch('/slots/1/', headers=headers, body=json.dumps(body))
 
         assert resp.status_code == 200
         assert json.loads(resp.body) ==  {
@@ -960,7 +961,7 @@ class TestEnginesManagersModelUriTemplatePatch(object):
                     },
                     'id': 1,
                     'inside_engine_name': 'filter_test',
-                    'engine_manager_id': 1,
+                    'slot_id': 1,
                     'override': False,
                     'override_value_json': None,
                     'variable_id': 1,
@@ -1026,10 +1027,10 @@ class TestEnginesManagersModelUriTemplatePatch(object):
         }
 
 
-class TestEnginesManagersModelUriTemplateDelete(object):
+class TestSlotsModelUriTemplateDelete(object):
 
     def test_delete_with_body(self, client, headers):
-        resp = client.delete('/engines_managers/1/', headers=headers, body='{}')
+        resp = client.delete('/slots/1/', headers=headers, body='{}')
         assert resp.status_code == 400
         assert json.loads(resp.body) == {'error': 'Request body is not acceptable'}
 
@@ -1044,26 +1045,26 @@ class TestEnginesManagersModelUriTemplateDelete(object):
                 'inside_engine_name': 'filter_test'
             }]
         }]
-        client.post('/engines_managers/', headers=headers, body=json.dumps(body))
-        resp = client.get('/engines_managers/1/', headers=headers)
+        client.post('/slots/', headers=headers, body=json.dumps(body))
+        resp = client.get('/slots/1/', headers=headers)
         assert resp.status_code == 200
 
-        resp = client.delete('/engines_managers/1/', headers=headers)
+        resp = client.delete('/slots/1/', headers=headers)
         assert resp.status_code == 204
 
-        resp = client.get('/engines_managers/1/', headers=headers)
+        resp = client.get('/slots/1/', headers=headers)
         assert resp.status_code == 404
 
 
-class TestEnginesManagersModelUriTemplateGet(object):
+class TestSlotsModelUriTemplateGet(object):
 
     def test_get_with_body(self, client, headers):
-        resp = client.get('/engines_managers/1/', headers=headers, body='{}')
+        resp = client.get('/slots/1/', headers=headers, body='{}')
         assert resp.status_code == 400
         assert json.loads(resp.body) == {'error': 'Request body is not acceptable'}
 
     def test_get_not_found(self, client, headers):
-        resp = client.get('/engines_managers/1/', headers=headers)
+        resp = client.get('/slots/1/', headers=headers)
         assert resp.status_code == 404
 
     def test_get(self, client, headers):
@@ -1077,9 +1078,9 @@ class TestEnginesManagersModelUriTemplateGet(object):
                 'inside_engine_name': 'filter_test'
             }]
         }]
-        client.post('/engines_managers/', headers=headers, body=json.dumps(body))
+        client.post('/slots/', headers=headers, body=json.dumps(body))
 
-        resp = client.get('/engines_managers/1/', headers=headers)
+        resp = client.get('/slots/1/', headers=headers)
 
         assert resp.status_code == 200
         assert json.loads(resp.body) == {
@@ -1095,7 +1096,7 @@ class TestEnginesManagersModelUriTemplateGet(object):
                     },
                     'id': 1,
                     'inside_engine_name': 'filter_test',
-                    'engine_manager_id': 1,
+                    'slot_id': 1,
                     'override': False,
                     'override_value_json': None,
                     'variable_id': 1,

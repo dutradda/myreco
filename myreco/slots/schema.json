@@ -1,5 +1,5 @@
 {
-    "/engines_managers/": {
+    "/slots/": {
         "parameters": [{
             "name": "Authorization",
             "in": "header",
@@ -21,7 +21,7 @@
             "responses": {"200": {"description": "Got"}}
         }
     },
-    "/engines_managers/{id}/": {
+    "/slots/{id}/": {
         "parameters": [{
             "name": "Authorization",
             "in": "header",
@@ -107,7 +107,7 @@
                 ],
                 "properties": {
                     "id": {"type": "integer"},
-                    "engine_manager_id": {"type": "integer"},
+                    "slot_id": {"type": "integer"},
                     "variable_id": {"type": "integer"},
                     "_operation": {"enum": ["remove", "update", "insert", "get"]},
                     "inside_engine_name": {"type": "string"},

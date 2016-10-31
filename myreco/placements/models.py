@@ -77,13 +77,13 @@ class PlacementsModelRecommenderBase(PlacementsModelBase):
         session = req.context['session']
         input_variables = req.context['parameters']['query_string']
 
-        for engine_manager in placement['variations'][0]['engines_managers']:
-            engine = engine_manager['engine']
+        for slot in placement['variations'][0]['slots']:
+            engine = slot['engine']
             items_model = cls._get_items_model(engine)
             engine_vars, filters = \
-                cls._get_variables_and_filters(engine_manager, items_model, input_variables)
+                cls._get_variables_and_filters(slot, items_model, input_variables)
             engine_type = EngineTypeChooser(engine['type_name']['name'])(engine, items_model)
-            max_recos = engine_manager['max_recos']
+            max_recos = slot['max_recos']
             eng_recos = engine_type.get_recommendations(session, filters, max_recos, **engine_vars)
             recommendations.extend(eng_recos)
 
@@ -104,12 +104,12 @@ class PlacementsModelRecommenderBase(PlacementsModelBase):
         return placements[0]
 
     @classmethod
-    def _get_variables_and_filters(cls, engine_manager, items_model, input_variables):
+    def _get_variables_and_filters(cls, slot, items_model, input_variables):
         engine_vars = dict()
         filters = dict()
-        engine = engine_manager['engine']
+        engine = slot['engine']
 
-        for engine_var in engine_manager['engine_variables']:
+        for engine_var in slot['engine_variables']:
             var_name = engine_var['variable']['name']
             var_engine_name = engine_var['inside_engine_name']
 
@@ -173,9 +173,9 @@ class VariationsModelBase(AbstractConcreteBase):
         return sa.Column(sa.ForeignKey('placements.hash', ondelete='CASCADE', onupdate='CASCADE'), nullable=False)
 
     @declared_attr
-    def engines_managers(cls):
-        return sa.orm.relationship('EnginesManagersModel',
-                uselist=True, secondary='variations_engines_managers')
+    def slots(cls):
+        return sa.orm.relationship('SlotsModel',
+                uselist=True, secondary='variations_slots')
 
 
 class ABTestUsersModelBase(AbstractConcreteBase):
@@ -189,9 +189,9 @@ class ABTestUsersModelBase(AbstractConcreteBase):
         return sa.Column(sa.ForeignKey('variations.id'), nullable=False)
 
 
-def build_variations_engines_managers_table(metadata, **kwargs):
+def build_variations_slots_table(metadata, **kwargs):
     return sa.Table(
-        'variations_engines_managers', metadata,
+        'variations_slots', metadata,
         sa.Column('variation_id', sa.Integer, sa.ForeignKey('variations.id', ondelete='CASCADE', onupdate='CASCADE'), primary_key=True),
-        sa.Column('engine_manager_id', sa.Integer, sa.ForeignKey('engines_managers.id', ondelete='CASCADE', onupdate='CASCADE'), primary_key=True),
+        sa.Column('slot_id', sa.Integer, sa.ForeignKey('slots.id', ondelete='CASCADE', onupdate='CASCADE'), primary_key=True),
         **kwargs)

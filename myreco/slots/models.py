@@ -28,8 +28,8 @@ from sqlalchemy.ext.declarative import AbstractConcreteBase, declared_attr
 import sqlalchemy as sa
 
 
-class EnginesManagersVariablesModelBase(AbstractConcreteBase):
-    __tablename__ = 'engines_managers_variables'
+class SlotsVariablesModelBase(AbstractConcreteBase):
+    __tablename__ = 'slots_variables'
     __use_redis__ = False
 
     id = sa.Column(sa.Integer, primary_key=True)
@@ -45,16 +45,16 @@ class EnginesManagersVariablesModelBase(AbstractConcreteBase):
         return sa.Column(sa.ForeignKey('variables.id', ondelete='CASCADE', onupdate='CASCADE'), nullable=False)
 
     @declared_attr
-    def engine_manager_id(cls):
-        return sa.Column(sa.ForeignKey('engines_managers.id', ondelete='CASCADE', onupdate='CASCADE'), nullable=False)
+    def slot_id(cls):
+        return sa.Column(sa.ForeignKey('slots.id', ondelete='CASCADE', onupdate='CASCADE'), nullable=False)
 
     @declared_attr
     def variable(cls):
         return sa.orm.relationship('VariablesModel')
 
 
-class EnginesManagersModelBase(AbstractConcreteBase):
-    __tablename__ = 'engines_managers'
+class SlotsModelBase(AbstractConcreteBase):
+    __tablename__ = 'slots'
     __schema__ = get_model_schema(__file__)
 
     id = sa.Column(sa.Integer, primary_key=True)
@@ -74,15 +74,15 @@ class EnginesManagersModelBase(AbstractConcreteBase):
 
     @declared_attr
     def engine_variables(cls):
-        return sa.orm.relationship('EnginesManagersVariablesModel', uselist=True, passive_deletes=True)
+        return sa.orm.relationship('SlotsVariablesModel', uselist=True, passive_deletes=True)
 
     @declared_attr
     def fallbacks(cls):
-        return sa.orm.relationship('EnginesManagersModel',
-                                   uselist=True, remote_side='EnginesManagersModel.id',
-                                   secondary='engines_managers_fallbacks',
-                                   primaryjoin='engines_managers_fallbacks.c.engine_manager_id == EnginesManagersModel.id',
-                                   secondaryjoin='engines_managers_fallbacks.c.fallback_id == EnginesManagersModel.id')
+        return sa.orm.relationship('SlotsModel',
+                                   uselist=True, remote_side='SlotsModel.id',
+                                   secondary='slots_fallbacks',
+                                   primaryjoin='slots_fallbacks.c.slot_id == SlotsModel.id',
+                                   secondaryjoin='slots_fallbacks.c.fallback_id == SlotsModel.id')
 
     def __init__(self, session, input_=None, **kwargs):
         super().__init__(session, input_=input_, **kwargs)
@@ -157,10 +157,10 @@ class EnginesManagersModelBase(AbstractConcreteBase):
                 fallback.pop('fallbacks')
 
 
-def build_engines_managers_fallbacks_table(metadata, **kwargs):
-    return sa.Table("engines_managers_fallbacks", metadata,
-        sa.Column("engine_manager_id", sa.Integer, sa.ForeignKey(
-            "engines_managers.id", ondelete='CASCADE', onupdate='CASCADE'), primary_key=True),
+def build_slots_fallbacks_table(metadata, **kwargs):
+    return sa.Table("slots_fallbacks", metadata,
+        sa.Column("slot_id", sa.Integer, sa.ForeignKey(
+            "slots.id", ondelete='CASCADE', onupdate='CASCADE'), primary_key=True),
         sa.Column("fallback_id", sa.Integer, sa.ForeignKey(
-            "engines_managers.id", ondelete='CASCADE', onupdate='CASCADE'), primary_key=True),
+            "slots.id", ondelete='CASCADE', onupdate='CASCADE'), primary_key=True),
         **kwargs)

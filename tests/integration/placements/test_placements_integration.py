@@ -22,7 +22,7 @@
 
 
 from tests.integration.fixtures_models import (
-    SQLAlchemyRedisModelBase, EnginesManagersModel, PlacementsModel,
+    SQLAlchemyRedisModelBase, SlotsModel, PlacementsModel,
     UsersModel, StoresModel, VariablesModel, ItemsTypesModel,
     EnginesModel, EnginesTypesNamesModel, DataImporter)
 from pytest_falcon.plugin import Client
@@ -215,8 +215,8 @@ def app(redis, session, temp_dir):
     VariablesModel.insert(session, {'name': 'filter_array_exclusive_of', 'store_id': 1})
     VariablesModel.insert(session, {'name': 'filter_object_exclusive_of', 'store_id': 1})
 
-    EnginesManagersModel.__api__ = None
-    engine_manager = {
+    SlotsModel.__api__ = None
+    slot = {
         'max_recos': 10,
         'store_id': 1,
         'engine_id': 1,
@@ -240,8 +240,8 @@ def app(redis, session, temp_dir):
             'inside_engine_name': 'item_id'
         }]
     }
-    EnginesManagersModel.insert(session, engine_manager)
-    engine_manager = {
+    SlotsModel.insert(session, slot)
+    slot = {
         'max_recos': 10,
         'store_id': 1,
         'engine_id': 4,
@@ -387,7 +387,7 @@ def app(redis, session, temp_dir):
             'inside_engine_name': 'filter_object'
         }]
     }
-    EnginesManagersModel.insert(session, engine_manager)
+    SlotsModel.insert(session, slot)
 
     PlacementsModel.__api__ = None
     api = HttpAPI([PlacementsModel, ItemsTypesModel], session.bind, session.redis_bind)
@@ -436,7 +436,7 @@ class TestPlacementsModelPost(object):
             'name': 'Placement Test',
             'variations': [{
                 '_operation': 'insert',
-                'engines_managers': [{'id': 1}]
+                'slots': [{'id': 1}]
             }]
         }]
         resp = client.post('/placements/', headers=headers, body=json.dumps(body))
@@ -448,7 +448,7 @@ class TestPlacementsModelPost(object):
             'small_hash': '603de',
             'store_id': 1,
             'variations': [{
-                'engines_managers': [{
+                'slots': [{
                     'max_recos': 10,
                     'engine': {
                         'configuration': {
@@ -507,7 +507,7 @@ class TestPlacementsModelPost(object):
                         'is_filter': True,
                         'is_inclusive_filter': True,
                         'filter_type': 'By Property',
-                        'engine_manager_id': 1,
+                        'slot_id': 1,
                         'id': 1,
                         'inside_engine_name': 'filter_test',
                         'override': False,
@@ -522,7 +522,7 @@ class TestPlacementsModelPost(object):
                         'is_filter': True,
                         'is_inclusive_filter': True,
                         'filter_type': 'Property Of',
-                        'engine_manager_id': 1,
+                        'slot_id': 1,
                         'id': 2,
                         'inside_engine_name': 'filter_test',
                         'override': False,
@@ -537,7 +537,7 @@ class TestPlacementsModelPost(object):
                         'is_filter': False,
                         'is_inclusive_filter': None,
                         'filter_type': None,
-                        'engine_manager_id': 1,
+                        'slot_id': 1,
                         'id': 3,
                         'inside_engine_name': 'item_id',
                         'override': False,
@@ -565,7 +565,7 @@ class TestPlacementsModelPost(object):
             'name': 'Placement Test',
             'variations': [{
                 '_operation': 'insert',
-                'engines_managers': [{'id': 1}]
+                'slots': [{'id': 1}]
             }]
         }]
         resp = client.post('/placements/', headers={'Authorization': 'invalid'}, body=json.dumps(body))
@@ -591,7 +591,7 @@ class TestPlacementsModelGet(object):
             'name': 'Placement Test',
             'variations': [{
                 '_operation': 'insert',
-                'engines_managers': [{'id': 1}]
+                'slots': [{'id': 1}]
             }]
         }]
         client.post('/placements/', headers=headers, body=json.dumps(body))
@@ -605,7 +605,7 @@ class TestPlacementsModelGet(object):
             'small_hash': '603de',
             'store_id': 1,
             'variations': [{
-                'engines_managers': [{
+                'slots': [{
                     'max_recos': 10,
                     'engine': {
                         'configuration': {
@@ -664,7 +664,7 @@ class TestPlacementsModelGet(object):
                         'is_filter': True,
                         'is_inclusive_filter': True,
                         'filter_type': 'By Property',
-                        'engine_manager_id': 1,
+                        'slot_id': 1,
                         'id': 1,
                         'inside_engine_name': 'filter_test',
                         'override': False,
@@ -679,7 +679,7 @@ class TestPlacementsModelGet(object):
                         'is_filter': True,
                         'is_inclusive_filter': True,
                         'filter_type': 'Property Of',
-                        'engine_manager_id': 1,
+                        'slot_id': 1,
                         'id': 2,
                         'inside_engine_name': 'filter_test',
                         'override': False,
@@ -694,7 +694,7 @@ class TestPlacementsModelGet(object):
                         'is_filter': False,
                         'is_inclusive_filter': None,
                         'filter_type': None,
-                        'engine_manager_id': 1,
+                        'slot_id': 1,
                         'id': 3,
                         'inside_engine_name': 'item_id',
                         'override': False,
@@ -758,7 +758,7 @@ class TestPlacementsModelUriTemplatePatch(object):
             'name': 'Placement Test',
             'variations': [{
                 '_operation': 'insert',
-                'engines_managers': [{'id': 1}]
+                'slots': [{'id': 1}]
             }]
         }]
         obj = json.loads(client.post('/placements/', headers=headers, body=json.dumps(body)).body)[0]
@@ -767,7 +767,7 @@ class TestPlacementsModelUriTemplatePatch(object):
             'variations': [{
                 '_operation': 'update',
                 'id': 1,
-                'engines_managers': [{'id': 1, '_operation': 'remove'}]
+                'slots': [{'id': 1, '_operation': 'remove'}]
             }]
         }
         resp = client.patch('/placements/{}/'.format(obj['small_hash']),
@@ -781,7 +781,7 @@ class TestPlacementsModelUriTemplatePatch(object):
             'small_hash': '603de',
             'store_id': 1,
             'variations': [{
-                'engines_managers': [],
+                'slots': [],
                 'id': 1,
                 'placement_hash': '603de7791bc268d86c705e417448d3c6efbb3439',
                 'weight': None
@@ -802,7 +802,7 @@ class TestPlacementsModelUriTemplateDelete(object):
             'name': 'Placement Test',
             'variations': [{
                 '_operation': 'insert',
-                'engines_managers': [{'id': 1}]
+                'slots': [{'id': 1}]
             }]
         }]
         obj = json.loads(client.post('/placements/', headers=headers, body=json.dumps(body)).body)[0]
@@ -833,7 +833,7 @@ class TestPlacementsModelUriTemplateGet(object):
             'name': 'Placement Test',
             'variations': [{
                 '_operation': 'insert',
-                'engines_managers': [{'id': 1}]
+                'slots': [{'id': 1}]
             }]
         }]
         obj = json.loads(client.post('/placements/', headers=headers, body=json.dumps(body)).body)[0]
@@ -848,7 +848,7 @@ class TestPlacementsModelUriTemplateGet(object):
             'small_hash': '603de',
             'store_id': 1,
             'variations': [{
-                'engines_managers': [{
+                'slots': [{
                     'max_recos': 10,
                     'engine': {
                         'configuration': {
@@ -907,7 +907,7 @@ class TestPlacementsModelUriTemplateGet(object):
                         'is_filter': True,
                         'is_inclusive_filter': True,
                         'filter_type': 'By Property',
-                        'engine_manager_id': 1,
+                        'slot_id': 1,
                         'id': 1,
                         'inside_engine_name': 'filter_test',
                         'override': False,
@@ -922,7 +922,7 @@ class TestPlacementsModelUriTemplateGet(object):
                         'is_filter': True,
                         'is_inclusive_filter': True,
                         'filter_type': 'Property Of',
-                        'engine_manager_id': 1,
+                        'slot_id': 1,
                         'id': 2,
                         'inside_engine_name': 'filter_test',
                         'override': False,
@@ -937,7 +937,7 @@ class TestPlacementsModelUriTemplateGet(object):
                         'is_filter': False,
                         'is_inclusive_filter': None,
                         'filter_type': None,
-                        'engine_manager_id': 1,
+                        'slot_id': 1,
                         'id': 3,
                         'inside_engine_name': 'item_id',
                         'override': False,
@@ -1013,7 +1013,7 @@ class TestPlacementsGetRecomendations(object):
             'name': 'Placement Test',
             'variations': [{
                 '_operation': 'insert',
-                'engines_managers': [{'id': 2}]
+                'slots': [{'id': 2}]
             }]
         }]
         obj = json.loads(client.post('/placements/', headers=headers, body=json.dumps(body)).body)[0]
@@ -1032,7 +1032,7 @@ class TestPlacementsGetRecomendations(object):
             'name': 'Placement Test',
             'variations': [{
                 '_operation': 'insert',
-                'engines_managers': [{'id': 1}]
+                'slots': [{'id': 1}]
             }]
         }]
         obj = json.loads(client.post('/placements/', headers=headers, body=json.dumps(body)).body)[0]
@@ -1076,7 +1076,7 @@ class TestPlacementsGetRecomendations(object):
             'name': 'Placement Test',
             'variations': [{
                 '_operation': 'insert',
-                'engines_managers': [{'id': 2}]
+                'slots': [{'id': 2}]
             }]
         }]
         obj = json.loads(client.post('/placements/', headers=headers, body=json.dumps(body)).body)[0]
@@ -1127,7 +1127,7 @@ class TestPlacementsGetRecomendationsFilters(object):
             'name': 'Placement Test',
             'variations': [{
                 '_operation': 'insert',
-                'engines_managers': [{'id': 2}]
+                'slots': [{'id': 2}]
             }]
         }]
         obj = json.loads(client.post('/placements/', headers=headers, body=json.dumps(body)).body)[0]
@@ -1173,7 +1173,7 @@ class TestPlacementsGetRecomendationsFilters(object):
             'name': 'Placement Test',
             'variations': [{
                 '_operation': 'insert',
-                'engines_managers': [{'id': 2}]
+                'slots': [{'id': 2}]
             }]
         }]
         obj = json.loads(client.post('/placements/', headers=headers, body=json.dumps(body)).body)[0]
@@ -1218,7 +1218,7 @@ class TestPlacementsGetRecomendationsFilters(object):
             'name': 'Placement Test',
             'variations': [{
                 '_operation': 'insert',
-                'engines_managers': [{'id': 2}]
+                'slots': [{'id': 2}]
             }]
         }]
         obj = json.loads(client.post('/placements/', headers=headers, body=json.dumps(body)).body)[0]
@@ -1264,7 +1264,7 @@ class TestPlacementsGetRecomendationsFilters(object):
             'name': 'Placement Test',
             'variations': [{
                 '_operation': 'insert',
-                'engines_managers': [{'id': 2}]
+                'slots': [{'id': 2}]
             }]
         }]
         obj = json.loads(client.post('/placements/', headers=headers, body=json.dumps(body)).body)[0]
@@ -1309,7 +1309,7 @@ class TestPlacementsGetRecomendationsFilters(object):
             'name': 'Placement Test',
             'variations': [{
                 '_operation': 'insert',
-                'engines_managers': [{'id': 2}]
+                'slots': [{'id': 2}]
             }]
         }]
         obj = json.loads(client.post('/placements/', headers=headers, body=json.dumps(body)).body)[0]
@@ -1355,7 +1355,7 @@ class TestPlacementsGetRecomendationsFilters(object):
             'name': 'Placement Test',
             'variations': [{
                 '_operation': 'insert',
-                'engines_managers': [{'id': 2}]
+                'slots': [{'id': 2}]
             }]
         }]
         obj = json.loads(client.post('/placements/', headers=headers, body=json.dumps(body)).body)[0]
@@ -1400,7 +1400,7 @@ class TestPlacementsGetRecomendationsFilters(object):
             'name': 'Placement Test',
             'variations': [{
                 '_operation': 'insert',
-                'engines_managers': [{'id': 2}]
+                'slots': [{'id': 2}]
             }]
         }]
         obj = json.loads(client.post('/placements/', headers=headers, body=json.dumps(body)).body)[0]
@@ -1446,7 +1446,7 @@ class TestPlacementsGetRecomendationsFilters(object):
             'name': 'Placement Test',
             'variations': [{
                 '_operation': 'insert',
-                'engines_managers': [{'id': 2}]
+                'slots': [{'id': 2}]
             }]
         }]
         obj = json.loads(client.post('/placements/', headers=headers, body=json.dumps(body)).body)[0]
@@ -1491,7 +1491,7 @@ class TestPlacementsGetRecomendationsFilters(object):
             'name': 'Placement Test',
             'variations': [{
                 '_operation': 'insert',
-                'engines_managers': [{'id': 2}]
+                'slots': [{'id': 2}]
             }]
         }]
         obj = json.loads(client.post('/placements/', headers=headers, body=json.dumps(body)).body)[0]
@@ -1537,7 +1537,7 @@ class TestPlacementsGetRecomendationsFilters(object):
             'name': 'Placement Test',
             'variations': [{
                 '_operation': 'insert',
-                'engines_managers': [{'id': 2}]
+                'slots': [{'id': 2}]
             }]
         }]
         obj = json.loads(client.post('/placements/', headers=headers, body=json.dumps(body)).body)[0]
@@ -1587,7 +1587,7 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
             'name': 'Placement Test',
             'variations': [{
                 '_operation': 'insert',
-                'engines_managers': [{'id': 2}]
+                'slots': [{'id': 2}]
             }]
         }]
         obj = json.loads(client.post('/placements/', headers=headers, body=json.dumps(body)).body)[0]
@@ -1633,7 +1633,7 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
             'name': 'Placement Test',
             'variations': [{
                 '_operation': 'insert',
-                'engines_managers': [{'id': 2}]
+                'slots': [{'id': 2}]
             }]
         }]
         obj = json.loads(client.post('/placements/', headers=headers, body=json.dumps(body)).body)[0]
@@ -1678,7 +1678,7 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
             'name': 'Placement Test',
             'variations': [{
                 '_operation': 'insert',
-                'engines_managers': [{'id': 2}]
+                'slots': [{'id': 2}]
             }]
         }]
         obj = json.loads(client.post('/placements/', headers=headers, body=json.dumps(body)).body)[0]
@@ -1724,7 +1724,7 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
             'name': 'Placement Test',
             'variations': [{
                 '_operation': 'insert',
-                'engines_managers': [{'id': 2}]
+                'slots': [{'id': 2}]
             }]
         }]
         obj = json.loads(client.post('/placements/', headers=headers, body=json.dumps(body)).body)[0]
@@ -1769,7 +1769,7 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
             'name': 'Placement Test',
             'variations': [{
                 '_operation': 'insert',
-                'engines_managers': [{'id': 2}]
+                'slots': [{'id': 2}]
             }]
         }]
         obj = json.loads(client.post('/placements/', headers=headers, body=json.dumps(body)).body)[0]
@@ -1816,7 +1816,7 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
             'name': 'Placement Test',
             'variations': [{
                 '_operation': 'insert',
-                'engines_managers': [{'id': 2}]
+                'slots': [{'id': 2}]
             }]
         }]
         obj = json.loads(client.post('/placements/', headers=headers, body=json.dumps(body)).body)[0]
@@ -1862,7 +1862,7 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
             'name': 'Placement Test',
             'variations': [{
                 '_operation': 'insert',
-                'engines_managers': [{'id': 2}]
+                'slots': [{'id': 2}]
             }]
         }]
         obj = json.loads(client.post('/placements/', headers=headers, body=json.dumps(body)).body)[0]
@@ -1907,7 +1907,7 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
             'name': 'Placement Test',
             'variations': [{
                 '_operation': 'insert',
-                'engines_managers': [{'id': 2}]
+                'slots': [{'id': 2}]
             }]
         }]
         obj = json.loads(client.post('/placements/', headers=headers, body=json.dumps(body)).body)[0]
@@ -1953,7 +1953,7 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
             'name': 'Placement Test',
             'variations': [{
                 '_operation': 'insert',
-                'engines_managers': [{'id': 2}]
+                'slots': [{'id': 2}]
             }]
         }]
         obj = json.loads(client.post('/placements/', headers=headers, body=json.dumps(body)).body)[0]
@@ -1998,7 +1998,7 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
             'name': 'Placement Test',
             'variations': [{
                 '_operation': 'insert',
-                'engines_managers': [{'id': 2}]
+                'slots': [{'id': 2}]
             }]
         }]
         obj = json.loads(client.post('/placements/', headers=headers, body=json.dumps(body)).body)[0]
@@ -2044,7 +2044,7 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
             'name': 'Placement Test',
             'variations': [{
                 '_operation': 'insert',
-                'engines_managers': [{'id': 2}]
+                'slots': [{'id': 2}]
             }]
         }]
         obj = json.loads(client.post('/placements/', headers=headers, body=json.dumps(body)).body)[0]

@@ -26,9 +26,9 @@ from myreco.users.models import (GrantsModelBase, URIsModelBase, MethodsModelBas
 from myreco.stores.model import StoresModelBase
 from myreco.variables.model import VariablesModelBase
 from myreco.placements.models import (PlacementsModelBase, VariationsModelBase,
-    ABTestUsersModelBase, build_variations_engines_managers_table)
-from myreco.engines_managers.models import (EnginesManagersVariablesModelBase,
-    EnginesManagersModelBase, build_engines_managers_fallbacks_table)
+    ABTestUsersModelBase, build_variations_slots_table)
+from myreco.slots.models import (SlotsVariablesModelBase,
+    SlotsModelBase, build_slots_fallbacks_table)
 from myreco.engines.models import EnginesModelBase, EnginesTypesNamesModelBase
 from myreco.items_types.models import ItemsTypesModelBase
 from myreco.factory import ModelsFactory
@@ -58,9 +58,9 @@ VariationsModel = models['variations']
 
 ABTestUsersModel = models['ab_test_users']
 
-EnginesManagersVariablesModel = models['engines_managers_variables']
+SlotsVariablesModel = models['slots_variables']
 
-EnginesManagersModel = models['engines_managers']
+SlotsModel = models['slots']
 
 EnginesModel = models['engines']
 

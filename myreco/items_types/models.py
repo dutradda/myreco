@@ -411,14 +411,14 @@ class ItemsCollectionsModelBaseMeta(RedisModelMeta):
         return {'items_indices_map': items_indices_map_ret, 'filters': filters_ret}
 
     def _get_enabled_filters(cls, session, store_id):
-        engines_managers_model = cls.__all_models__['engines_managers']
-        engines_managers = engines_managers_model.get(session, **{'store_id': store_id})
+        slots_model = cls.__all_models__['slots']
+        slots = slots_model.get(session, **{'store_id': store_id})
         filters_variables = []
 
         # used to aggregate filters inclusive and exclusive with same property
         filters_names_set = set()
 
-        for eng_manager in engines_managers:
+        for eng_manager in slots:
             if cls.__item_type__['id'] == eng_manager['engine']['item_type_id']:
                 for engine_var in eng_manager['engine_variables']:
                     if engine_var['is_filter']:

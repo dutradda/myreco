@@ -26,9 +26,9 @@ from myreco.users.models import (GrantsModelBase, URIsModelBase, MethodsModelBas
 from myreco.stores.model import StoresModelBase
 from myreco.variables.model import VariablesModelBase
 from myreco.placements.models import (PlacementsModelBase, PlacementsModelRecommenderBase,
-    VariationsModelBase, ABTestUsersModelBase, build_variations_engines_managers_table)
-from myreco.engines_managers.models import (EnginesManagersVariablesModelBase,
-    EnginesManagersModelBase, build_engines_managers_fallbacks_table)
+    VariationsModelBase, ABTestUsersModelBase, build_variations_slots_table)
+from myreco.slots.models import (SlotsVariablesModelBase,
+    SlotsModelBase, build_slots_fallbacks_table)
 from myreco.engines.models import (
     EnginesModelBase, EnginesModelDataImporterBase,
     EnginesModelObjectsExporterBase, EnginesTypesNamesModelBase)
@@ -83,8 +83,8 @@ class ModelsFactory(object):
         return {
             'engines': self.make_engines_model(app_type),
             'engines_types_names': self.make_engines_types_names_model(),
-            'engines_managers': self.make_engines_managers_model(),
-            'engines_managers_variables': self.make_engines_managers_variables_model(),
+            'slots': self.make_slots_model(),
+            'slots_variables': self.make_slots_variables_model(),
             'items_types': self.make_items_types_model(app_type),
             'placements': self.make_placements_model(app_type),
             'variations': self.make_variations_model(),
@@ -101,8 +101,8 @@ class ModelsFactory(object):
         return {
             'users_grants': self.make_users_grants_table(),
             'users_stores': self.make_users_stores_table(),
-            'variations_engines_managers': self.make_variations_engines_managers_table(),
-            'engines_managers_fallbacks': self.make_engines_managers_fallbacks_table(),
+            'variations_slots': self.make_variations_slots_table(),
+            'slots_fallbacks': self.make_slots_fallbacks_table(),
             'items_types_stores': self.make_items_types_stores_table()
         }
 
@@ -114,13 +114,13 @@ class ModelsFactory(object):
         attributes = self._init_attributes(attributes, self._commons_tables_attrs)
         return build_users_stores_table(self.base_model.metadata, **attributes)
 
-    def make_variations_engines_managers_table(self, attributes=None):
+    def make_variations_slots_table(self, attributes=None):
         attributes = self._init_attributes(attributes, self._commons_tables_attrs)
-        return build_variations_engines_managers_table(self.base_model.metadata, **attributes)
+        return build_variations_slots_table(self.base_model.metadata, **attributes)
 
-    def make_engines_managers_fallbacks_table(self, attributes=None):
+    def make_slots_fallbacks_table(self, attributes=None):
         attributes = self._init_attributes(attributes, self._commons_tables_attrs)
-        return build_engines_managers_fallbacks_table(self.base_model.metadata, **attributes)
+        return build_slots_fallbacks_table(self.base_model.metadata, **attributes)
 
     def make_items_types_stores_table(self, attributes=None):
         attributes = self._init_attributes(attributes, self._commons_tables_attrs)
@@ -143,16 +143,16 @@ class ModelsFactory(object):
         return self.meta_class(
             'EnginesTypesNamesModel', (EnginesTypesNamesModelBase, self.base_model), attributes)
 
-    def make_engines_managers_model(self, attributes=None):
+    def make_slots_model(self, attributes=None):
         attributes = self._init_attributes(attributes, self._commons_models_attrs)
         return self.meta_class(
-            'EnginesManagersModel', (EnginesManagersModelBase, self.base_model), attributes)
+            'SlotsModel', (SlotsModelBase, self.base_model), attributes)
 
-    def make_engines_managers_variables_model(self, attributes=None):
+    def make_slots_variables_model(self, attributes=None):
         attributes = self._init_attributes(attributes, self._commons_models_attrs)
         return self.meta_class(
-            'EnginesManagersVariablesModel',
-            (EnginesManagersVariablesModelBase, self.base_model), attributes)
+            'SlotsVariablesModel',
+            (SlotsVariablesModelBase, self.base_model), attributes)
 
     def make_items_types_model(self, app_type, attributes=None):
         attributes = self._init_attributes(attributes, self._commons_models_attrs)
