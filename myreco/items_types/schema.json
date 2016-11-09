@@ -17,6 +17,20 @@
             "responses": {"201": {"description": "Created"}}
         },
         "get": {
+            "parameters": [{
+                "name": "stores",
+                "in": "query",
+                "required": true,
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": ["id"],
+                    "properties": {
+                        "id": {"type": "integer"}
+                    }
+                }
+            }],
             "operationId": "get_by_body",
             "responses": {"200": {"description": "Got"}}
         }

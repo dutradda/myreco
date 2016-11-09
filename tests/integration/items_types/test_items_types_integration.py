@@ -200,11 +200,11 @@ class TestItemsTypesModelPost(object):
 class TestItemsTypesModelGet(object):
 
     def test_get_not_found(self, client, headers):
-        resp = client.get('/items_types/', headers=headers)
+        resp = client.get('/items_types/?stores=id:1', headers=headers)
         assert resp.status_code == 404
 
     def test_get_invalid_with_body(self, client, headers):
-        resp = client.get('/items_types/', headers=headers, body='{}')
+        resp = client.get('/items_types/?stores=id:1', headers=headers, body='{}')
         assert resp.status_code == 400
         assert json.loads(resp.body) == {'error': 'Request body is not acceptable'}
 
@@ -224,7 +224,7 @@ class TestItemsTypesModelGet(object):
             'name': 'test'
         }]
 
-        resp = client.get('/items_types/', headers=headers)
+        resp = client.get('/items_types/?stores=id:1', headers=headers)
         assert resp.status_code == 200
         assert json.loads(resp.body) ==  body
 

@@ -112,11 +112,11 @@ class TestVariablesModelPost(object):
 class TestVariablesModelGet(object):
 
     def test_get_not_found(self, client, headers):
-        resp = client.get('/variables/', headers=headers)
+        resp = client.get('/variables/?store_id=1', headers=headers)
         assert resp.status_code == 404
 
     def test_get_invalid_with_body(self, client, headers):
-        resp = client.get('/variables/', headers=headers, body='{}')
+        resp = client.get('/variables/?store_id=1', headers=headers, body='{}')
         assert resp.status_code == 400
         assert json.loads(resp.body) == {'error': 'Request body is not acceptable'}
 
@@ -128,7 +128,7 @@ class TestVariablesModelGet(object):
         client.post('/variables/', headers=headers, body=json.dumps(body))
         body[0]['id'] = 1
 
-        resp = client.get('/variables/', headers=headers)
+        resp = client.get('/variables/?store_id=1', headers=headers)
         assert resp.status_code == 200
         assert json.loads(resp.body) ==  body
 

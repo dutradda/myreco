@@ -161,11 +161,11 @@ class TestEnginesModelPost(object):
 class TestEnginesModelGet(object):
 
     def test_get_not_found(self, client, headers):
-        resp = client.get('/engines/', headers=headers)
+        resp = client.get('/engines/?store_id=1', headers=headers)
         assert resp.status_code == 404
 
     def test_get_invalid_with_body(self, client, headers):
-        resp = client.get('/engines/', headers=headers, body='{}')
+        resp = client.get('/engines/?store_id=1', headers=headers, body='{}')
         assert resp.status_code == 400
         assert json.loads(resp.body) == {'error': 'Request body is not acceptable'}
 
@@ -200,7 +200,7 @@ class TestEnginesModelGet(object):
             'available_filters': [{'name': 'sku', 'schema': {'type': 'string'}}]
         }
 
-        resp = client.get('/engines/', headers=headers)
+        resp = client.get('/engines/?store_id=1', headers=headers)
         assert resp.status_code == 200
         assert json.loads(resp.body) ==  body
 

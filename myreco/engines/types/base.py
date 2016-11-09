@@ -22,6 +22,7 @@
 
 
 from falconswagger.models.base import build_validator, get_module_path
+from myreco.engines.types.items_indices_map import ItemsIndicesMap
 from jsonschema import Draft4Validator
 from abc import ABCMeta, abstractmethod
 from bottleneck import argpartition
@@ -70,7 +71,7 @@ class EngineType(metaclass=EngineTypeMeta):
         pass
 
     def _build_rec_list(self, session, rec_vector, max_recos):
-        items_indices_map = self.items_model.build_items_indices_map()
+        items_indices_map = ItemsIndicesMap(self.items_model)
         best_indices = self._get_best_indices(rec_vector, max_recos)
         best_items_keys = items_indices_map.get_items(session, best_indices)
         return [msgpack.loads(item, encoding='utf-8') for item in session.redis_bind.hmget(

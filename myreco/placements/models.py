@@ -104,6 +104,11 @@ class PlacementsModelRecommenderBase(PlacementsModelBase):
         return placements[0]
 
     @classmethod
+    def _get_items_model(cls, engine):
+        items_types_model_key = build_item_key(engine['item_type']['name'])
+        return cls.__api__.models[items_types_model_key].__models__[engine['store_id']]
+
+    @classmethod
     def _get_variables_and_filters(cls, slot, items_model, input_variables):
         engine_vars = dict()
         filters = dict()
@@ -154,11 +159,6 @@ class PlacementsModelRecommenderBase(PlacementsModelBase):
             'items': [engine['item_type']['schema']['properties'][id_name] \
                 for id_name in engine['item_type']['schema']['id_names']]
         }
-
-    @classmethod
-    def _get_items_model(cls, engine):
-        items_types_model_key = build_item_key(engine['item_type']['name'])
-        return cls.__api__.models[items_types_model_key].__models__[engine['store_id']]
 
 
 class VariationsModelBase(AbstractConcreteBase):

@@ -33,7 +33,7 @@ from myreco.engines.models import (
     EnginesModelBase, EnginesModelDataImporterBase,
     EnginesModelObjectsExporterBase, EnginesTypesNamesModelBase)
 from myreco.items_types.models import (ItemsTypesModelBase, build_items_types_stores_table,
-    ItemsTypesModelIndicesUpdaterBase)
+    ItemsTypesModelFiltersUpdaterBase)
 from falconswagger.models.sqlalchemy_redis import SQLAlchemyRedisModelBuilder
 from falconswagger.hooks import Authorizer
 
@@ -160,7 +160,7 @@ class ModelsFactory(object):
         if app_type == 'recommender':
             bases_classes = (ItemsTypesModelBase, self.base_model)
         else:
-            bases_classes = (ItemsTypesModelIndicesUpdaterBase, self.base_model)
+            bases_classes = (ItemsTypesModelFiltersUpdaterBase, self.base_model)
 
         return self.meta_class('ItemsTypesModel', bases_classes, attributes)
 

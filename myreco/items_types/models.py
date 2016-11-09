@@ -108,7 +108,8 @@ class ItemsTypesModelBase(AbstractConcreteBase):
                 '__all_models__': cls.__all_models__,
                 '__item_type__': item_type
             }
-            items_collections = ItemsCollectionsModelBaseMeta(class_name, (ModelBase,), attributes)
+            items_collections = \
+                cls._get_items_collections_metaclass()(class_name, (ModelBase,), attributes)
             cls.__api__.associate_model(items_collections)
 
     @classmethod
@@ -240,6 +241,10 @@ class ItemsTypesModelBase(AbstractConcreteBase):
         return parameters
 
     @classmethod
+    def _get_items_collections_metaclass(cls):
+        return ItemsCollectionsModelBaseMeta
+
+    @classmethod
     def insert(cls, session, objs, commit=True, todict=True, **kwargs):
         objs = type(cls).insert(cls, session, objs, commit=commit, todict=todict, **kwargs)
         if cls.__build_items_models__:
@@ -284,7 +289,7 @@ class ItemsTypesModelBase(AbstractConcreteBase):
         return get_dir_path(__file__)
 
 
-class ItemsTypesModelIndicesUpdaterBase(ItemsTypesModelBase):
+class ItemsTypesModelFiltersUpdaterBase(ItemsTypesModelBase):
 
     @classmethod
     def _build_items_collections_schema(cls, key, schema, id_names):
@@ -319,6 +324,10 @@ class ItemsTypesModelIndicesUpdaterBase(ItemsTypesModelBase):
         }
         return schema
 
+    @classmethod
+    def _get_items_collections_metaclass(cls):
+        return ItemsCollectionsModelFiltersUpdaterBaseMeta
+
 
 class ItemsModelBaseMeta(RedisModelMeta):
 
@@ -331,9 +340,6 @@ class ItemsModelBaseMeta(RedisModelMeta):
         limit = items_per_page * page
         offset = items_per_page * (page-1)
         return RedisModelMeta.get(cls, session, ids=ids, limit=limit, offset=offset, **kwargs)
-
-    def build_items_indices_map(cls):
-        return ItemsIndicesMap(cls)
 
 
 class ItemsCollectionsModelBaseMeta(RedisModelMeta):
@@ -381,6 +387,9 @@ class ItemsCollectionsModelBaseMeta(RedisModelMeta):
     def get(cls, session, ids=None, limit=None, offset=None, **kwargs):
         items_model = cls._get_model(kwargs)
         return items_model.get(session, ids=ids, limit=limit, offset=offset, **kwargs)
+
+
+class ItemsCollectionsModelFiltersUpdaterBaseMeta(ItemsCollectionsModelBaseMeta):
 
     def _run_job(cls, job_session, req, resp):
         query_string = req.context['parameters']['query_string']
