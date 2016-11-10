@@ -40,7 +40,7 @@ class PlacementsModelBase(AbstractConcreteBase):
 
     hash = sa.Column(sa.String(255), primary_key=True)
     small_hash = sa.Column(sa.String(255), unique=True, nullable=False)
-    name = sa.Column(sa.String(255), unique=True, nullable=False)
+    name = sa.Column(sa.String(255), nullable=False)
     ab_testing = sa.Column(sa.Boolean, default=False)
     show_details = sa.Column(sa.Boolean, default=True)
     distribute_recos = sa.Column(sa.Boolean, default=False)
@@ -60,7 +60,7 @@ class PlacementsModelBase(AbstractConcreteBase):
     def _set_hash(self):
         if self.name and not self.hash:
             hash_ = hashlib.new('ripemd160')
-            hash_.update(self.name.encode())
+            hash_.update(self.name.encode() + bytes(self.store_id))
             self.hash = hash_.hexdigest()
 
     def __setattr__(self, name, value):

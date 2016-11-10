@@ -799,35 +799,40 @@ def filters_updater_app(redis, session):
         'engine_id': 1,
         'engine_variables': [{
             '_operation': 'insert',
-            'variable_id': 1,
+            'variable_name': 'test',
+            'variable_store_id': 1,
             'is_filter': True,
             'is_inclusive_filter': True,
             'filter_type': 'By Property',
             'inside_engine_name': 'filter1'
         },{
             '_operation': 'insert',
-            'variable_id': 1,
+            'variable_name': 'test',
+            'variable_store_id': 1,
             'is_filter': True,
             'is_inclusive_filter': True,
             'filter_type': 'By Property',
             'inside_engine_name': 'filter2'
         },{
             '_operation': 'insert',
-            'variable_id': 1,
+            'variable_name': 'test',
+            'variable_store_id': 1,
             'is_filter': True,
             'is_inclusive_filter': True,
             'filter_type': 'By Property',
             'inside_engine_name': 'filter3'
         },{
             '_operation': 'insert',
-            'variable_id': 1,
+            'variable_name': 'test',
+            'variable_store_id': 1,
             'is_filter': True,
             'is_inclusive_filter': True,
             'filter_type': 'By Property',
             'inside_engine_name': 'filter4'
         },{
             '_operation': 'insert',
-            'variable_id': 1,
+            'variable_name': 'test',
+            'variable_store_id': 1,
             'is_filter': True,
             'is_inclusive_filter': True,
             'filter_type': 'By Property',

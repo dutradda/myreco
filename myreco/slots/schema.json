@@ -110,13 +110,14 @@
                 "minProperties": 2,
                 "oneOf": [
                     {"required": ["id", "_operation"]},
-                    {"required": ["variable_id", "inside_engine_name"]},
+                    {"required": ["variable_name", "variable_store_id", "inside_engine_name"]},
                     {"required": ["variable", "inside_engine_name"]}
                 ],
                 "properties": {
                     "id": {"type": "integer"},
                     "slot_id": {"type": "integer"},
-                    "variable_id": {"type": "integer"},
+                    "variable_name": {"type": "string"},
+                    "variable_store_id": {"type": "integer"},
                     "_operation": {"enum": ["remove", "update", "insert", "get"]},
                     "inside_engine_name": {"type": "string"},
                     "is_filter": {"type": "boolean"},

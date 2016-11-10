@@ -41,8 +41,12 @@ class SlotsVariablesModelBase(AbstractConcreteBase):
     inside_engine_name = sa.Column(sa.String(255), nullable=False)
 
     @declared_attr
-    def variable_id(cls):
-        return sa.Column(sa.ForeignKey('variables.id', ondelete='CASCADE', onupdate='CASCADE'), nullable=False)
+    def variable_name(cls):
+        return sa.Column(sa.ForeignKey('variables.name', ondelete='CASCADE', onupdate='CASCADE'), nullable=False)
+
+    @declared_attr
+    def variable_store_id(cls):
+        return sa.Column(sa.ForeignKey('variables.store_id', ondelete='CASCADE', onupdate='CASCADE'), nullable=False)
 
     @declared_attr
     def slot_id(cls):
@@ -50,7 +54,10 @@ class SlotsVariablesModelBase(AbstractConcreteBase):
 
     @declared_attr
     def variable(cls):
-        return sa.orm.relationship('VariablesModel')
+        return sa.orm.relationship('VariablesModel',
+            foreign_keys=[cls.variable_name, cls.variable_store_id],
+            primaryjoin='and_(SlotsVariablesModel.variable_name == VariablesModel.name, '\
+                        'SlotsVariablesModel.variable_store_id == VariablesModel.store_id)')
 
 
 class SlotsModelBase(AbstractConcreteBase):

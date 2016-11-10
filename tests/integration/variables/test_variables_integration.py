@@ -103,7 +103,6 @@ class TestVariablesModelPost(object):
             'store_id': 1
         }]
         resp = client.post('/variables/', headers=headers, body=json.dumps(body))
-        body[0]['id'] = 1
 
         assert resp.status_code == 201
         assert json.loads(resp.body) ==  body
@@ -126,7 +125,6 @@ class TestVariablesModelGet(object):
             'store_id': 1
         }]
         client.post('/variables/', headers=headers, body=json.dumps(body))
-        body[0]['id'] = 1
 
         resp = client.get('/variables/?store_id=1', headers=headers)
         assert resp.status_code == 200
@@ -136,12 +134,12 @@ class TestVariablesModelGet(object):
 class TestVariablesModelUriTemplatePatch(object):
 
     def test_patch_without_body(self, client, headers):
-        resp = client.patch('/variables/1/', headers=headers, body='')
+        resp = client.patch('/variables/test/1/', headers=headers, body='')
         assert resp.status_code == 400
         assert json.loads(resp.body) == {'error': 'Request body is missing'}
 
     def test_patch_with_invalid_body(self, client, headers):
-        resp = client.patch('/variables/1/', headers=headers, body='{}')
+        resp = client.patch('/variables/test/1/', headers=headers, body='{}')
         assert resp.status_code == 400
         assert json.loads(resp.body) ==  {
             'error': {
@@ -164,7 +162,7 @@ class TestVariablesModelUriTemplatePatch(object):
             'name': 'test',
             'store_id': 1
         }
-        resp = client.patch('/variables/1/', headers=headers, body=json.dumps(body))
+        resp = client.patch('/variables/test/1/', headers=headers, body=json.dumps(body))
         assert resp.status_code == 404
 
     def test_patch(self, client, headers):
@@ -177,7 +175,7 @@ class TestVariablesModelUriTemplatePatch(object):
         body = {
             'name': 'test2'
         }
-        resp = client.patch('/variables/1/', headers=headers, body=json.dumps(body))
+        resp = client.patch('/variables/test/1/', headers=headers, body=json.dumps(body))
         obj['name'] = 'test2'
 
         assert resp.status_code == 200
@@ -187,7 +185,7 @@ class TestVariablesModelUriTemplatePatch(object):
 class TestVariablesModelUriTemplateDelete(object):
 
     def test_delete_with_body(self, client, headers):
-        resp = client.delete('/variables/1/', headers=headers, body='{}')
+        resp = client.delete('/variables/test/1/', headers=headers, body='{}')
         assert resp.status_code == 400
         assert json.loads(resp.body) == {'error': 'Request body is not acceptable'}
 
@@ -198,25 +196,25 @@ class TestVariablesModelUriTemplateDelete(object):
         }]
         client.post('/variables/', headers=headers, body=json.dumps(body))
 
-        resp = client.get('/variables/1/', headers=headers)
+        resp = client.get('/variables/test/1/', headers=headers)
         assert resp.status_code == 200
 
-        resp = client.delete('/variables/1/', headers=headers)
+        resp = client.delete('/variables/test/1/', headers=headers)
         assert resp.status_code == 204
 
-        resp = client.get('/variables/1/', headers=headers)
+        resp = client.get('/variables/test/1/', headers=headers)
         assert resp.status_code == 404
 
 
 class TestVariablesModelUriTemplateGet(object):
 
     def test_get_with_body(self, client, headers):
-        resp = client.get('/variables/1/', headers=headers, body='{}')
+        resp = client.get('/variables/test/1/', headers=headers, body='{}')
         assert resp.status_code == 400
         assert json.loads(resp.body) == {'error': 'Request body is not acceptable'}
 
     def test_get_not_found(self, client, headers):
-        resp = client.get('/variables/1/', headers=headers)
+        resp = client.get('/variables/test/1/', headers=headers)
         assert resp.status_code == 404
 
     def test_get(self, client, headers):
@@ -226,7 +224,6 @@ class TestVariablesModelUriTemplateGet(object):
         }]
         client.post('/variables/', headers=headers, body=json.dumps(body))
 
-        resp = client.get('/variables/1/', headers=headers)
-        body[0]['id'] = 1
+        resp = client.get('/variables/test/1/', headers=headers)
         assert resp.status_code == 200
         assert json.loads(resp.body) == body[0]

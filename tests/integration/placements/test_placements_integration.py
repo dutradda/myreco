@@ -236,21 +236,24 @@ def app(redis, session, temp_dir):
         'engine_id': 1,
         'engine_variables': [{
             '_operation': 'insert',
-            'variable_id': 1,
+            'variable_name': 'test',
+            'variable_store_id': 1,
             'is_filter': True,
             'is_inclusive_filter': True,
             'filter_type': 'By Property',
             'inside_engine_name': 'filter_test'
         },{
             '_operation': 'insert',
-            'variable_id': 3,
+            'variable_name': 'test3',
+            'variable_store_id': 1,
             'is_filter': True,
             'is_inclusive_filter': True,
             'filter_type': 'Property Of',
             'inside_engine_name': 'filter_test'
         },{
             '_operation': 'insert',
-            'variable_id': 2,
+            'variable_name': 'test2',
+            'variable_store_id': 1,
             'inside_engine_name': 'item_id'
         }]
     }
@@ -262,140 +265,160 @@ def app(redis, session, temp_dir):
         'engine_id': 4,
         'engine_variables': [{
             '_operation': 'insert',
-            'variable_id': 4,
+            'variable_name': 'filter_string_inclusive',
+            'variable_store_id': 1,
             'is_filter': True,
             'is_inclusive_filter': True,
             'filter_type': 'By Property',
             'inside_engine_name': 'filter_string'
         },{
             '_operation': 'insert',
-            'variable_id': 5,
+            'variable_name': 'filter_integer_inclusive',
+            'variable_store_id': 1,
             'is_filter': True,
             'is_inclusive_filter': True,
             'filter_type': 'By Property',
             'inside_engine_name': 'filter_integer'
         },{
             '_operation': 'insert',
-            'variable_id': 6,
+            'variable_name': 'filter_boolean_inclusive',
+            'variable_store_id': 1,
             'is_filter': True,
             'is_inclusive_filter': True,
             'filter_type': 'By Property',
             'inside_engine_name': 'filter_boolean'
         },{
             '_operation': 'insert',
-            'variable_id': 7,
+            'variable_name': 'filter_array_inclusive',
+            'variable_store_id': 1,
             'is_filter': True,
             'is_inclusive_filter': True,
             'filter_type': 'By Property',
             'inside_engine_name': 'filter_array'
         },{
             '_operation': 'insert',
-            'variable_id': 8,
+            'variable_name': 'filter_object_inclusive',
+            'variable_store_id': 1,
             'is_filter': True,
             'is_inclusive_filter': True,
             'filter_type': 'By Property',
             'inside_engine_name': 'filter_object'
         },{
             '_operation': 'insert',
-            'variable_id': 9,
+            'variable_name': 'filter_string_exclusive',
+            'variable_store_id': 1,
             'is_filter': True,
             'is_inclusive_filter': False,
             'filter_type': 'By Property',
             'inside_engine_name': 'filter_string'
         },{
             '_operation': 'insert',
-            'variable_id': 10,
+            'variable_name': 'filter_integer_exclusive',
+            'variable_store_id': 1,
             'is_filter': True,
             'is_inclusive_filter': False,
             'filter_type': 'By Property',
             'inside_engine_name': 'filter_integer'
         },{
             '_operation': 'insert',
-            'variable_id': 11,
+            'variable_name': 'filter_boolean_exclusive',
+            'variable_store_id': 1,
             'is_filter': True,
             'is_inclusive_filter': False,
             'filter_type': 'By Property',
             'inside_engine_name': 'filter_boolean'
         },{
             '_operation': 'insert',
-            'variable_id': 12,
+            'variable_name': 'filter_array_exclusive',
+            'variable_store_id': 1,
             'is_filter': True,
             'is_inclusive_filter': False,
             'filter_type': 'By Property',
             'inside_engine_name': 'filter_array'
         },{
             '_operation': 'insert',
-            'variable_id': 13,
+            'variable_name': 'filter_object_exclusive',
+            'variable_store_id': 1,
             'is_filter': True,
             'is_inclusive_filter': False,
             'filter_type': 'By Property',
             'inside_engine_name': 'filter_object'
         },{
             '_operation': 'insert',
-            'variable_id': 14,
+            'variable_name': 'filter_string_inclusive_of',
+            'variable_store_id': 1,
             'is_filter': True,
             'is_inclusive_filter': True,
             'filter_type': 'Property Of',
             'inside_engine_name': 'filter_string'
         },{
             '_operation': 'insert',
-            'variable_id': 15,
+            'variable_name': 'filter_integer_inclusive_of',
+            'variable_store_id': 1,
             'is_filter': True,
             'is_inclusive_filter': True,
             'filter_type': 'Property Of',
             'inside_engine_name': 'filter_integer'
         },{
             '_operation': 'insert',
-            'variable_id': 16,
+            'variable_name': 'filter_boolean_inclusive_of',
+            'variable_store_id': 1,
             'is_filter': True,
             'is_inclusive_filter': True,
             'filter_type': 'Property Of',
             'inside_engine_name': 'filter_boolean'
         },{
             '_operation': 'insert',
-            'variable_id': 17,
+            'variable_name': 'filter_array_inclusive_of',
+            'variable_store_id': 1,
             'is_filter': True,
             'is_inclusive_filter': True,
             'filter_type': 'Property Of',
             'inside_engine_name': 'filter_array'
         },{
             '_operation': 'insert',
-            'variable_id': 18,
+            'variable_name': 'filter_object_inclusive_of',
+            'variable_store_id': 1,
             'is_filter': True,
             'is_inclusive_filter': True,
             'filter_type': 'Property Of',
             'inside_engine_name': 'filter_object'
         },{
             '_operation': 'insert',
-            'variable_id': 19,
+            'variable_name': 'filter_string_exclusive_of',
+            'variable_store_id': 1,
             'is_filter': True,
             'is_inclusive_filter': False,
             'filter_type': 'Property Of',
             'inside_engine_name': 'filter_string'
         },{
             '_operation': 'insert',
-            'variable_id': 20,
+            'variable_name': 'filter_integer_exclusive_of',
+            'variable_store_id': 1,
             'is_filter': True,
             'is_inclusive_filter': False,
             'filter_type': 'Property Of',
             'inside_engine_name': 'filter_integer'
         },{
             '_operation': 'insert',
-            'variable_id': 21,
+            'variable_name': 'filter_boolean_exclusive_of',
+            'variable_store_id': 1,
             'is_filter': True,
             'is_inclusive_filter': False,
             'filter_type': 'Property Of',
             'inside_engine_name': 'filter_boolean'
         },{
             '_operation': 'insert',
-            'variable_id': 22,
+            'variable_name': 'filter_array_exclusive_of',
+            'variable_store_id': 1,
             'is_filter': True,
             'is_inclusive_filter': False,
             'filter_type': 'Property Of',
             'inside_engine_name': 'filter_array'
         },{
             '_operation': 'insert',
-            'variable_id': 23,
+            'variable_name': 'filter_object_exclusive_of',
+            'variable_store_id': 1,
             'is_filter': True,
             'is_inclusive_filter': False,
             'filter_type': 'Property Of',
@@ -470,9 +493,9 @@ class TestPlacementsModelPost(object):
             'ab_testing': False,
             'show_details': True,
             'distribute_recos': False,
-            'hash': '603de7791bc268d86c705e417448d3c6efbb3439',
+            'hash': '941e021d7ae6ca23f8969870ffe48b87a315e05c',
             'name': 'Placement Test',
-            'small_hash': '603de',
+            'small_hash': '941e0',
             'store_id': 1,
             'variations': [{
                 'slots': [{
@@ -541,11 +564,11 @@ class TestPlacementsModelPost(object):
                         'override': False,
                         'override_value_json': None,
                         'variable': {
-                            'id': 1,
                             'name': 'test',
                             'store_id': 1
                         },
-                        'variable_id': 1
+                        'variable_name': 'test',
+                        'variable_store_id': 1
                     },{
                         'is_filter': True,
                         'is_inclusive_filter': True,
@@ -556,11 +579,11 @@ class TestPlacementsModelPost(object):
                         'override': False,
                         'override_value_json': None,
                         'variable': {
-                            'id': 3,
                             'name': 'test3',
                             'store_id': 1
                         },
-                        'variable_id': 3
+                        'variable_name': 'test3',
+                        'variable_store_id': 1
                     },{
                         'is_filter': False,
                         'is_inclusive_filter': None,
@@ -571,18 +594,18 @@ class TestPlacementsModelPost(object):
                         'override': False,
                         'override_value_json': None,
                         'variable': {
-                            'id': 2,
                             'name': 'test2',
                             'store_id': 1
                         },
-                        'variable_id': 2
+                        'variable_name': 'test2',
+                        'variable_store_id': 1
                     }],
                     'fallbacks': [],
                     'id': 1,
                     'store_id': 1
                 }],
                 'id': 1,
-                'placement_hash': '603de7791bc268d86c705e417448d3c6efbb3439',
+                'placement_hash': '941e021d7ae6ca23f8969870ffe48b87a315e05c',
                 'weight': None
             }]
         }]
@@ -630,9 +653,9 @@ class TestPlacementsModelGet(object):
             'ab_testing': False,
             'show_details': True,
             'distribute_recos': False,
-            'hash': '603de7791bc268d86c705e417448d3c6efbb3439',
+            'hash': '941e021d7ae6ca23f8969870ffe48b87a315e05c',
             'name': 'Placement Test',
-            'small_hash': '603de',
+            'small_hash': '941e0',
             'store_id': 1,
             'variations': [{
                 'slots': [{
@@ -701,11 +724,11 @@ class TestPlacementsModelGet(object):
                         'override': False,
                         'override_value_json': None,
                         'variable': {
-                            'id': 1,
                             'name': 'test',
                             'store_id': 1
                         },
-                        'variable_id': 1
+                        'variable_name': 'test',
+                        'variable_store_id': 1
                     },{
                         'is_filter': True,
                         'is_inclusive_filter': True,
@@ -716,11 +739,11 @@ class TestPlacementsModelGet(object):
                         'override': False,
                         'override_value_json': None,
                         'variable': {
-                            'id': 3,
                             'name': 'test3',
                             'store_id': 1
                         },
-                        'variable_id': 3
+                        'variable_name': 'test3',
+                        'variable_store_id': 1
                     },{
                         'is_filter': False,
                         'is_inclusive_filter': None,
@@ -731,18 +754,18 @@ class TestPlacementsModelGet(object):
                         'override': False,
                         'override_value_json': None,
                         'variable': {
-                            'id': 2,
                             'name': 'test2',
                             'store_id': 1
                         },
-                        'variable_id': 2
+                        'variable_name': 'test2',
+                        'variable_store_id': 1
                     }],
                     'fallbacks': [],
                     'id': 1,
                     'store_id': 1
                 }],
                 'id': 1,
-                'placement_hash': '603de7791bc268d86c705e417448d3c6efbb3439',
+                'placement_hash': '941e021d7ae6ca23f8969870ffe48b87a315e05c',
                 'weight': None
             }]
         }]
@@ -811,14 +834,14 @@ class TestPlacementsModelUriTemplatePatch(object):
             'ab_testing': False,
             'show_details': True,
             'distribute_recos': False,
-            'hash': '603de7791bc268d86c705e417448d3c6efbb3439',
+            'hash': '941e021d7ae6ca23f8969870ffe48b87a315e05c',
             'name': 'Placement Test',
-            'small_hash': '603de',
+            'small_hash': '941e0',
             'store_id': 1,
             'variations': [{
                 'slots': [],
                 'id': 1,
-                'placement_hash': '603de7791bc268d86c705e417448d3c6efbb3439',
+                'placement_hash': '941e021d7ae6ca23f8969870ffe48b87a315e05c',
                 'weight': None
             }]
         }
@@ -880,9 +903,9 @@ class TestPlacementsModelUriTemplateGet(object):
             'ab_testing': False,
             'show_details': True,
             'distribute_recos': False,
-            'hash': '603de7791bc268d86c705e417448d3c6efbb3439',
+            'hash': '941e021d7ae6ca23f8969870ffe48b87a315e05c',
             'name': 'Placement Test',
-            'small_hash': '603de',
+            'small_hash': '941e0',
             'store_id': 1,
             'variations': [{
                 'slots': [{
@@ -951,11 +974,11 @@ class TestPlacementsModelUriTemplateGet(object):
                         'override': False,
                         'override_value_json': None,
                         'variable': {
-                            'id': 1,
                             'name': 'test',
                             'store_id': 1
                         },
-                        'variable_id': 1
+                        'variable_name': 'test',
+                        'variable_store_id': 1
                     },{
                         'is_filter': True,
                         'is_inclusive_filter': True,
@@ -966,11 +989,11 @@ class TestPlacementsModelUriTemplateGet(object):
                         'override': False,
                         'override_value_json': None,
                         'variable': {
-                            'id': 3,
                             'name': 'test3',
                             'store_id': 1
                         },
-                        'variable_id': 3
+                        'variable_name': 'test3',
+                        'variable_store_id': 1
                     },{
                         'is_filter': False,
                         'is_inclusive_filter': None,
@@ -981,18 +1004,18 @@ class TestPlacementsModelUriTemplateGet(object):
                         'override': False,
                         'override_value_json': None,
                         'variable': {
-                            'id': 2,
                             'name': 'test2',
                             'store_id': 1
                         },
-                        'variable_id': 2
+                        'variable_name': 'test2',
+                        'variable_store_id': 1
                     }],
                     'fallbacks': [],
                     'id': 1,
                     'store_id': 1
                 }],
                 'id': 1,
-                'placement_hash': '603de7791bc268d86c705e417448d3c6efbb3439',
+                'placement_hash': '941e021d7ae6ca23f8969870ffe48b87a315e05c',
                 'weight': None
             }]
         }
@@ -1233,7 +1256,7 @@ class TestPlacementsGetRecomendations(object):
                     }
                 }
             ],
-            "small_hash": "603de"
+            "small_hash": "941e0"
         }
 
     def test_get_recommendations_without_show_details(self, client, app, headers, top_seller_data_importer, filters_updater_client):
