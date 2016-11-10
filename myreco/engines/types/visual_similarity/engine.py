@@ -50,8 +50,8 @@ class VisualSimilarityEngine(EngineType):
 
         if item_id_name not in item_type_schema_props:
             raise ValidationError(message.format('item_id_name'),
-                instance=dict_inst, schema=item_type_schema_props)
+                instance=engine['configuration'], schema=item_type_schema_props)
 
         elif aggregators_ids_name not in item_type_schema_props:
             raise ValidationError(message.format('aggregators_ids_name'),
-                instance=dict_inst, schema=item_type_schema_props)
+                instance=engine['configuration'], schema=item_type_schema_props)

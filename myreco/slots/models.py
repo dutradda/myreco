@@ -59,6 +59,7 @@ class SlotsModelBase(AbstractConcreteBase):
 
     id = sa.Column(sa.Integer, primary_key=True)
     max_recos = sa.Column(sa.Integer, nullable=False)
+    name = sa.Column(sa.String(255), nullable=False)
 
     @declared_attr
     def engine_id(cls):

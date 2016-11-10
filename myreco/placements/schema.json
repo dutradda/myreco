@@ -64,6 +64,12 @@
             "responses": {"200": {"description": "Got"}}
         }
     },
+    "/placements/{small_hash}/slots": {
+        "get": {
+            "operationId": "get_slots",
+            "responses": {"200": {"description": "Got"}}
+        }
+    },
     "definitions": {
         "schema_without_required": {
             "type": "object",
@@ -73,6 +79,8 @@
                 "store_id": {"type": "integer"},
                 "name": {"type": "string"},
                 "ab_testing": {"type": "boolean"},
+                "show_details": {"type": "boolean"},
+                "distribute_recos": {"type": "boolean"},
                 "variations": {"$ref": "#/definitions/variations"}
             }
         },
@@ -87,6 +95,8 @@
                     "store_id": {"type": "integer"},
                     "name": {"type": "string"},
                     "ab_testing": {"type": "boolean"},
+                    "show_details": {"type": "boolean"},
+                    "distribute_recos": {"type": "boolean"},
                     "variations": {"$ref": "#/definitions/variations"}
                 }
             }

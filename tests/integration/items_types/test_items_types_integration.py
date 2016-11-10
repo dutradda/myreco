@@ -794,6 +794,7 @@ def filters_updater_app(redis, session):
 
     slot = {
         'max_recos': 10,
+        'name': 'test',
         'store_id': 1,
         'engine_id': 1,
         'engine_variables': [{

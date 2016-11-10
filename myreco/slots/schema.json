@@ -65,6 +65,7 @@
             "additionalProperties": false,
             "properties": {
                 "max_recos": {"type": "integer"},
+                "name": {"type": "string"},
                 "store_id": {"type": "integer"},
                 "engine_id": {"type": "integer"},
                 "fallbacks": {"$ref": "#/definitions/fallbacks"},
@@ -77,9 +78,10 @@
             "items": {
                 "type": "object",
                 "additionalProperties": false,
-                "required": ["engine_id", "store_id", "engine_variables", "max_recos"],
+                "required": ["engine_id", "store_id", "engine_variables", "max_recos", "name"],
                 "properties": {
                     "max_recos": {"type": "integer"},
+                    "name": {"type": "string"},
                     "store_id": {"type": "integer"},
                     "engine_id": {"type": "integer"},
                     "fallbacks": {"$ref": "#/definitions/fallbacks"},

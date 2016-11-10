@@ -157,9 +157,10 @@ class TestSlotsModelPost(object):
                 'schema': {
                     'type': 'object',
                     'additionalProperties': False,
-                    'required': ['engine_id', 'store_id', 'engine_variables', 'max_recos'],
+                    'required': ['engine_id', 'store_id', 'engine_variables', 'max_recos', 'name'],
                     'properties': {
                         'max_recos': {'type': 'integer'},
+                        'name': {'type': 'string'},
                         'store_id': {'type': 'integer'},
                         'engine_id': {'type': 'integer'},
                         'fallbacks': {'$ref': '#/definitions/fallbacks'},
@@ -172,6 +173,7 @@ class TestSlotsModelPost(object):
     def test_post_with_invalid_variable_engine(self, client, headers):
         body = [{
             'max_recos': 10,
+            'name': 'test',
             'store_id': 1,
             'engine_id': 1,
             'engine_variables': [{
@@ -187,6 +189,7 @@ class TestSlotsModelPost(object):
                 'message': "Invalid engine variable with 'inside_engine_name' value 'test'",
                 'input': [{
                     'max_recos': 10,
+                    'name': 'test',
                     'engine_id': 1,
                     'store_id': 1,
                     'engine_variables': [{
@@ -210,6 +213,7 @@ class TestSlotsModelPost(object):
     def test_post_with_invalid_filter(self, client, headers):
         body = [{
             'max_recos': 10,
+            'name': 'test',
             'store_id': 1,
             'engine_id': 1,
             'engine_variables': [{
@@ -228,6 +232,7 @@ class TestSlotsModelPost(object):
                 'message': "Invalid filter with 'inside_engine_name' value 'test'",
                 'input': [{
                     'max_recos': 10,
+                    'name': 'test',
                     'engine_id': 1,
                     'store_id': 1,
                     'engine_variables': [{
@@ -254,6 +259,7 @@ class TestSlotsModelPost(object):
     def test_post_with_invalid_filter_missing_properties(self, client, headers):
         body = [{
             'max_recos': 10,
+            'name': 'test',
             'store_id': 1,
             'engine_id': 1,
             'engine_variables': [{
@@ -272,6 +278,7 @@ class TestSlotsModelPost(object):
                 "'is_inclusive_filter' and 'filter_type' must be setted",
                 'input': [{
                     'max_recos': 10,
+                    'name': 'test',
                     'engine_id': 1,
                     'store_id': 1,
                     'engine_variables': [{
@@ -288,6 +295,7 @@ class TestSlotsModelPost(object):
     def test_post_with_insert_engine_variable_engine_var(self, client, headers):
         body = [{
             'max_recos': 10,
+            'name': 'test',
             'store_id': 1,
             'engine_id': 1,
             'engine_variables': [{
@@ -301,6 +309,7 @@ class TestSlotsModelPost(object):
         assert resp.status_code == 201
         assert json.loads(resp.body) == [{
             'max_recos': 10,
+            'name': 'test',
             'fallbacks': [],
             'id': 1,
             'engine_variables': [
@@ -380,6 +389,7 @@ class TestSlotsModelPost(object):
     def test_post_with_insert_engine_variable_engine_filter(self, client, headers):
         body = [{
             'max_recos': 10,
+            'name': 'test',
             'store_id': 1,
             'engine_id': 1,
             'engine_variables': [{
@@ -398,6 +408,7 @@ class TestSlotsModelPost(object):
             'fallbacks': [],
             'id': 1,
             'max_recos': 10,
+            'name': 'test',
             'engine_variables': [
                 {
                     'variable': {
@@ -475,6 +486,7 @@ class TestSlotsModelPost(object):
     def test_post_with_fallback(self, client, headers):
         body = [{
             'max_recos': 10,
+            'name': 'test',
             'store_id': 1,
             'engine_id': 1,
             'engine_variables': [{
@@ -487,6 +499,7 @@ class TestSlotsModelPost(object):
 
         body = [{
             'max_recos': 10,
+            'name': 'test',
             'store_id': 1,
             'engine_id': 1,
             'engine_variables': [{
@@ -502,6 +515,7 @@ class TestSlotsModelPost(object):
         assert json.loads(resp.body) == [{
             'fallbacks': [{
                 'max_recos': 10,
+                'name': 'test',
                 'id': 1,
                 'engine_variables': [
                     {
@@ -578,6 +592,7 @@ class TestSlotsModelPost(object):
             }],
             'id': 2,
             'max_recos': 10,
+            'name': 'test',
             'engine_variables': [
                 {
                     'variable': {
@@ -655,6 +670,7 @@ class TestSlotsModelPost(object):
     def test_post_with_invalid_grant(self, client):
         body = [{
             'max_recos': 10,
+            'name': 'test',
             'store_id': 1,
             'engine_id': 1,
             'engine_variables': [{
@@ -682,6 +698,7 @@ class TestSlotsModelGet(object):
     def test_get(self, client, headers):
         body = [{
             'max_recos': 10,
+            'name': 'test',
             'store_id': 1,
             'engine_id': 1,
             'engine_variables': [{
@@ -698,6 +715,7 @@ class TestSlotsModelGet(object):
             'fallbacks': [],
             'id': 1,
             'max_recos': 10,
+            'name': 'test',
             'engine_variables': [
                 {
                     'variable': {
@@ -793,6 +811,9 @@ class TestSlotsModelUriTemplatePatch(object):
                         'max_recos': {
                             'type': 'integer'
                         },
+                        'name': {
+                            'type': 'string'
+                        },
                         'engine_id': {
                             'type': 'integer'
                         },
@@ -816,6 +837,7 @@ class TestSlotsModelUriTemplatePatch(object):
     def test_patch_with_invalid_engine_variable(self, client, headers):
         body = [{
             'max_recos': 10,
+            'name': 'test',
             'store_id': 1,
             'engine_id': 1,
             'engine_variables': [{
@@ -861,6 +883,7 @@ class TestSlotsModelUriTemplatePatch(object):
     def test_patch_with_invalid_fallback_id(self, client, headers):
         body = [{
             'max_recos': 10,
+            'name': 'test',
             'store_id': 1,
             'engine_id': 1,
             'engine_variables': [{
@@ -886,6 +909,7 @@ class TestSlotsModelUriTemplatePatch(object):
     def test_patch_with_invalid_fallback_item_type(self, client, headers):
         body = [{
             'max_recos': 10,
+            'name': 'test',
             'store_id': 1,
             'engine_id': 1,
             'engine_variables': [{
@@ -895,6 +919,7 @@ class TestSlotsModelUriTemplatePatch(object):
             }]
         },{
             'max_recos': 10,
+            'name': 'test',
             'store_id': 1,
             'engine_id': 2,
             'engine_variables': [{
@@ -928,6 +953,7 @@ class TestSlotsModelUriTemplatePatch(object):
     def test_patch(self, client, headers):
         body = [{
             'max_recos': 10,
+            'name': 'test',
             'store_id': 1,
             'engine_id': 1,
             'engine_variables': [{
@@ -952,6 +978,7 @@ class TestSlotsModelUriTemplatePatch(object):
             'fallbacks': [],
             'id': 1,
             'max_recos': 10,
+            'name': 'test',
             'engine_variables': [
                 {
                     'variable': {
@@ -1037,6 +1064,7 @@ class TestSlotsModelUriTemplateDelete(object):
     def test_delete(self, client, headers):
         body = [{
             'max_recos': 10,
+            'name': 'test',
             'store_id': 1,
             'engine_id': 1,
             'engine_variables': [{
@@ -1070,6 +1098,7 @@ class TestSlotsModelUriTemplateGet(object):
     def test_get(self, client, headers):
         body = [{
             'max_recos': 10,
+            'name': 'test',
             'store_id': 1,
             'engine_id': 1,
             'engine_variables': [{
@@ -1087,6 +1116,7 @@ class TestSlotsModelUriTemplateGet(object):
             'fallbacks': [],
             'id': 1,
             'max_recos': 10,
+            'name': 'test',
             'engine_variables': [
                 {
                     'variable': {

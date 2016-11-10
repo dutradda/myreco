@@ -127,7 +127,9 @@ class ItemsTypesModelBase(AbstractConcreteBase):
         class_name = cls._build_class_name(item_type['name'], store['name'])
         key = build_item_key(item_type['name'], store['id'])
         id_names = item_type['schema']['id_names']
-        return RedisModelBuilder(class_name, key, id_names, None, metaclass=ItemsModelBaseMeta)
+        items_model = RedisModelBuilder(class_name, key, id_names, None, metaclass=ItemsModelBaseMeta)
+        items_model.__item_type__ = item_type
+        return items_model
 
     @classmethod
     def _build_items_collections_schema(cls, key, schema, id_names):

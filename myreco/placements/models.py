@@ -29,6 +29,7 @@ from myreco.engines.types.filters.factory import FiltersFactory
 from myreco.items_types.models import build_item_key
 from falcon.errors import HTTPNotFound
 from sqlalchemy.ext.declarative import AbstractConcreteBase, declared_attr
+import random as random_
 import sqlalchemy as sa
 import hashlib
 import json
@@ -41,6 +42,8 @@ class PlacementsModelBase(AbstractConcreteBase):
     small_hash = sa.Column(sa.String(255), unique=True, nullable=False)
     name = sa.Column(sa.String(255), unique=True, nullable=False)
     ab_testing = sa.Column(sa.Boolean, default=False)
+    show_details = sa.Column(sa.Boolean, default=True)
+    distribute_recos = sa.Column(sa.Boolean, default=False)
 
     @declared_attr
     def store_id(cls):
@@ -72,25 +75,49 @@ class PlacementsModelRecommenderBase(PlacementsModelBase):
 
     @classmethod
     def get_recommendations(cls, req, resp):
+        cls._get_recommendations(req, resp)
+
+    @classmethod
+    def get_slots(cls, req, resp):
+        cls._get_recommendations(req, resp, True)
+
+    @classmethod
+    def _get_recommendations(cls, req, resp, by_slots=False):
         placement = cls._get_placement(req, resp)
-        recommendations = []
         session = req.context['session']
         input_variables = req.context['parameters']['query_string']
+        show_details = placement.get('show_details')
+        distribute_recos = placement.get('distribute_recos')
+        recos = []
+        recos_key = 'slots' if by_slots else 'recommendations'
 
         for slot in placement['variations'][0]['slots']:
-            engine = slot['engine']
-            items_model = cls._get_items_model(engine)
-            engine_vars, filters = \
-                cls._get_variables_and_filters(slot, items_model, input_variables)
-            engine_type = EngineTypeChooser(engine['type_name']['name'])(engine, items_model)
-            max_recos = slot['max_recos']
-            eng_recos = engine_type.get_recommendations(session, filters, max_recos, **engine_vars)
-            recommendations.extend(eng_recos)
+            slot_recos = {'fallbacks': []}
+            slot_recos['main'] = \
+                cls._get_recos_by_slot(slot, input_variables, session, show_details)
 
-        if not recommendations:
+            cls._get_fallbacks_recos(slot_recos, slot, input_variables, session, show_details)
+
+            if by_slots:
+                slot = {'name': slot['name'], 'item_type': slot['engine']['item_type']['name']}
+                slot['recommendations'] = slot_recos
+                recos.append(slot)
+            else:
+                cls._get_recos(recos, slot_recos, slot, distribute_recos)
+
+        if not recos:
             raise HTTPNotFound()
 
-        resp.body = json.dumps(recommendations)
+        if not by_slots:
+            if distribute_recos:
+                recos = cls._distribute_recos(recos)
+
+            recos = cls._unique_recos(recos)
+
+        placement = {'name': placement['name'], 'small_hash': placement['small_hash']}
+        placement[recos_key] = recos
+
+        resp.body = json.dumps(placement)
 
     @classmethod
     def _get_placement(cls, req, resp):
@@ -102,6 +129,18 @@ class PlacementsModelRecommenderBase(PlacementsModelBase):
             raise HTTPNotFound()
 
         return placements[0]
+
+    @classmethod
+    def _get_recos_by_slot(cls, slot, input_variables, session, show_details, max_recos=None):
+        engine = slot['engine']
+        items_model = cls._get_items_model(engine)
+        engine_vars, filters = \
+            cls._get_variables_and_filters(slot, items_model, input_variables)
+        engine_type = EngineTypeChooser(engine['type_name']['name'])(engine, items_model)
+        max_recos = slot['max_recos'] if max_recos is None else max_recos
+
+        return \
+            engine_type.get_recommendations(session, filters, max_recos, show_details, **engine_vars)
 
     @classmethod
     def _get_items_model(cls, engine):
@@ -151,6 +190,64 @@ class PlacementsModelRecommenderBase(PlacementsModelBase):
                     filter_input_schema = {'type': 'array', 'items': var['schema']}
 
                 return var['schema'], filter_input_schema
+
+    @classmethod
+    def _get_fallbacks_recos(cls, slot_recos, slot, input_variables, session, show_details):
+        if len(slot_recos['main']) != slot['max_recos']:
+            for fallback in slot['fallbacks']:
+                fallbacks_recos_size = \
+                    sum([len(fallback) for fallback in slot_recos['fallbacks']])
+                max_recos = slot['max_recos'] - len(slot_recos['main']) - fallbacks_recos_size
+                if max_recos == 0:
+                    break
+
+                fallback_recos = cls._get_recos_by_slot(
+                    fallback, input_variables, session, show_details, max_recos)
+                slot_recos['fallbacks'].append(fallback_recos)
+
+    @classmethod
+    def _get_recos(cls, recos, slot_recos, slot, distribute_recos):
+        fallbacks_recos = []
+        [fallbacks_recos.extend(recos) for recos in slot_recos['fallbacks']]
+        slot_recos = slot_recos['main'] + fallbacks_recos
+
+        for reco in slot_recos:
+            reco['type'] = slot['engine']['item_type']['name']
+
+        if distribute_recos:
+            recos.append(slot_recos)
+        else:
+            recos.extend(slot_recos)
+
+    @classmethod
+    def _distribute_recos(cls, recos_list, random=True):
+        total_length = sum([len(recos) for recos in recos_list])
+        total_items = []
+        initial_pos = 0
+
+        for recos in recos_list:
+            if not recos:
+                continue
+
+            step = int(total_length / len(recos))
+
+            if random:
+                initial_pos = random_.randint(0, step-1)
+
+            positions = range(initial_pos, total_length, step)
+            zip_items_positions = zip(recos, positions)
+            total_items.extend(zip_items_positions)
+
+        random_.shuffle(total_items)
+        sorted_items = sorted(total_items, key=(lambda each: each[1]))
+
+        return [i[0] for i in sorted_items]
+
+    @classmethod
+    def _unique_recos(cls, recos):
+        unique = list()
+        [unique.append(reco) for reco in recos if not unique.count(reco)]
+        return unique
 
     @classmethod
     def _build_id_names_schema(cls, engine):

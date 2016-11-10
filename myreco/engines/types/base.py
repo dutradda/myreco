@@ -58,24 +58,35 @@ class EngineType(metaclass=EngineTypeMeta):
     def _validate_config(self, engine):
         pass
 
-    def get_recommendations(self, session, filters, max_recos, **variables):
+    def get_recommendations(self, session, filters, max_recos, show_details, **variables):
         rec_vector = self._build_rec_vector(session, **variables)
 
         if rec_vector is not None:
             [filter_.filter(session, rec_vector, ids) for filter_, ids in filters.items()]
-            return self._build_rec_list(session, rec_vector, max_recos)
+            return self._build_rec_list(session, rec_vector, max_recos, show_details)
 
         return []
 
     def _build_rec_vector(self, session, **variables):
         pass
 
-    def _build_rec_list(self, session, rec_vector, max_recos):
+    def _build_rec_list(self, session, rec_vector, max_recos, show_details):
         items_indices_map = ItemsIndicesMap(self.items_model)
         best_indices = self._get_best_indices(rec_vector, max_recos)
         best_items_keys = items_indices_map.get_items(session, best_indices)
-        return [msgpack.loads(item, encoding='utf-8') for item in session.redis_bind.hmget(
+
+        if show_details:
+            return [msgpack.loads(item, encoding='utf-8') for item in session.redis_bind.hmget(
                             self.items_model.__key__, best_items_keys) if item is not None]
+
+        else:
+            items_ids = []
+            for key in best_items_keys:
+                item = self.items_model()
+                item.set_ids(eval(key))
+                items_ids.append(item)
+
+            return items_ids
 
     def _get_best_indices(self, rec_vector, max_recos):
         if max_recos > rec_vector.size:
