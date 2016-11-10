@@ -35,8 +35,22 @@ def redis():
     return mock.MagicMock()
 
 
+@pytest.fixture(scope='session')
+def engine(variables):
+    if variables['database']['password']:
+        url = 'mysql+pymysql://{user}:{password}'\
+            '@{host}:{port}/{database}'.format(**variables['database'])
+    else:
+        variables['database'].pop('password')
+        url = 'mysql+pymysql://{user}'\
+            '@{host}:{port}/{database}'.format(**variables['database'])
+        variables['database']['password'] = None
+
+    return create_engine(url)
+
+
 @pytest.fixture
-def session(model_base, request, variables, redis):
+def session(model_base, request, variables, redis, engine):
     conn = pymysql.connect(
         user=variables['database']['user'], password=variables['database']['password'])
 
@@ -50,16 +64,6 @@ def session(model_base, request, variables, redis):
     conn.commit()
     conn.close()
 
-    if variables['database']['password']:
-        url = 'mysql+pymysql://{user}:{password}'\
-            '@{host}:{port}/{database}'.format(**variables['database'])
-    else:
-        variables['database'].pop('password')
-        url = 'mysql+pymysql://{user}'\
-            '@{host}:{port}/{database}'.format(**variables['database'])
-        variables['database']['password'] = None
-
-    engine = create_engine(url)
     model_base.metadata.bind = engine
     model_base.metadata.create_all()
 
