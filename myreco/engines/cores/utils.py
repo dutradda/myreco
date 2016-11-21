@@ -38,4 +38,4 @@ def build_csv_readers(path, pattern=''):
 
 def build_data_path(engine):
     return os.path.join(engine['store']['configuration']['data_path'],
-                        engine['type_name']['name'])
+                        engine['core']['name'])

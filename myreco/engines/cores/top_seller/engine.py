@@ -21,8 +21,8 @@
 # SOFTWARE.
 
 
-from myreco.engines.types.base import EngineType, EngineError
-from myreco.engines.types.utils import build_csv_readers, build_data_path
+from myreco.engines.cores.base import EngineCore, EngineError
+from myreco.engines.cores.utils import build_csv_readers, build_data_path
 from falconswagger.models.base import get_model_schema
 from falconswagger.json_builder import JsonBuilder
 from concurrent.futures import ThreadPoolExecutor
@@ -35,7 +35,7 @@ def build_data_pattern(configuration):
     return 'days_interval_{}'.format(configuration['days_interval'])
 
 
-class TopSellerEngine(EngineType):
+class TopSellerEngine(EngineCore):
     __configuration_schema__ = get_model_schema(__file__)
 
     def export_objects(self, session, items_indices_map):
@@ -92,7 +92,7 @@ class TopSellerEngine(EngineType):
                 indices_values_map[int(index)] = int(value)
 
     def _build_redis_key(self):
-        return '{}_{}'.format(self.engine['type_name']['name'], self.engine['id'])
+        return '{}_{}'.format(self.engine['core']['name'], self.engine['id'])
 
     def _build_rec_vector(self, session, **variables):
         rec_vector = session.redis_bind.get(self._build_redis_key())

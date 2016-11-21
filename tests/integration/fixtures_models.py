@@ -29,7 +29,8 @@ from myreco.placements.models import (PlacementsModelBase, VariationsModelBase,
     ABTestUsersModelBase, build_variations_slots_table)
 from myreco.slots.models import (SlotsVariablesModelBase,
     SlotsModelBase, build_slots_fallbacks_table)
-from myreco.engines.models import EnginesModelBase, EnginesTypesNamesModelBase
+from myreco.engines.models import EnginesModelBase, EnginesCoresModelBase
+from myreco.engines.cores.base import EngineCore
 from myreco.items_types.models import ItemsTypesModelBase
 from myreco.factory import ModelsFactory
 from unittest.mock import MagicMock
@@ -64,10 +65,52 @@ SlotsModel = models['slots']
 
 EnginesModel = models['engines']
 
-EnginesTypesNamesModel = models['engines_types_names']
+EnginesCoresModel = models['engines_cores']
 
 ItemsTypesModel = models['items_types']
     
 SQLAlchemyRedisModelBase = factory.base_model
 
 DataImporter = MagicMock()
+
+
+class TestEngine(EngineCore):
+    __configuration_schema__ = {
+        "type": "object",
+        "required": ["item_id_name", "aggregators_ids_name"],
+        "properties": {
+            "item_id_name": {"type": "string"},
+            "aggregators_ids_name": {"type": "string"}
+        }
+    }
+
+    def get_variables(self):
+        item_id_name = self.engine['configuration']['item_id_name']
+        aggregators_ids_name = self.engine['configuration']['aggregators_ids_name']
+        item_type_schema_props = self.engine['item_type']['schema']['properties']
+        return [{
+            'name': item_id_name,
+            'schema': item_type_schema_props[item_id_name]
+        },{
+            'name': aggregators_ids_name,
+            'schema': item_type_schema_props[aggregators_ids_name]
+        }]
+
+    def _validate_config(self, engine):
+        item_id_name = engine['configuration']['item_id_name']
+        aggregators_ids_name = engine['configuration']['aggregators_ids_name']
+        item_type_schema_props = engine['item_type']['schema']['properties']
+        message = "Configuration key '{}' not in item_type schema"
+
+        if item_id_name not in item_type_schema_props:
+            raise ValidationError(message.format('item_id_name'),
+                instance=engine['configuration'], schema=item_type_schema_props)
+
+        elif aggregators_ids_name not in item_type_schema_props:
+            raise ValidationError(message.format('aggregators_ids_name'),
+                instance=engine['configuration'], schema=item_type_schema_props)
+
+    def _build_rec_vector(self):
+        pass
+
+    get_recommendations = MagicMock()

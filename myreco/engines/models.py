@@ -23,13 +23,12 @@
 
 from falconswagger.models.base import get_model_schema
 from falconswagger.exceptions import ModelBaseError
-from myreco.engines.types.base import EngineTypeChooser
-from myreco.engines.types.items_indices_map import ItemsIndicesMap
+from myreco.engines.cores.items_indices_map import ItemsIndicesMap
 from myreco.items_types.models import build_item_key
+from myreco.utils import ModuleClassLoader
 from types import MethodType, FunctionType
 from jsonschema import ValidationError
 from sqlalchemy.ext.declarative import AbstractConcreteBase, declared_attr
-from importlib import import_module
 from falcon import HTTPNotFound
 import sqlalchemy as sa
 import json
@@ -55,16 +54,16 @@ class EnginesModelBase(AbstractConcreteBase):
         return sa.Column(sa.ForeignKey('stores.id'), nullable=False)
 
     @declared_attr
-    def type_name_id(cls):
-        return sa.Column(sa.ForeignKey('engines_types_names.id'), nullable=False)
+    def core_id(cls):
+        return sa.Column(sa.ForeignKey('engines_cores.id'), nullable=False)
 
     @declared_attr
     def item_type_id(cls):
         return sa.Column(sa.ForeignKey('items_types.id'), nullable=False)
 
     @declared_attr
-    def type_name(cls):
-        return sa.orm.relationship('EnginesTypesNamesModel')
+    def core(cls):
+        return sa.orm.relationship('EnginesCoresModel')
 
     @declared_attr
     def item_type(cls):
@@ -75,23 +74,25 @@ class EnginesModelBase(AbstractConcreteBase):
         return sa.orm.relationship('StoresModel')
 
     @property
-    def type_(self):
-        if not hasattr(self, '_type'):
-            self._set_type()
-        return self._type
+    def core_instance(self):
+        if not hasattr(self, '_core_instance'):
+            self._set_core_instance()
 
-    def _set_type(self):
+        return self._core_instance
+
+    def _set_core_instance(self):
+        core_class_ = ModuleClassLoader.load(self.core.configuration['core_module'])
         todict_schema = {'variables': False}
-        self._type = EngineTypeChooser(self.type_name.name)(self.todict(todict_schema))
+        self._core_instance = core_class_(self.todict(todict_schema))
 
     def _setattr(self, attr_name, value, session, input_):
         if attr_name == 'configuration':
             value = json.dumps(value)
             attr_name = 'configuration_json'
 
-        if attr_name == 'type_name_id':
+        if attr_name == 'core_id':
             value = {'id': value}
-            attr_name = 'type_name'
+            attr_name = 'core'
 
         if attr_name == 'item_type_id':
             value = {'id': value}
@@ -100,8 +101,8 @@ class EnginesModelBase(AbstractConcreteBase):
         super()._setattr(attr_name, value, session, input_)
 
     def _validate(self):
-        if self.type_name is not None:
-            self.type_.validate_config()
+        if self.core is not None:
+            self.core_instance.validate_config()
 
     def _format_output_json(self, dict_inst, schema):
         if schema.get('configuration') is not False:
@@ -109,7 +110,7 @@ class EnginesModelBase(AbstractConcreteBase):
             dict_inst['configuration'] = self.configuration
 
         if schema.get('variables') is not False:
-            dict_inst['variables'] = self.type_.get_variables()
+            dict_inst['variables'] = self.core_instance.get_variables()
 
 
 class EnginesModelDataImporterBase(EnginesModelBase):
@@ -118,21 +119,10 @@ class EnginesModelDataImporterBase(EnginesModelBase):
     @classmethod
     def _run_job(cls, job_session, req, resp):
         engine = cls._get_engine(req, job_session)
-        data_importer = cls._get_data_importer(engine.configuration['data_importer_path'])
+        data_importer_config = engine.core.configuration['data_importer_module']
+        data_importer = ModuleClassLoader.load(data_importer_config)
         items_indices_map = cls._build_items_indices_map(engine)
         return data_importer.get_data(engine.todict(), items_indices_map, job_session)
-
-    @classmethod
-    def _get_data_importer(cls, path):
-        try:
-            module_path = '.'.join(path.split('.')[:-1])
-            class_name = path.split('.')[-1]
-            module = import_module(module_path)
-            return getattr(module, class_name)
-
-        except Exception as error:
-            raise ModelBaseError(
-                "invalid 'data_importer_path' configuration for this engine", path)
 
     @classmethod
     def _get_engine(cls, req, job_session):
@@ -161,16 +151,36 @@ class EnginesModelObjectsExporterBase(EnginesModelDataImporterBase):
         items_indices_map = cls._build_items_indices_map(engine)
 
         if import_data:
-            data_importer = cls._get_data_importer(engine.configuration['data_importer_path'])
+            data_importer_config = engine.core.configuration['data_importer_module']
+            data_importer = ModuleClassLoader.load(data_importer_config)
             data_importer.get_data(engine.todict(), items_indices_map, job_session)
-            return engine.type_.export_objects(job_session, items_indices_map)
+            return engine.core_instance.export_objects(job_session, items_indices_map)
         else:
-            return engine.type_.export_objects(job_session, items_indices_map)
+            return engine.core_instance.export_objects(job_session, items_indices_map)
 
 
-class EnginesTypesNamesModelBase(AbstractConcreteBase):
-    __tablename__ = 'engines_types_names'
-    __use_redis__ = False
+class EnginesCoresModelBase(AbstractConcreteBase):
+    __tablename__ = 'engines_cores'
+    __schema__ = get_model_schema(__file__, 'engines_cores_schema.json')
 
     id = sa.Column(sa.Integer, primary_key=True)
     name = sa.Column(sa.String(255), unique=True, nullable=False)
+    configuration_json = sa.Column(sa.Text, nullable=False)
+
+    @property
+    def configuration(self):
+        if not hasattr(self, '_configuration'):
+            self._configuration = json.loads(self.configuration_json)
+        return self._configuration
+
+    def _setattr(self, attr_name, value, session, input_):
+        if attr_name == 'configuration':
+            value = json.dumps(value)
+            attr_name = 'configuration_json'
+
+        super()._setattr(attr_name, value, session, input_)
+
+    def _format_output_json(self, dict_inst, schema):
+        if schema.get('configuration') is not False:
+            dict_inst.pop('configuration_json')
+            dict_inst['configuration'] = self.configuration

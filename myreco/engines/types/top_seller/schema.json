@@ -1,8 +1,0 @@
-{
-    "type": "object",
-    "required": ["days_interval", "data_importer_path"],
-    "properties": {
-        "days_interval": {"type": "integer"},
-        "data_importer_path": {"type": "string"}
-    }
-}

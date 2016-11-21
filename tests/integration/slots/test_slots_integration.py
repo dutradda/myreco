@@ -24,7 +24,7 @@
 from tests.integration.fixtures_models import (
     SQLAlchemyRedisModelBase, SlotsModel,
     StoresModel, UsersModel, VariablesModel, ItemsTypesModel,
-    EnginesModel, EnginesTypesNamesModel)
+    EnginesModel, EnginesCoresModel)
 from falconswagger.http_api import HttpAPI
 from base64 import b64encode
 from fakeredis import FakeStrictRedis
@@ -54,8 +54,30 @@ def app(session):
     }
     StoresModel.insert(session, store)
 
-    EnginesTypesNamesModel.insert(session, {'name': 'visual_similarity'})
-    EnginesTypesNamesModel.insert(session, {'name': 'top_seller'})
+    engine_core = {
+        'name': 'visual_similarity',
+        'configuration': {
+            'core_module': {
+                'path': 'tests.integration.fixtures_models',
+                'class_name': 'TestEngine'
+            }
+        }
+    }
+    EnginesCoresModel.insert(session, engine_core)
+    engine_core = {
+        'name': 'top_seller',
+        'configuration': {
+            'core_module': {
+                'path': 'myreco.engines.cores.top_seller.engine',
+                'class_name': 'TopSellerEngine'
+            },
+            'data_importer_module': {
+                'path': 'tests.integration.fixtures_models',
+                'class_name': 'DataImporter'
+            }
+        }
+    }
+    EnginesCoresModel.insert(session, engine_core)
 
     schema = {
         'type': 'object',
@@ -98,7 +120,7 @@ def app(session):
             'data_importer_path': 'test.test'
         }),
         'store_id': 1,
-        'type_name_id': 1,
+        'core_id': 1,
         'item_type_id': 1
     }
     EnginesModel.insert(session, engine)
@@ -110,7 +132,7 @@ def app(session):
             'data_importer_path': 'test.test'
         }),
         'store_id': 1,
-        'type_name_id': 1,
+        'core_id': 1,
         'item_type_id': 2
     }
     EnginesModel.insert(session, engine)
@@ -121,7 +143,7 @@ def app(session):
             'data_importer_path': 'test.test'
         }),
         'store_id': 1,
-        'type_name_id': 2,
+        'core_id': 2,
         'item_type_id': 3
     }
     EnginesModel.insert(session, engine)
@@ -366,9 +388,15 @@ class TestSlotsModelPost(object):
                 'store_id': 1,
                 'name': 'Visual Similarity',
                 'item_type_id': 1,
-                'type_name': {
+                'core': {
                     'id': 1,
-                    'name': 'visual_similarity'
+                    'name': 'visual_similarity',
+                    'configuration': {
+                        'core_module': {
+                            'path': 'tests.integration.fixtures_models',
+                            'class_name': 'TestEngine'
+                        }
+                    }
                 },
                 'id': 1,
                 'variables': [{
@@ -376,7 +404,7 @@ class TestSlotsModelPost(object):
                 },{
                     'name': 'filter_test', 'schema': {'type': 'string'}
                 }],
-                'type_name_id': 1,
+                'core_id': 1,
                 'configuration': {
                     'aggregators_ids_name': 'filter_test',
                     'item_id_name': 'item_id',
@@ -464,9 +492,15 @@ class TestSlotsModelPost(object):
                 'store_id': 1,
                 'name': 'Visual Similarity',
                 'item_type_id': 1,
-                'type_name': {
+                'core': {
                     'id': 1,
-                    'name': 'visual_similarity'
+                    'name': 'visual_similarity',
+                    'configuration': {
+                        'core_module': {
+                            'path': 'tests.integration.fixtures_models',
+                            'class_name': 'TestEngine'
+                        }
+                    }
                 },
                 'id': 1,
                 'variables': [{
@@ -474,7 +508,7 @@ class TestSlotsModelPost(object):
                 },{
                     'name': 'filter_test', 'schema': {'type': 'string'}
                 }],
-                'type_name_id': 1,
+                'core_id': 1,
                 'configuration': {
                     'aggregators_ids_name': 'filter_test',
                     'item_id_name': 'item_id',
@@ -574,9 +608,15 @@ class TestSlotsModelPost(object):
                     'store_id': 1,
                     'name': 'Visual Similarity',
                     'item_type_id': 1,
-                    'type_name': {
+                    'core': {
                         'id': 1,
-                        'name': 'visual_similarity'
+                        'name': 'visual_similarity',
+                        'configuration': {
+                            'core_module': {
+                                'path': 'tests.integration.fixtures_models',
+                                'class_name': 'TestEngine'
+                            }
+                        }
                     },
                     'id': 1,
                     'variables': [{
@@ -584,7 +624,7 @@ class TestSlotsModelPost(object):
                     },{
                         'name': 'filter_test', 'schema': {'type': 'string'}
                     }],
-                    'type_name_id': 1,
+                    'core_id': 1,
                     'configuration': {
                         'aggregators_ids_name': 'filter_test',
                         'item_id_name': 'item_id',
@@ -650,9 +690,15 @@ class TestSlotsModelPost(object):
                 'store_id': 1,
                 'name': 'Visual Similarity',
                 'item_type_id': 1,
-                'type_name': {
+                'core': {
                     'id': 1,
-                    'name': 'visual_similarity'
+                    'name': 'visual_similarity',
+                    'configuration': {
+                        'core_module': {
+                            'path': 'tests.integration.fixtures_models',
+                            'class_name': 'TestEngine'
+                        }
+                    }
                 },
                 'id': 1,
                 'variables': [{
@@ -660,7 +706,7 @@ class TestSlotsModelPost(object):
                 },{
                     'name': 'filter_test', 'schema': {'type': 'string'}
                 }],
-                'type_name_id': 1,
+                'core_id': 1,
                 'configuration': {
                     'aggregators_ids_name': 'filter_test',
                     'item_id_name': 'item_id',
@@ -775,9 +821,15 @@ class TestSlotsModelGet(object):
                 'store_id': 1,
                 'name': 'Visual Similarity',
                 'item_type_id': 1,
-                'type_name': {
+                'core': {
                     'id': 1,
-                    'name': 'visual_similarity'
+                    'name': 'visual_similarity',
+                    'configuration': {
+                        'core_module': {
+                            'path': 'tests.integration.fixtures_models',
+                            'class_name': 'TestEngine'
+                        }
+                    }
                 },
                 'id': 1,
                 'variables': [{
@@ -785,7 +837,7 @@ class TestSlotsModelGet(object):
                 },{
                     'name': 'filter_test', 'schema': {'type': 'string'}
                 }],
-                'type_name_id': 1,
+                'core_id': 1,
                 'configuration': {
                     'aggregators_ids_name': 'filter_test',
                     'item_id_name': 'item_id',
@@ -1043,9 +1095,15 @@ class TestSlotsModelUriTemplatePatch(object):
                 'store_id': 1,
                 'name': 'Visual Similarity',
                 'item_type_id': 1,
-                'type_name': {
+                'core': {
                     'id': 1,
-                    'name': 'visual_similarity'
+                    'name': 'visual_similarity',
+                    'configuration': {
+                        'core_module': {
+                            'path': 'tests.integration.fixtures_models',
+                            'class_name': 'TestEngine'
+                        }
+                    }
                 },
                 'id': 1,
                 'variables': [{
@@ -1053,7 +1111,7 @@ class TestSlotsModelUriTemplatePatch(object):
                 },{
                     'name': 'filter_test', 'schema': {'type': 'string'}
                 }],
-                'type_name_id': 1,
+                'core_id': 1,
                 'configuration': {
                     'aggregators_ids_name': 'filter_test',
                     'item_id_name': 'item_id',
@@ -1183,9 +1241,15 @@ class TestSlotsModelUriTemplateGet(object):
                 'store_id': 1,
                 'name': 'Visual Similarity',
                 'item_type_id': 1,
-                'type_name': {
+                'core': {
                     'id': 1,
-                    'name': 'visual_similarity'
+                    'name': 'visual_similarity',
+                    'configuration': {
+                        'core_module': {
+                            'path': 'tests.integration.fixtures_models',
+                            'class_name': 'TestEngine'
+                        }
+                    }
                 },
                 'id': 1,
                 'variables': [{
@@ -1193,7 +1257,7 @@ class TestSlotsModelUriTemplateGet(object):
                 },{
                     'name': 'filter_test', 'schema': {'type': 'string'}
                 }],
-                'type_name_id': 1,
+                'core_id': 1,
                 'configuration': {
                     'aggregators_ids_name': 'filter_test',
                     'item_id_name': 'item_id',

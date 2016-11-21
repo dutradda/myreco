@@ -23,9 +23,9 @@
 
 from tests.integration.fixtures_models import (
     SQLAlchemyRedisModelBase, StoresModel, UsersModel,
-    ItemsTypesModel, EnginesModel, EnginesTypesNamesModel, DataImporter)
+    ItemsTypesModel, EnginesModel, EnginesCoresModel, DataImporter)
 from myreco.factory import ModelsFactory
-from myreco.engines.types.items_indices_map import ItemsIndicesMap
+from myreco.engines.cores.items_indices_map import ItemsIndicesMap
 from pytest_falcon.plugin import Client
 from falconswagger.http_api import HttpAPI
 from base64 import b64encode
@@ -58,7 +58,16 @@ def app(session):
     }
     StoresModel.insert(session, store)
 
-    EnginesTypesNamesModel.insert(session, {'name': 'top_seller'})
+    core = {
+        'name': 'top_seller',
+        'configuration': {
+            'core_module': {
+                'path': 'myreco.engines.cores.top_seller.engine',
+                'class_name': 'TopSellerEngine'
+            }
+        }
+    }
+    EnginesCoresModel.insert(session, core)
 
     item_type = {
         'name': 'products',
@@ -71,7 +80,7 @@ def app(session):
     }
     ItemsTypesModel.insert(session, item_type)
 
-    return HttpAPI([EnginesModel], session.bind, FakeStrictRedis())
+    return HttpAPI([EnginesModel, EnginesCoresModel], session.bind, FakeStrictRedis())
 
 
 @pytest.fixture
@@ -99,12 +108,12 @@ class TestEnginesModelPost(object):
                 'schema': {
                     'type': 'object',
                     'additionalProperties': False,
-                    'required': ['configuration', 'store_id', 'type_name_id', 'item_type_id'],
+                    'required': ['configuration', 'store_id', 'core_id', 'item_type_id'],
                     'properties': {
                         'name': {'type': 'string'},
                         'configuration': {'$ref': 'http://json-schema.org/draft-04/schema#'},
                         'store_id': {'type': 'integer'},
-                        'type_name_id': {'type': 'integer'},
+                        'core_id': {'type': 'integer'},
                         'item_type_id': {'type': 'integer'}
                     }
                 }
@@ -116,7 +125,7 @@ class TestEnginesModelPost(object):
             'name': 'Seven Days Top Seller',
             'configuration': {"days_interval": 7, 'data_importer_path': 'test.test'},
             'store_id': 1,
-            'type_name_id': 1,
+            'core_id': 1,
             'item_type_id': 1
         }]
         resp = client.post('/engines/', headers={'Authorization': 'invalid'},body=json.dumps(body))
@@ -128,7 +137,7 @@ class TestEnginesModelPost(object):
             'name': 'Seven Days Top Seller',
             'configuration': {"days_interval": 7, 'data_importer_path': 'test.test'},
             'store_id': 1,
-            'type_name_id': 1,
+            'core_id': 1,
             'item_type_id': 1
         }]
         resp = client.post('/engines/', headers=headers, body=json.dumps(body))
@@ -136,7 +145,16 @@ class TestEnginesModelPost(object):
         body[0]['variables'] = []
         body[0]['store'] = \
             {'id': 1, 'name': 'test', 'country': 'test', 'configuration': {'data_path': '/test'}}
-        body[0]['type_name'] = {'id': 1, 'name': 'top_seller'}
+        body[0]['core'] = {
+            'id': 1,
+            'name': 'top_seller',
+            'configuration': {
+                'core_module': {
+                    'path': 'myreco.engines.cores.top_seller.engine',
+                    'class_name': 'TopSellerEngine'
+                }
+            }
+        }
         body[0]['item_type'] = {
             'id': 1,
             'stores': [{
@@ -174,7 +192,7 @@ class TestEnginesModelGet(object):
             'name': 'Seven Days Top Seller',
             'configuration': {"days_interval": 7, 'data_importer_path': 'test.test'},
             'store_id': 1,
-            'type_name_id': 1,
+            'core_id': 1,
             'item_type_id': 1
         }]
         client.post('/engines/', headers=headers, body=json.dumps(body))
@@ -182,7 +200,16 @@ class TestEnginesModelGet(object):
         body[0]['variables'] = []
         body[0]['store'] = \
             {'id': 1, 'name': 'test', 'country': 'test', 'configuration': {'data_path': '/test'}}
-        body[0]['type_name'] = {'id': 1, 'name': 'top_seller'}
+        body[0]['core'] = {
+            'id': 1,
+            'name': 'top_seller',
+            'configuration': {
+                'core_module': {
+                    'path': 'myreco.engines.cores.top_seller.engine',
+                    'class_name': 'TopSellerEngine'
+                }
+            }
+        }
         body[0]['item_type'] = {
             'id': 1,
             'stores': [{
@@ -227,7 +254,7 @@ class TestEnginesModelUriTemplatePatch(object):
                         'name': {'type': 'string'},
                         'configuration': {'$ref': 'http://json-schema.org/draft-04/schema#'},
                         'store_id': {'type': 'integer'},
-                        'type_name_id': {'type': 'integer'},
+                        'core_id': {'type': 'integer'},
                         'item_type_id': {'type': 'integer'}
                     }
                 }
@@ -237,9 +264,9 @@ class TestEnginesModelUriTemplatePatch(object):
     def test_patch_with_invalid_configuration(self, client, headers):
         body = [{
             'name': 'Seven Days Top Seller',
-            'configuration': {"days_interval": 7, 'data_importer_path': 'test.test'},
+            'configuration': {'days_interval': 7},
             'store_id': 1,
-            'type_name_id': 1,
+            'core_id': 1,
             'item_type_id': 1
         }]
         client.post('/engines/', headers=headers, body=json.dumps(body))
@@ -255,10 +282,9 @@ class TestEnginesModelUriTemplatePatch(object):
                 'message': "'days_interval' is a required property",
                 'schema': {
                     'type': 'object',
-                    'required': ['days_interval', 'data_importer_path'],
+                    'required': ['days_interval'],
                     'properties': {
-                        'days_interval': {'type': 'integer'},
-                        'data_importer_path': {'type': 'string'}
+                        'days_interval': {'type': 'integer'}
                     }
                 }
             }
@@ -275,9 +301,9 @@ class TestEnginesModelUriTemplatePatch(object):
     def test_patch(self, client, headers):
         body = [{
             'name': 'Seven Days Top Seller',
-            'configuration': {"days_interval": 7, 'data_importer_path': 'test.test'},
+            'configuration': {"days_interval": 7},
             'store_id': 1,
-            'type_name_id': 1,
+            'core_id': 1,
             'item_type_id': 1
         }]
         obj = json.loads(client.post('/engines/', headers=headers, body=json.dumps(body)).body)[0]
@@ -302,9 +328,9 @@ class TestEnginesModelUriTemplateDelete(object):
     def test_delete(self, client, headers):
         body = [{
             'name': 'Seven Days Top Seller',
-            'configuration': {"days_interval": 7, 'data_importer_path': 'test.test'},
+            'configuration': {"days_interval": 7},
             'store_id': 1,
-            'type_name_id': 1,
+            'core_id': 1,
             'item_type_id': 1
         }]
         client.post('/engines/', headers=headers, body=json.dumps(body))
@@ -332,9 +358,9 @@ class TestEnginesModelUriTemplateGet(object):
     def test_get(self, client, headers):
         body = [{
             'name': 'Seven Days Top Seller',
-            'configuration': {"days_interval": 7, 'data_importer_path': 'test.test'},
+            'configuration': {"days_interval": 7},
             'store_id': 1,
-            'type_name_id': 1,
+            'core_id': 1,
             'item_type_id': 1
         }]
         client.post('/engines/', headers=headers, body=json.dumps(body))
@@ -344,7 +370,16 @@ class TestEnginesModelUriTemplateGet(object):
         body[0]['variables'] = []
         body[0]['store'] = \
             {'id': 1, 'name': 'test', 'country': 'test', 'configuration': {'data_path': '/test'}}
-        body[0]['type_name'] = {'id': 1, 'name': 'top_seller'}
+        body[0]['core'] = {
+            'id': 1,
+            'name': 'top_seller',
+            'configuration': {
+                'core_module': {
+                    'path': 'myreco.engines.cores.top_seller.engine',
+                    'class_name': 'TopSellerEngine'
+                }
+            }
+        }
         body[0]['item_type'] = {
             'id': 1,
             'stores': [{
@@ -387,7 +422,20 @@ def data_importer_app(session):
     }
     models['stores'].insert(session, store)
 
-    models['engines_types_names'].insert(session, {'name': 'top_seller'})
+    engine_core = {
+        'name': 'top_seller',
+        'configuration': {
+            'core_module': {
+                'path': 'myreco.engines.cores.top_seller.engine',
+                'class_name': 'TopSellerEngine'
+            },
+            'data_importer_module': {
+                'path': 'tests.integration.fixtures_models',
+                'class_name': 'DataImporter'
+            }
+        }
+    }
+    models['engines_cores'].insert(session, engine_core)
 
     item_type = {
         'name': 'products',
@@ -402,9 +450,9 @@ def data_importer_app(session):
 
     engine = {
         'name': 'Seven Days Top Seller',
-        'configuration': {'days_interval': 7, 'data_importer_path': 'tests.integration.fixtures_models.DataImporter'},
+        'configuration': {'days_interval': 7},
         'store_id': 1,
-        'type_name_id': 1,
+        'core_id': 1,
         'item_type_id': 1
     }
     models['engines'].insert(session, engine)
@@ -522,7 +570,20 @@ def objects_exporter_app(session):
     }
     models['stores'].insert(session, store)
 
-    models['engines_types_names'].insert(session, {'name': 'top_seller'})
+    engine_core = {
+        'name': 'top_seller',
+        'configuration': {
+            'core_module': {
+                'path': 'myreco.engines.cores.top_seller.engine',
+                'class_name': 'TopSellerEngine'
+            },
+            'data_importer_module': {
+                'path': 'tests.integration.fixtures_models',
+                'class_name': 'DataImporter'
+            }
+        }
+    }
+    models['engines_cores'].insert(session, engine_core)
 
     item_type = {
         'name': 'products',
@@ -537,9 +598,9 @@ def objects_exporter_app(session):
 
     engine = {
         'name': 'Seven Days Top Seller',
-        'configuration': {'days_interval': 7, 'data_importer_path': 'tests.integration.fixtures_models.DataImporter'},
+        'configuration': {'days_interval': 7},
         'store_id': 1,
-        'type_name_id': 1,
+        'core_id': 1,
         'item_type_id': 1
     }
     models['engines'].insert(session, engine)
@@ -555,7 +616,7 @@ def objects_exporter_client(objects_exporter_app):
     return Client(objects_exporter_app)
 
 
-@mock.patch('myreco.engines.types.top_seller.engine.build_csv_readers')
+@mock.patch('myreco.engines.cores.top_seller.engine.build_csv_readers')
 @mock.patch('falconswagger.models.base.random.getrandbits',
     new=mock.MagicMock(return_value=131940827655846590526331314439483569710))
 class TestEnginesModelsObjectsExporter(object):
@@ -631,7 +692,7 @@ class TestEnginesModelsObjectsExporter(object):
         }
 
 
-@mock.patch('myreco.engines.types.top_seller.engine.build_csv_readers')
+@mock.patch('myreco.engines.cores.top_seller.engine.build_csv_readers')
 @mock.patch('falconswagger.models.base.random.getrandbits',
     new=mock.MagicMock(return_value=131940827655846590526331314439483569710))
 class TestEnginesModelsObjectsExporterWithImport(object):
@@ -743,3 +804,258 @@ class TestEnginesModelsObjectsExporterWithImport(object):
                 'name': 'EngineError'
             }
         }
+
+
+class TestEnginesCoresModelPost(object):
+
+    def test_post_without_body(self, client, headers):
+        resp = client.post('/engines_cores/', headers=headers)
+        assert resp.status_code == 400
+        assert json.loads(resp.body) == {'error': 'Request body is missing'}
+
+    def test_post_with_invalid_body(self, client, headers):
+        resp = client.post('/engines_cores/', headers=headers, body='[{}]')
+        assert resp.status_code == 400
+        assert json.loads(resp.body) ==  {
+            'error': {
+                'input': {},
+                'message': "'configuration' is a required property",
+                'schema': {
+                    'type': 'object',
+                    'additionalProperties': False,
+                    'required': ['configuration'],
+                    'properties': {
+                        'name': {'type': 'string'},
+                        'configuration': {'$ref': '#/definitions/configuration'}
+                    }
+                }
+            }
+        }
+
+    def test_post_with_invalid_grant(self, client):
+        body = [{
+            'name': 'top_seller2',
+            'configuration': {
+                'core_module': {
+                    'path': 'myreco.engines.cores.top_seller.engine',
+                    'class_name': 'TopSellerEngine'
+                }
+            }
+        }]
+        resp = client.post('/engines_cores/', headers={'Authorization': 'invalid'},body=json.dumps(body))
+        assert resp.status_code == 401
+        assert json.loads(resp.body) ==  {'error': 'Invalid authorization'}
+
+    def test_post(self, client, headers):
+        body = [{
+            'name': 'top_seller2',
+            'configuration': {
+                'core_module': {
+                    'path': 'myreco.engines.cores.top_seller.engine',
+                    'class_name': 'TopSellerEngine'
+                },
+                'data_importer_module': {
+                    'path': 'tests.integration.fixtures_models',
+                    'class_name': 'DataImporter'
+                }
+            }
+        }]
+        resp = client.post('/engines_cores/', headers=headers, body=json.dumps(body))
+        body[0]['id'] = 2
+
+        assert resp.status_code == 201
+        assert json.loads(resp.body) ==  body
+
+
+class TestEnginesCoresModelGet(object):
+
+    def test_get_not_found(self, client, headers):
+        client.delete('/engines_cores/1/', headers=headers)
+        resp = client.get('/engines_cores/', headers=headers)
+        assert resp.status_code == 404
+
+    def test_get_invalid_with_body(self, client, headers):
+        resp = client.get('/engines_cores/', headers=headers, body='{}')
+        assert resp.status_code == 400
+        assert json.loads(resp.body) == {'error': 'Request body is not acceptable'}
+
+    def test_get(self, client, headers):
+        body = [{
+            'name': 'top_seller2',
+            'configuration': {
+                'core_module': {
+                    'path': 'myreco.engines.cores.top_seller.engine',
+                    'class_name': 'TopSellerEngine'
+                },
+                'data_importer_module': {
+                    'path': 'tests.integration.fixtures_models',
+                    'class_name': 'DataImporter'
+                }
+            }
+        }]
+        client.delete('/engines_cores/1/', headers=headers)
+        client.post('/engines_cores/', headers=headers, body=json.dumps(body))
+        body[0]['id'] = 2
+        resp = client.get('/engines_cores/', headers=headers)
+        assert resp.status_code == 200
+        assert json.loads(resp.body) ==  body
+
+
+class TestEnginesCoresModelUriTemplatePatch(object):
+
+    def test_patch_without_body(self, client, headers):
+        resp = client.patch('/engines_cores/1/', headers=headers, body='')
+        assert resp.status_code == 400
+        assert json.loads(resp.body) == {'error': 'Request body is missing'}
+
+    def test_patch_with_invalid_body(self, client, headers):
+        resp = client.patch('/engines_cores/1/', headers=headers, body='{}')
+        assert resp.status_code == 400
+        assert json.loads(resp.body) ==  {
+            'error': {
+                'input': {},
+                'message': '{} does not have enough properties',
+                'schema': {
+                    'type': 'object',
+                    'additionalProperties': False,
+                    'minProperties': 1,
+                    'properties': {
+                        'name': {'type': 'string'},
+                        'configuration': {'$ref': '#/definitions/configuration'}
+                    }
+                }
+            }
+        }
+
+    def test_patch_with_invalid_configuration(self, client, headers):
+        body = [{
+            'name': 'top_seller2',
+            'configuration': {
+                'core_module': {
+                    'path': 'myreco.engines.cores.top_seller.engine',
+                    'class_name': 'TopSellerEngine'
+                },
+                'data_importer_module': {
+                    'path': 'tests.integration.fixtures_models',
+                    'class_name': 'DataImporter'
+                }
+            }
+        }]
+        client.post('/engines_cores/', headers=headers, body=json.dumps(body))
+
+        body = {
+            'configuration': {}
+        }
+        resp = client.patch('/engines_cores/2/', headers=headers, body=json.dumps(body))
+        assert resp.status_code == 400
+        assert json.loads(resp.body) ==  {
+            'error': {
+                'input': {},
+                'message': "'data_importer_module' is a required property",
+                'schema': {
+                    'type': 'object',
+                    'required': ['data_importer_module', 'core_module'],
+                    'properties': {
+                        'data_importer_module': {'$ref': '#/definitions/module'},
+                        'core_module': {'$ref': '#/definitions/module'}
+                    }
+                }
+            }
+        }
+
+    def test_patch_not_found(self, client, headers):
+        body = {
+            'name': 'test'
+        }
+        resp = client.patch('/engines_cores/2/', headers=headers, body=json.dumps(body))
+        assert resp.status_code == 404
+
+    def test_patch(self, client, headers):
+        body = [{
+            'name': 'top_seller2',
+            'configuration': {
+                'core_module': {
+                    'path': 'myreco.engines.cores.top_seller.engine',
+                    'class_name': 'TopSellerEngine'
+                },
+                'data_importer_module': {
+                    'path': 'tests.integration.fixtures_models',
+                    'class_name': 'DataImporter'
+                }
+            }
+        }]
+        obj = json.loads(client.post('/engines_cores/', headers=headers, body=json.dumps(body)).body)[0]
+
+        body = {
+            'name': 'test2'
+        }
+        resp = client.patch('/engines_cores/2/', headers=headers, body=json.dumps(body))
+        obj['name'] = 'test2'
+
+        assert resp.status_code == 200
+        assert json.loads(resp.body) ==  obj
+
+
+class TestEnginesCoresModelUriTemplateDelete(object):
+
+    def test_delete_with_body(self, client, headers):
+        resp = client.delete('/engines_cores/1/', headers=headers, body='{}')
+        assert resp.status_code == 400
+        assert json.loads(resp.body) == {'error': 'Request body is not acceptable'}
+
+    def test_delete(self, client, headers):
+        body = [{
+            'name': 'top_seller2',
+            'configuration': {
+                'core_module': {
+                    'path': 'myreco.engines.cores.top_seller.engine',
+                    'class_name': 'TopSellerEngine'
+                },
+                'data_importer_module': {
+                    'path': 'tests.integration.fixtures_models',
+                    'class_name': 'DataImporter'
+                }
+            }
+        }]
+        client.post('/engines_cores/', headers=headers, body=json.dumps(body))
+        resp = client.get('/engines_cores/2/', headers=headers)
+        assert resp.status_code == 200
+
+        resp = client.delete('/engines_cores/2/', headers=headers)
+        assert resp.status_code == 204
+
+        resp = client.get('/engines_cores/2/', headers=headers)
+        assert resp.status_code == 404
+
+
+class TestEnginesCoresModelUriTemplateGet(object):
+
+    def test_get_with_body(self, client, headers):
+        resp = client.get('/engines_cores/2/', headers=headers, body='{}')
+        assert resp.status_code == 400
+        assert json.loads(resp.body) == {'error': 'Request body is not acceptable'}
+
+    def test_get_not_found(self, client, headers):
+        resp = client.get('/engines_cores/2/', headers=headers)
+        assert resp.status_code == 404
+
+    def test_get(self, client, headers):
+        body = [{
+            'name': 'top_seller2',
+            'configuration': {
+                'core_module': {
+                    'path': 'myreco.engines.cores.top_seller.engine',
+                    'class_name': 'TopSellerEngine'
+                },
+                'data_importer_module': {
+                    'path': 'tests.integration.fixtures_models',
+                    'class_name': 'DataImporter'
+                }
+            }
+        }]
+        client.post('/engines_cores/', headers=headers, body=json.dumps(body))
+
+        resp = client.get('/engines_cores/2/', headers=headers)
+        body[0]['id'] = 2
+        assert resp.status_code == 200
+        assert json.loads(resp.body) == body[0]

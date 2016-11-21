@@ -1,9 +1,0 @@
-{
-    "type": "object",
-    "required": ["item_id_name", "aggregators_ids_name", "data_importer_path"],
-    "properties": {
-        "item_id_name": {"type": "string"},
-        "aggregators_ids_name": {"type": "string"},
-        "data_importer_path": {"type": "string"}
-    }
-}

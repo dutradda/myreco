@@ -21,9 +21,9 @@
 # SOFTWARE.
 
 
-from myreco.engines.types.items_indices_map import ItemsIndicesMap
-from myreco.engines.types.filters.factory import FiltersFactory
-from myreco.engines.types.filters.filters import BooleanFilterBy
+from myreco.engines.cores.items_indices_map import ItemsIndicesMap
+from myreco.engines.cores.filters.factory import FiltersFactory
+from myreco.engines.cores.filters.filters import BooleanFilterBy
 from falconswagger.models.redis import RedisModelMeta, RedisModelBuilder
 from falconswagger.models.base import get_model_schema, ModelBase, get_dir_path
 from falconswagger.exceptions import ModelBaseError

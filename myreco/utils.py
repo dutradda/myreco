@@ -21,9 +21,26 @@
 # SOFTWARE.
 
 
-from falconswagger.models.base import get_model_schema
-from myreco.engines.types.base import EngineType
+from falconswagger.exceptions import ModelBaseError
+from importlib import import_module
 
 
-class NeighborhoodEngine(EngineType):
-    __configuration_schema__ = get_model_schema(__file__)
+class ModuleClassLoader(object):
+    _classes = dict()
+
+    @classmethod
+    def load(cls, config):
+        key = '{}.{}'.format(config['path'], config['class_name'])
+        class_ = cls._classes.get(key)
+
+        if class_ is None:
+            try:
+                module = import_module(config['path'])
+                class_ = getattr(module, config['class_name'])
+                cls._classes[key] = class_
+
+            except Exception as error:
+                raise ModelBaseError("invalid module '{}.{}' configuration for this engine",
+                                     config['path'], config['class_name'])
+
+        return class_

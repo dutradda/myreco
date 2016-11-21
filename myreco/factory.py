@@ -31,7 +31,7 @@ from myreco.slots.models import (SlotsVariablesModelBase,
     SlotsModelBase, build_slots_fallbacks_table)
 from myreco.engines.models import (
     EnginesModelBase, EnginesModelDataImporterBase,
-    EnginesModelObjectsExporterBase, EnginesTypesNamesModelBase)
+    EnginesModelObjectsExporterBase, EnginesCoresModelBase)
 from myreco.items_types.models import (ItemsTypesModelBase, build_items_types_stores_table,
     ItemsTypesModelFiltersUpdaterBase)
 from falconswagger.models.sqlalchemy_redis import SQLAlchemyRedisModelBuilder
@@ -82,7 +82,7 @@ class ModelsFactory(object):
 
         return {
             'engines': self.make_engines_model(app_type),
-            'engines_types_names': self.make_engines_types_names_model(),
+            'engines_cores': self.make_engines_cores_model(),
             'slots': self.make_slots_model(),
             'slots_variables': self.make_slots_variables_model(),
             'items_types': self.make_items_types_model(app_type),
@@ -138,10 +138,10 @@ class ModelsFactory(object):
 
         return self.meta_class('EnginesModel', bases_classes, attributes)
 
-    def make_engines_types_names_model(self, attributes=None):
+    def make_engines_cores_model(self, attributes=None):
         attributes = self._init_attributes(attributes, self._commons_models_attrs)
         return self.meta_class(
-            'EnginesTypesNamesModel', (EnginesTypesNamesModelBase, self.base_model), attributes)
+            'EnginesCoresModel', (EnginesCoresModelBase, self.base_model), attributes)
 
     def make_slots_model(self, attributes=None):
         attributes = self._init_attributes(attributes, self._commons_models_attrs)

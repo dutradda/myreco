@@ -22,7 +22,7 @@
 
 
 from falconswagger.models.base import build_validator, get_module_path
-from myreco.engines.types.items_indices_map import ItemsIndicesMap
+from myreco.engines.cores.items_indices_map import ItemsIndicesMap
 from jsonschema import Draft4Validator
 from abc import ABCMeta, abstractmethod
 from bottleneck import argpartition
@@ -33,16 +33,16 @@ class EngineError(Exception):
     pass
 
 
-class EngineTypeMeta(type):
+class EngineCoreMeta(ABCMeta):
 
     def __init__(cls, name, bases_classes, attributes):
-        if name != 'EngineType':
+        if name != 'EngineCore':
             schema = cls.__configuration_schema__
             Draft4Validator.check_schema(schema)
             cls.__config_validator__ = build_validator(schema, get_module_path(cls))
 
 
-class EngineType(metaclass=EngineTypeMeta):
+class EngineCore(metaclass=EngineCoreMeta):
 
     def __init__(self, engine=None, items_model=None):
         self.engine = engine
@@ -67,6 +67,7 @@ class EngineType(metaclass=EngineTypeMeta):
 
         return []
 
+    @abstractmethod
     def _build_rec_vector(self, session, **variables):
         pass
 
@@ -107,21 +108,3 @@ class AbstractDataImporter(metaclass=ABCMeta):
     @abstractmethod
     def get_data(cls, engine, items_indices_map, session):
         pass
-
-
-from myreco.engines.types.neighborhood.engine import NeighborhoodEngine
-from myreco.engines.types.top_seller.engine import TopSellerEngine
-from myreco.engines.types.visual_similarity.engine import VisualSimilarityEngine
-
-
-class EngineTypeChooser(object):
-
-    def __new__(cls, name):
-        if name == 'neighborhood':
-            return NeighborhoodEngine
-
-        elif name == 'top_seller':
-            return TopSellerEngine
-
-        elif name == 'visual_similarity':
-            return VisualSimilarityEngine

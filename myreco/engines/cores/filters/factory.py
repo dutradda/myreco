@@ -21,7 +21,7 @@
 # SOFTWARE.
 
 
-from myreco.engines.types.filters.filters import (BooleanFilterBy, SimpleFilterBy, ObjectFilterBy,
+from myreco.engines.cores.filters.filters import (BooleanFilterBy, SimpleFilterBy, ObjectFilterBy,
     ArrayFilterBy, SimpleFilterOf, ObjectFilterOf, ArrayFilterOf)
 
 

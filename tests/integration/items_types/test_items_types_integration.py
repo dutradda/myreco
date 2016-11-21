@@ -25,7 +25,7 @@ from tests.integration.fixtures_models import UsersModel, StoresModel, SQLAlchem
 from tests.integration.fixtures_models import ItemsTypesModel, SlotsModel
 from falconswagger.http_api import HttpAPI
 from myreco.factory import ModelsFactory
-from myreco.engines.types.items_indices_map import ItemsIndicesMap
+from myreco.engines.cores.items_indices_map import ItemsIndicesMap
 from base64 import b64encode
 from fakeredis import FakeStrictRedis
 from unittest import mock
@@ -776,16 +776,25 @@ def filters_updater_app(redis, session):
     }
     models['items_types'].insert(session, item_type)
 
-    models['engines_types_names'].insert(session, {'name': 'top_seller'})
+    engine_core = {
+        'name': 'top_seller',
+        'configuration': {
+            'core_module': {
+                'path': 'myreco.engines.cores.top_seller.engine',
+                'class_name': 'TopSellerEngine'
+            }
+        }
+    }
+    models['engines_cores'].insert(session, engine_core)
 
     engine = {
         'name': 'Top Seller',
         'configuration_json': json.dumps({
             'days_interval': 7,
-            'data_importer_path': 'myreco.engines.types.base.AbstractDataImporter'
+            'data_importer_path': 'myreco.engines.cores.base.AbstractDataImporter'
         }),
         'store_id': 1,
-        'type_name_id': 1,
+        'core_id': 1,
         'item_type_id': 1
     }
     models['engines'].insert(session, engine)

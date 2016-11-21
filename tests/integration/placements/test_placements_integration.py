@@ -24,12 +24,10 @@
 from tests.integration.fixtures_models import (
     SQLAlchemyRedisModelBase, SlotsModel, PlacementsModel,
     UsersModel, StoresModel, VariablesModel, ItemsTypesModel,
-    EnginesModel, EnginesTypesNamesModel, DataImporter)
+    EnginesModel, EnginesCoresModel, DataImporter, TestEngine)
 from pytest_falcon.plugin import Client
-from myreco.engines.types.base import EngineType
-from myreco.engines.types.items_indices_map import ItemsIndicesMap
-from myreco.engines.types.utils import build_data_path
-from myreco.engines.types.top_seller.engine import build_data_pattern as build_top_seller_data_pattern
+from myreco.engines.cores.utils import build_data_path
+from myreco.engines.cores.top_seller.engine import build_data_pattern as build_top_seller_data_pattern
 from myreco.factory import ModelsFactory
 from falconswagger.http_api import HttpAPI
 from base64 import b64encode
@@ -79,9 +77,31 @@ def app(redis, session, temp_dir):
     }
     StoresModel.insert(session, store)
 
-    EnginesTypesNamesModel.__api__ = None
-    EnginesTypesNamesModel.insert(session, {'name': 'visual_similarity'})
-    EnginesTypesNamesModel.insert(session, {'name': 'top_seller'})
+    EnginesCoresModel.__api__ = None
+    engine_core = {
+        'name': 'visual_similarity',
+        'configuration': {
+            'core_module': {
+                'path': 'tests.integration.fixtures_models',
+                'class_name': 'TestEngine'
+            }
+        }
+    }
+    EnginesCoresModel.insert(session, engine_core)
+    engine_core = {
+        'name': 'top_seller',
+        'configuration': {
+            'core_module': {
+                'path': 'myreco.engines.cores.top_seller.engine',
+                'class_name': 'TopSellerEngine'
+            },
+            'data_importer_module': {
+                'path': 'tests.integration.fixtures_models',
+                'class_name': 'DataImporter'
+            }
+        }
+    }
+    EnginesCoresModel.insert(session, engine_core)
 
     schema = {
         'type': 'object',
@@ -152,7 +172,7 @@ def app(redis, session, temp_dir):
             'data_importer_path': 'test.test'
         }),
         'store_id': 1,
-        'type_name_id': 1,
+        'core_id': 1,
         'item_type_id': 1
     }
     EnginesModel.insert(session, engine)
@@ -160,40 +180,37 @@ def app(redis, session, temp_dir):
         'name': 'Categories Visual Similarity',
         'configuration_json': json.dumps({
             'item_id_name': 'item_id',
-            'aggregators_ids_name': 'filter_test',
-            'data_importer_path': 'test.test'
+            'aggregators_ids_name': 'filter_test'
         }),
         'store_id': 1,
-        'type_name_id': 1,
+        'core_id': 1,
         'item_type_id': 2
     }
     EnginesModel.insert(session, engine)
     engine = {
         'name': 'Invalid Top Seller',
         'configuration_json': json.dumps({
-            'days_interval': 7,
-            'data_importer_path': 'test.test'
+            'days_interval': 7
         }),
         'store_id': 1,
-        'type_name_id': 2,
+        'core_id': 2,
         'item_type_id': 3
     }
     EnginesModel.insert(session, engine)
     engine = {
         'name': 'Top Seller',
         'configuration_json': json.dumps({
-            'days_interval': 7,
-            'data_importer_path': 'tests.integration.fixtures_models.DataImporter'
+            'days_interval': 7
         }),
         'store_id': 1,
-        'type_name_id': 2,
+        'core_id': 2,
         'item_type_id': 4
     }
     EnginesModel.insert(session, engine)
     engine = {
         'name': 'With Fallback',
         'store_id': 1,
-        'type_name_id': 1,
+        'core_id': 1,
         'item_type_id': 4,
         'configuration': {
             'item_id_name': 'item_id',
@@ -542,11 +559,17 @@ class TestPlacementsModelPost(object):
                             'configuration': {'data_path': temp_dir.name}
                         },
                         'store_id': 1,
-                        'type_name': {
+                        'core': {
                             'id': 1,
-                            'name': 'visual_similarity'
+                            'name': 'visual_similarity',
+                            'configuration': {
+                                'core_module': {
+                                    'path': 'tests.integration.fixtures_models',
+                                    'class_name': 'TestEngine'
+                                }
+                            }
                         },
-                        'type_name_id': 1,
+                        'core_id': 1,
                         'variables': [{
                             'name': 'item_id', 'schema': {'type': 'integer'}
                         },{
@@ -702,11 +725,17 @@ class TestPlacementsModelGet(object):
                             'configuration': {'data_path': temp_dir.name}
                         },
                         'store_id': 1,
-                        'type_name': {
+                        'core': {
                             'id': 1,
-                            'name': 'visual_similarity'
+                            'name': 'visual_similarity',
+                            'configuration': {
+                                'core_module': {
+                                    'path': 'tests.integration.fixtures_models',
+                                    'class_name': 'TestEngine'
+                                }
+                            }
                         },
-                        'type_name_id': 1,
+                        'core_id': 1,
                         'variables': [{
                             'name': 'item_id', 'schema': {'type': 'integer'}
                         },{
@@ -952,11 +981,17 @@ class TestPlacementsModelUriTemplateGet(object):
                             'configuration': {'data_path': temp_dir.name}
                         },
                         'store_id': 1,
-                        'type_name': {
+                        'core': {
                             'id': 1,
-                            'name': 'visual_similarity'
+                            'name': 'visual_similarity',
+                            'configuration': {
+                                'core_module': {
+                                    'path': 'tests.integration.fixtures_models',
+                                    'class_name': 'TestEngine'
+                                }
+                            }
                         },
-                        'type_name_id': 1,
+                        'core_id': 1,
                         'variables': [{
                             'name': 'item_id', 'schema': {'type': 'integer'}
                         },{
@@ -1085,9 +1120,9 @@ class TestPlacementsGetRecomendations(object):
         resp = client.get('/placements/123/recommendations', headers=headers)
         assert resp.status_code == 404
 
-    @mock.patch('myreco.placements.models.EngineTypeChooser')
-    def test_get_recommendations_with_variable_valid(self, engine_chooser, client, headers):
-        engine_chooser()().get_recommendations.return_value = [{'id': 1}, {'id': 2}, {'id': 3}]
+    @mock.patch('myreco.placements.models.ModuleClassLoader')
+    def test_get_recommendations_with_variable_valid(self, class_loader, client, headers):
+        class_loader.load()().get_recommendations.return_value = [{'id': 1}, {'id': 2}, {'id': 3}]
         body = [{
             'store_id': 1,
             'name': 'Placement Test',
@@ -1099,8 +1134,8 @@ class TestPlacementsGetRecomendations(object):
         obj = json.loads(client.post('/placements/', headers=headers, body=json.dumps(body)).body)[0]
         resp = client.get('/placements/{}/recommendations?test2=1'.format(obj['small_hash']), headers=headers)
         assert resp.status_code == 200
-        assert engine_chooser()().get_recommendations.call_count == 1
-        assert engine_chooser()().get_recommendations.call_args_list[0][1] == {'item_id': 1}
+        assert class_loader.load()().get_recommendations.call_count == 1
+        assert class_loader.load()().get_recommendations.call_args_list[0][1] == {'item_id': 1}
 
     def test_get_recommendations_valid(self, client, app, headers, top_seller_data_importer, filters_updater_client):
         items_model = app.models['products'].__models__[1]
@@ -1185,7 +1220,11 @@ class TestPlacementsGetRecomendations(object):
             }]
         }]
         obj = json.loads(client.post('/placements/', headers=headers, body=json.dumps(body)).body)[0]
+
+        TestEngine.get_recommendations.return_value = []
         resp = client.get('/placements/{}/recommendations'.format(obj['small_hash']), headers=headers)
+        TestEngine.get_recommendations.reset_mock()
+
         assert resp.status_code == 200
         assert json.loads(resp.body)['recommendations'] == [{'sku': 'test1', 'item_id': 1, 'type': 'products_new'},
             {'sku': 'test3', 'item_id': 3, 'type': 'products_new'}, {'sku': 'test2', 'item_id': 2, 'type': 'products_new'}]
@@ -1310,10 +1349,8 @@ class TestPlacementsGetRecomendations(object):
             {'sku': 'test2', 'item_id': 2, 'type': 'products_new'}
         ]
 
-    @mock.patch('myreco.engines.types.base.VisualSimilarityEngine.get_recommendations')
-    def test_get_recommendations_distributed(self, visual_engine, client, app, headers, top_seller_data_importer, filters_updater_client):
+    def test_get_recommendations_distributed(self, client, app, headers, top_seller_data_importer, filters_updater_client):
         random.seed(0)
-        visual_engine.return_value = [{'test': 1}, {'test': 2}]
         items_model = app.models['products'].__models__[1]
         products = [{
             'item_id': 1,
@@ -1353,7 +1390,11 @@ class TestPlacementsGetRecomendations(object):
             }]
         }]
         obj = json.loads(client.post('/placements/', headers=headers, body=json.dumps(body)).body)[0]
+
+        TestEngine.get_recommendations.return_value = [{'test': 1}, {'test': 2}]
         resp = client.get('/placements/{}/recommendations'.format(obj['small_hash']), headers=headers)
+        TestEngine.get_recommendations.reset_mock()
+
         assert resp.status_code == 200
         assert json.loads(resp.body)['recommendations'] == [
             {'sku': 'test1', 'item_id': 1, 'type': 'products_new'},
