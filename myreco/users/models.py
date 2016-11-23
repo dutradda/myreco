@@ -111,8 +111,8 @@ class UsersModelBase(AbstractConcreteBase):
         elif user:
             for grant in user['grants']:
                 grant_uri = grant['uri']['uri']
-                if grant_uri == uri_template or grant_uri == path \
-                        and grant['method']['method'] == method:
+                if (grant_uri == uri_template or grant_uri == path) \
+                        and grant['method']['method'].lower() == method.lower():
                     session.user = user
                     return True
 
