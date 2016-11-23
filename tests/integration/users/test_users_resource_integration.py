@@ -62,10 +62,8 @@ def init_(session):
     }]
     GrantsModel.insert(session, grants)
 
-    methods = [{'method': 'put'}, {'method': 'get'}]
-    MethodsModel.insert(session, methods[0])
-    MethodsModel.insert(session, methods[1])
-
+    methods = [{'method': 'put'}]
+    MethodsModel.insert(session, methods)
 
     grants = [{
         'uri_id': 3,
@@ -95,7 +93,7 @@ class TestUsersResourcePost(object):
             'password': 'test',
             'grants': [{
                 'uri_id': 2,
-                'method_id': 2,
+                'method_id': 3,
                 '_operation': 'insert'
             }]
         }]
@@ -108,14 +106,19 @@ class TestUsersResourcePost(object):
             'email': 'test2',
             'password': 'test',
             'grants': [{
-                'method_id': 2,
+                'method_id': 3,
                 'uri_id': 2,
-                'method': {'id': 2, 'method': 'post'},
+                'method': {'id': 3, 'method': 'post'},
                 'uri': {'id': 2, 'uri': '/test3'}
             },{
                 'method_id': 1,
                 'uri_id': 5,
                 'method': {'id': 1, 'method': 'patch'},
+                'uri': {'id': 5, 'uri': '/users/test2'}
+            },{
+                'method_id': 2,
+                'uri_id': 5,
+                'method': {'id': 2, 'method': 'get'},
                 'uri': {'id': 5, 'uri': '/users/test2'}
             }],
             'stores': [],
@@ -153,6 +156,11 @@ class TestUsersResourcePost(object):
                 'method': {'id': 1, 'method': 'patch'},
                 'method_id': 1,
                 'uri': {'id': 5, 'uri': '/users/test2'}
+            },{
+                'uri_id': 5,
+                'method': {'id': 2, 'method': 'get'},
+                'method_id': 2,
+                'uri': {'id': 5, 'uri': '/users/test2'}
             }],
             'stores': [],
             'admin': False
@@ -179,21 +187,32 @@ class TestUsersResourcePost(object):
             'email': 'test2',
             'password': 'test',
             'grants': [{
-                'method_id': 5,
                 'uri_id': 5,
-                'method': {'id': 5, 'method': 'delete'},
-                'uri': {'id': 5, 'uri': '/test4'}
-            },{
-                'uri_id': 6,
                 'method': {
                     'id': 1,
                     'method': 'patch'
                 },
                 'method_id': 1,
                 'uri': {
-                    'id': 6,
+                    'id': 5,
                     'uri': '/users/test2'
                 }
+            },{
+                'uri_id': 5,
+                'method': {
+                    'id': 2,
+                    'method': 'get'
+                },
+                'method_id': 2,
+                'uri': {
+                    'id': 5,
+                    'uri': '/users/test2'
+                }
+            },{
+                'method_id': 5,
+                'uri_id': 6,
+                'method': {'id': 5, 'method': 'delete'},
+                'uri': {'id': 6, 'uri': '/test4'}
             }],
             'stores': [],
             'admin': False
@@ -319,6 +338,17 @@ class TestUsersResourcePutInsert(object):
                     'id': 5,
                     'uri': '/users/test2'
                 }
+            },{
+                'uri_id': 5,
+                'method': {
+                    'id': 2,
+                    'method': 'get'
+                },
+                'method_id': 2,
+                'uri': {
+                    'id': 5,
+                    'uri': '/users/test2'
+                }
             }]
         }
 
@@ -344,21 +374,32 @@ class TestUsersResourcePutInsert(object):
             'stores': [],
             'admin': False,
             'grants': [{
-                'method_id': 5,
                 'uri_id': 5,
-                'method': {'id': 5, 'method': 'delete'},
-                'uri': {'id': 5, 'uri': '/test4'}
-            },{
-                'uri_id': 6,
                 'method': {
                     'id': 1,
                     'method': 'patch'
                 },
                 'method_id': 1,
                 'uri': {
-                    'id': 6,
+                    'id': 5,
                     'uri': '/users/test2'
                 }
+            },{
+                'uri_id': 5,
+                'method': {
+                    'id': 2,
+                    'method': 'get'
+                },
+                'method_id': 2,
+                'uri': {
+                    'id': 5,
+                    'uri': '/users/test2'
+                }
+            },{
+                'method_id': 5,
+                'uri_id': 6,
+                'method': {'id': 5, 'method': 'delete'},
+                'uri': {'id': 6, 'uri': '/test4'}
             }]
         }
 
@@ -384,8 +425,8 @@ class TestUsersResourcePutUpdateOne(object):
             'password': 'test_updated',
             'grants': [{
                 'uri_id': 3,
-                'method_id': 3,
-                '_operation': 'update'
+                'method_id': 4,
+                '_operation': 'insert'
             }]
         }
         resp = client.put('/users/test2', body=json.dumps(user), headers=headers)
@@ -404,9 +445,9 @@ class TestUsersResourcePutUpdateOne(object):
                 'method': {'id': 1, 'method': 'patch'},
                 'uri': {'id': 1, 'uri': '/test2'}
             },{
-                'method_id': 3,
+                'method_id': 4,
                 'uri_id': 3,
-                'method': {'id': 3, 'method': 'put'},
+                'method': {'id': 4, 'method': 'put'},
                 'uri': {'id': 3, 'uri': '/users/test'}
             },{
                 'uri_id': 5,
@@ -415,6 +456,17 @@ class TestUsersResourcePutUpdateOne(object):
                     'method': 'patch'
                 },
                 'method_id': 1,
+                'uri': {
+                    'id': 5,
+                    'uri': '/users/test2'
+                }
+            },{
+                'uri_id': 5,
+                'method': {
+                    'id': 2,
+                    'method': 'get'
+                },
+                'method_id': 2,
                 'uri': {
                     'id': 5,
                     'uri': '/users/test2'
@@ -466,6 +518,17 @@ class TestUsersResourcePutUpdateOne(object):
                     'id': 5,
                     'uri': '/users/test2'
                 }
+            },{
+                'uri_id': 5,
+                'method': {
+                    'id': 2,
+                    'method': 'get'
+                },
+                'method_id': 2,
+                'uri': {
+                    'id': 5,
+                    'uri': '/users/test2'
+                }
             }],
             'admin': False
         }
@@ -511,7 +574,7 @@ class TestUsersResourcePutUpdateOne(object):
             'grants': [{
                 'method_id': 3,
                 'uri_id': 3,
-                'method': {'id': 3, 'method': 'put'},
+                'method': {'id': 3, 'method': 'post'},
                 'uri': {'id': 3, 'uri': '/users/test'}
             },{
                 'uri_id': 5,
@@ -520,6 +583,17 @@ class TestUsersResourcePutUpdateOne(object):
                     'method': 'patch'
                 },
                 'method_id': 1,
+                'uri': {
+                    'id': 5,
+                    'uri': '/users/test2'
+                }
+            },{
+                'uri_id': 5,
+                'method': {
+                    'id': 2,
+                    'method': 'get'
+                },
+                'method_id': 2,
                 'uri': {
                     'id': 5,
                     'uri': '/users/test2'
@@ -582,6 +656,17 @@ class TestUsersResourcePutUpdateOne(object):
                     'id': 5,
                     'uri': '/users/test2'
                 }
+            },{
+                'uri_id': 5,
+                'method': {
+                    'id': 2,
+                    'method': 'get'
+                },
+                'method_id': 2,
+                'uri': {
+                    'id': 5,
+                    'uri': '/users/test2'
+                }
             }]
         }
         assert redis.hdel.call_args_list == [mock.call('users', "('test2:test',)")]
@@ -631,7 +716,7 @@ class TestUsersResourcePutUpdateMany(object):
             },{
                 'method_id': 3,
                 'uri_id': 3,
-                'method': {'id': 3, 'method': 'put'},
+                'method': {'id': 3, 'method': 'post'},
                 'uri': {'id': 3, 'uri': '/users/test'}
             },{
                 'uri_id': 5,
@@ -640,6 +725,17 @@ class TestUsersResourcePutUpdateMany(object):
                     'method': 'patch'
                 },
                 'method_id': 1,
+                'uri': {
+                    'id': 5,
+                    'uri': '/users/test2'
+                }
+            },{
+                'uri_id': 5,
+                'method': {
+                    'id': 2,
+                    'method': 'get'
+                },
+                'method_id': 2,
                 'uri': {
                     'id': 5,
                     'uri': '/users/test2'
@@ -692,6 +788,17 @@ class TestUsersResourcePutUpdateMany(object):
                     'id': 5,
                     'uri': '/users/test2'
                 }
+            },{
+                'uri_id': 5,
+                'method': {
+                    'id': 2,
+                    'method': 'get'
+                },
+                'method_id': 2,
+                'uri': {
+                    'id': 5,
+                    'uri': '/users/test2'
+                }
             }],
             'admin': False
         }]
@@ -738,12 +845,17 @@ class TestUsersResourcePutUpdateMany(object):
             'grants': [{
                 'method_id': 3,
                 'uri_id': 3,
-                'method': {'id': 3, 'method': 'put'},
+                'method': {'id': 3, 'method': 'post'},
                 'uri': {'id': 3, 'uri': '/users/test'}
             },{
                 'uri_id': 5,
                 'method': {'id': 1, 'method': 'patch'},
                 'method_id': 1,
+                'uri': {'id': 5, 'uri': '/users/test2'}
+            },{
+                'uri_id': 5,
+                'method': {'id': 2, 'method': 'get'},
+                'method_id': 2,
                 'uri': {'id': 5, 'uri': '/users/test2'}
             }]
         }]
@@ -777,6 +889,17 @@ class TestUsersResourcePatchOne(object):
                     'method': 'patch'
                 },
                 'method_id': 1,
+                'uri': {
+                    'id': 5,
+                    'uri': '/users/test2'
+                }
+            },{
+                'uri_id': 5,
+                'method': {
+                    'id': 2,
+                    'method': 'get'
+                },
+                'method_id': 2,
                 'uri': {
                     'id': 5,
                     'uri': '/users/test2'
@@ -818,6 +941,17 @@ class TestUsersResourcePatchOne(object):
                     'id': 5,
                     'uri': '/users/test2'
                 }
+            },{
+                'uri_id': 5,
+                'method': {
+                    'id': 2,
+                    'method': 'get'
+                },
+                'method_id': 2,
+                'uri': {
+                    'id': 5,
+                    'uri': '/users/test2'
+                }
             }]
         }
 
@@ -850,6 +984,17 @@ class TestUsersResourcePatchMany(object):
                     'method': 'patch'
                 },
                 'method_id': 1,
+                'uri': {
+                    'id': 5,
+                    'uri': '/users/test2'
+                }
+            },{
+                'uri_id': 5,
+                'method': {
+                    'id': 2,
+                    'method': 'get'
+                },
+                'method_id': 2,
                 'uri': {
                     'id': 5,
                     'uri': '/users/test2'
@@ -888,6 +1033,17 @@ class TestUsersResourcePatchMany(object):
                     'method': 'patch'
                 },
                 'method_id': 1,
+                'uri': {
+                    'id': 5,
+                    'uri': '/users/test2'
+                }
+            },{
+                'uri_id': 5,
+                'method': {
+                    'id': 2,
+                    'method': 'get'
+                },
+                'method_id': 2,
                 'uri': {
                     'id': 5,
                     'uri': '/users/test2'

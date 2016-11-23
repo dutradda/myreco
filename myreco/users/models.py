@@ -125,44 +125,43 @@ class UsersModelBase(AbstractConcreteBase):
     @classmethod
     def _set_objs_ids_and_grant(cls, objs, session):
         objs = cls._to_list(objs)
-        method = cls.get_model('methods').get(session, ids={'method': 'patch'}, todict=False)
+
+        patch_method = cls.get_model('methods').get(session, ids={'method': 'patch'}, todict=False)
+        if not patch_method:
+            patch_method = cls.get_model('methods').insert(session, [{'method': 'patch'}], todict=False)
+        patch_method = patch_method[0]
+
+        get_method = cls.get_model('methods').get(session, ids={'method': 'get'}, todict=False)
+        if not get_method:
+            get_method = cls.get_model('methods').insert(session, [{'method': 'get'}], todict=False)
+        get_method = get_method[0]
 
         for obj in objs:
+            new_grants = []
             user_uri = '/users/{}'.format(obj['email'])
-            uri = cls.get_model('uris').get(session, ids={'uri': user_uri}, todict=False)
 
-            if uri and method:
-                uri = uri[0]
-                method = method[0]
-                grant = cls.get_model('grants').get(session, {'uri_id': uri.id, 'method_id': method.id})
-                if grant:
-                    grant = {'uri_id': uri.id, 'method_id': method.id}
-                else:
-                    grant = {'uri_id': uri.id, 'method_id': method.id, '_operation': 'insert'}
-            elif uri:
-                uri = uri[0]
-                grant = {
-                    'uri_id': uri.id,
-                    'method': {'method': 'patch', '_operation': 'insert'},
-                    '_operation': 'insert'
-                }
-            elif method:
-                method = method[0]
-                grant = {
-                    'method': {'id': method.id},
-                    'uri': {'uri': user_uri, '_operation': 'insert'},
-                    '_operation': 'insert'
-                }
+            uri = cls.get_model('uris').get(session, ids={'uri': user_uri}, todict=False)
+            if not uri:
+                uri = cls.get_model('uris').insert(session, [{'uri': user_uri}], todict=False)
+            uri = uri[0]
+
+            grant = cls.get_model('grants').get(session, {'uri_id': uri.id, 'method_id': patch_method.id}, todict=False)
+            if grant:
+                grant = grant[0].todict()
             else:
-                grant = {
-                    'method': {'method': 'patch', '_operation': 'insert'},
-                    'uri': {'uri': user_uri, '_operation': 'insert'},
-                    '_operation': 'insert'
-                }
+                grant = {'uri_id': uri.id, 'method_id': patch_method.id, '_operation': 'insert'}
+            new_grants.append(grant)
+
+            grant = cls.get_model('grants').get(session, {'uri_id': uri.id, 'method_id': get_method.id}, todict=False)
+            if grant:
+                grant = grant[0].todict()
+            else:
+                grant = {'uri_id': uri.id, 'method_id': get_method.id, '_operation': 'insert'}
+            new_grants.append(grant)
 
             obj['id'] = '{}:{}'.format(obj['email'], obj['password'])
             grants = obj.get('grants', [])
-            grants.append(grant)
+            grants.extend(new_grants)
             obj['grants'] = grants
 
     @classmethod
