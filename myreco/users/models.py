@@ -109,6 +109,9 @@ class UsersModelBase(AbstractConcreteBase):
             return True
 
         elif user:
+            if method == 'OPTIONS':
+                return True
+
             for grant in user['grants']:
                 grant_uri = grant['uri']['uri']
                 if (grant_uri == uri_template or grant_uri == path) \
