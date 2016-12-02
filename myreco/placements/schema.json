@@ -107,10 +107,10 @@
             "items": {
                 "type": "object",
                 "additionalProperties": false,
-                "required": ["slots", "_operation"],
+                "minProperties": 2,
                 "properties": {
                     "id": {"type": "integer"},
-                    "weight": {"type": "number"},
+                    "weight": {"oneOf": [{"type": "number"}, {"type": "null"}]},
                     "_operation": {"enum": ["insert", "delete", "update"]},
                     "slots": {
                         "type": "array",
