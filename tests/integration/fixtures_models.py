@@ -30,10 +30,16 @@ from myreco.placements.models import (PlacementsModelBase, VariationsModelBase,
 from myreco.slots.models import (SlotsVariablesModelBase,
     SlotsModelBase, build_slots_fallbacks_table)
 from myreco.engines.models import EnginesModelBase, EnginesCoresModelBase
-from myreco.engines.cores.base import EngineCore
+from myreco.engines.cores.base import EngineCore, AbstractDataImporter
+from myreco.engines.cores.top_seller.engine import build_data_pattern as build_top_seller_data_pattern
+from myreco.engines.cores.utils import build_data_path
 from myreco.items_types.models import ItemsTypesModelBase
 from myreco.factory import ModelsFactory
 from unittest.mock import MagicMock
+from os import makedirs
+from csv import DictWriter
+import os.path
+import gzip
 
 
 table_args = {'mysql_engine':'innodb'}
@@ -72,6 +78,25 @@ ItemsTypesModel = models['items_types']
 SQLAlchemyRedisModelBase = factory.base_model
 
 DataImporter = MagicMock()
+
+
+class TestDataImporter(AbstractDataImporter):
+
+        def get_data(self, items_indices_map, session):
+            data_path = build_data_path(self._engine)
+            if not os.path.isdir(data_path):
+                makedirs(data_path)
+
+            filename_prefix = build_top_seller_data_pattern(self._engine['configuration'])
+            data = [{'item_id': 2, 'sku': 'test2', 'value': 1},
+                    {'item_id': 1, 'sku': 'test1', 'value': 3},
+                    {'item_id': 3, 'sku': 'test3', 'value': 2}]
+            file_ = gzip.open(os.path.join(data_path, filename_prefix) + '-000000001.gz', 'wt')
+            writer = DictWriter(file_, ['sku', 'value', 'item_id'])
+            writer.writeheader()
+            writer.writerows(data)
+            file_.close()
+            return {'lines_count': len(data)}
 
 
 class TestEngine(EngineCore):

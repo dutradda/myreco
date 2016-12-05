@@ -119,10 +119,9 @@ class EnginesModelDataImporterBase(EnginesModelBase):
     @classmethod
     def _run_job(cls, job_session, req, resp):
         engine = cls._get_engine(req, job_session)
-        data_importer_config = engine.core.configuration['data_importer_module']
-        data_importer = ModuleClassLoader.load(data_importer_config)
         items_indices_map = cls._build_items_indices_map(engine)
-        return data_importer.get_data(engine.todict(), items_indices_map, job_session)
+        data_importer = cls._build_data_importer(engine)
+        return data_importer.get_data(items_indices_map, job_session)
 
     @classmethod
     def _get_engine(cls, req, job_session):
@@ -140,6 +139,13 @@ class EnginesModelDataImporterBase(EnginesModelBase):
         item_model = item_collection_model.__models__[engine.store_id]
         return ItemsIndicesMap(item_model)
 
+    @classmethod
+    def _build_data_importer(cls, engine):
+        data_importer_config = engine.core.configuration['data_importer_module']
+        data_importer_class = ModuleClassLoader.load(data_importer_config)
+        return data_importer_class(engine.todict())
+
+
 
 class EnginesModelObjectsExporterBase(EnginesModelDataImporterBase):
     __schema__ = get_model_schema(__file__, 'objects_exporter_schema.json')
@@ -151,9 +157,8 @@ class EnginesModelObjectsExporterBase(EnginesModelDataImporterBase):
         items_indices_map = cls._build_items_indices_map(engine)
 
         if import_data:
-            data_importer_config = engine.core.configuration['data_importer_module']
-            data_importer = ModuleClassLoader.load(data_importer_config)
-            data_importer.get_data(engine.todict(), items_indices_map, job_session)
+            data_importer = cls._build_data_importer(engine)
+            data_importer.get_data(items_indices_map, job_session)
             return engine.core_instance.export_objects(job_session, items_indices_map)
         else:
             return engine.core_instance.export_objects(job_session, items_indices_map)

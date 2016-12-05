@@ -104,7 +104,9 @@ class EngineCore(metaclass=EngineCoreMeta):
 
 class AbstractDataImporter(metaclass=ABCMeta):
 
-    @classmethod
+    def __init__(self, engine):
+        self._engine = engine
+
     @abstractmethod
-    def get_data(cls, engine, items_indices_map, session):
+    def get_data(cls, items_indices_map, session):
         pass

@@ -473,7 +473,7 @@ def data_importer_client(data_importer_app):
 class TestEnginesModelsDataImporter(object):
 
     def test_importer_post(self, data_importer_client, headers):
-        DataImporter.get_data.return_value = {}
+        DataImporter().get_data.return_value = {}
         resp = data_importer_client.post('/engines/1/import_data', headers=headers)
         hash_ = json.loads(resp.body)
 
@@ -484,7 +484,7 @@ class TestEnginesModelsDataImporter(object):
             if json.loads(resp.body)['status'] != 'running':
                 break
 
-        called = bool(DataImporter.get_data.called)
+        called = bool(DataImporter().get_data.called)
         DataImporter.get_data.reset_mock()
 
         assert hash_ == {'hash': '6342e10bd7dca3240c698aa79c98362e'}
@@ -495,13 +495,13 @@ class TestEnginesModelsDataImporter(object):
             sleep(1)
             return {}
 
-        DataImporter.get_data = func
+        DataImporter().get_data = func
         data_importer_client.post('/engines/1/import_data', headers=headers)
 
         resp = data_importer_client.get(
             '/engines/1/import_data?hash=6342e10bd7dca3240c698aa79c98362e', headers=headers)
         sleep(0.1)
-        DataImporter.get_data = mock.MagicMock()
+        DataImporter().get_data = mock.MagicMock()
 
         assert json.loads(resp.body) == {'status': 'running'}
 
@@ -514,7 +514,7 @@ class TestEnginesModelsDataImporter(object):
 
 
     def test_importer_get_done(self, data_importer_client, headers):
-        DataImporter.get_data.return_value = 'testing'
+        DataImporter().get_data.return_value = 'testing'
         data_importer_client.post('/engines/1/import_data', headers=headers)
 
         while True:
@@ -526,12 +526,12 @@ class TestEnginesModelsDataImporter(object):
 
         resp = data_importer_client.get(
             '/engines/1/import_data?hash=6342e10bd7dca3240c698aa79c98362e', headers=headers)
-        DataImporter.get_data = mock.MagicMock()
+        DataImporter().get_data = mock.MagicMock()
 
         assert json.loads(resp.body) == {'status': 'done', 'result': 'testing'}
 
     def test_importer_get_with_error(self, data_importer_client, headers):
-        DataImporter.get_data.side_effect = Exception('testing')
+        DataImporter().get_data.side_effect = Exception('testing')
         data_importer_client.post('/engines/1/import_data', headers=headers)
 
         while True:
@@ -543,7 +543,7 @@ class TestEnginesModelsDataImporter(object):
 
         resp = data_importer_client.get(
             '/engines/1/import_data?hash=6342e10bd7dca3240c698aa79c98362e', headers=headers)
-        DataImporter.get_data = mock.MagicMock()
+        DataImporter().get_data = mock.MagicMock()
 
         assert json.loads(resp.body) == \
             {'status': 'error', 'result': {'message': 'testing', 'name': 'Exception'}}
@@ -699,7 +699,7 @@ class TestEnginesModelsObjectsExporterWithImport(object):
 
     def test_exporter_post_with_import(self, readers_builder, objects_exporter_client, headers):
         readers_builder.return_value = [[{'sku': 'test', 'value': 1}]]
-        DataImporter.get_data.return_value = {}
+        DataImporter().get_data.return_value = {}
         resp = objects_exporter_client.post('/engines/1/export_objects?import_data=true', headers=headers)
         hash_ = json.loads(resp.body)
 
@@ -710,8 +710,8 @@ class TestEnginesModelsObjectsExporterWithImport(object):
             if json.loads(resp.body)['status'] != 'running':
                 break
 
-        called = bool(DataImporter.get_data.called)
-        DataImporter.get_data.reset_mock()
+        called = bool(DataImporter().get_data.called)
+        DataImporter().get_data.reset_mock()
 
         assert hash_ == {'hash': '6342e10bd7dca3240c698aa79c98362e'}
         assert called
@@ -722,12 +722,12 @@ class TestEnginesModelsObjectsExporterWithImport(object):
             return {}
 
         readers_builder.return_value = [[{'sku': 'test', 'value': 1}]]
-        DataImporter.get_data = func
+        DataImporter().get_data = func
         objects_exporter_client.post('/engines/1/export_objects?import_data=true', headers=headers)
 
         resp = objects_exporter_client.get(
             '/engines/1/export_objects?hash=6342e10bd7dca3240c698aa79c98362e', headers=headers)
-        DataImporter.get_data = mock.MagicMock()
+        DataImporter().get_data = mock.MagicMock()
 
         assert json.loads(resp.body) == {'status': 'running'}
 
@@ -761,7 +761,7 @@ class TestEnginesModelsObjectsExporterWithImport(object):
 
     def test_exporter_get_with_error_in_import_with_import(
             self, readers_builder, objects_exporter_client, headers):
-        DataImporter.get_data.side_effect = Exception('testing')
+        DataImporter().get_data.side_effect = Exception('testing')
         objects_exporter_client.post('/engines/1/export_objects?import_data=true', headers=headers)
 
         while True:
@@ -773,7 +773,7 @@ class TestEnginesModelsObjectsExporterWithImport(object):
 
         resp = objects_exporter_client.get(
             '/engines/1/export_objects?hash=6342e10bd7dca3240c698aa79c98362e', headers=headers)
-        DataImporter.get_data = mock.MagicMock()
+        DataImporter().get_data = mock.MagicMock()
 
         assert json.loads(resp.body) == \
             {'status': 'error', 'result': {'message': 'testing', 'name': 'Exception'}}

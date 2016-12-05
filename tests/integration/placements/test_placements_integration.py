@@ -26,20 +26,15 @@ from tests.integration.fixtures_models import (
     UsersModel, StoresModel, VariablesModel, ItemsTypesModel,
     EnginesModel, EnginesCoresModel, DataImporter, TestEngine)
 from pytest_falcon.plugin import Client
-from myreco.engines.cores.utils import build_data_path
-from myreco.engines.cores.top_seller.engine import build_data_pattern as build_top_seller_data_pattern
 from myreco.factory import ModelsFactory
 from falconswagger.http_api import HttpAPI
 from base64 import b64encode
 from fakeredis import FakeStrictRedis
 from unittest import mock
 from tempfile import TemporaryDirectory
-from csv import DictWriter
-from os import makedirs
 import pytest
 import json
 import numpy as np
-import gzip
 import os.path
 import random
 
@@ -97,7 +92,7 @@ def app(redis, session, temp_dir):
             },
             'data_importer_module': {
                 'path': 'tests.integration.fixtures_models',
-                'class_name': 'DataImporter'
+                'class_name': 'TestDataImporter'
             }
         }
     }
@@ -1073,32 +1068,6 @@ def filters_updater_client(filters_updater_app):
     return Client(filters_updater_app)
 
 
-@pytest.fixture
-def top_seller_data_importer(request):
-    def get_data(engine, items_indices_map, session):
-        data_path = build_data_path(engine)
-        if not os.path.isdir(data_path):
-            makedirs(data_path)
-
-        filename_prefix = build_top_seller_data_pattern(engine['configuration'])
-        data = [{'item_id': 2, 'sku': 'test2', 'value': 1},
-                {'item_id': 1, 'sku': 'test1', 'value': 3},
-                {'item_id': 3, 'sku': 'test3', 'value': 2}]
-        file_ = gzip.open(os.path.join(data_path, filename_prefix) + '-000000001.gz', 'wt')
-        writer = DictWriter(file_, ['sku', 'value', 'item_id'])
-        writer.writeheader()
-        writer.writerows(data)
-        file_.close()
-        return {'lines_count': len(data)}
-
-    def finalizer():
-        DataImporter.get_data = mock.MagicMock()
-
-    DataImporter.get_data = get_data
-    request.addfinalizer(finalizer)
-    return DataImporter
-
-
 @mock.patch('falconswagger.models.base.random.getrandbits',
     new=mock.MagicMock(return_value=131940827655846590526331314439483569710))
 class TestPlacementsGetRecomendations(object):
@@ -1137,7 +1106,7 @@ class TestPlacementsGetRecomendations(object):
         assert class_loader.load()().get_recommendations.call_count == 1
         assert class_loader.load()().get_recommendations.call_args_list[0][1] == {'item_id': 1}
 
-    def test_get_recommendations_valid(self, client, app, headers, top_seller_data_importer, filters_updater_client):
+    def test_get_recommendations_valid(self, client, app, headers, filters_updater_client):
         items_model = app.models['products'].__models__[1]
         products = [{
             'item_id': 1,
@@ -1181,7 +1150,7 @@ class TestPlacementsGetRecomendations(object):
         assert json.loads(resp.body)['recommendations'] == [{'sku': 'test1', 'item_id': 1, 'type': 'products_new'},
             {'sku': 'test3', 'item_id': 3, 'type': 'products_new'}, {'sku': 'test2', 'item_id': 2, 'type': 'products_new'}]
 
-    def test_get_recommendations_with_fallback(self, client, app, headers, top_seller_data_importer, filters_updater_client):
+    def test_get_recommendations_with_fallback(self, client, app, headers, filters_updater_client):
         items_model = app.models['products'].__models__[1]
         products = [{
             'item_id': 1,
@@ -1229,7 +1198,7 @@ class TestPlacementsGetRecomendations(object):
         assert json.loads(resp.body)['recommendations'] == [{'sku': 'test1', 'item_id': 1, 'type': 'products_new'},
             {'sku': 'test3', 'item_id': 3, 'type': 'products_new'}, {'sku': 'test2', 'item_id': 2, 'type': 'products_new'}]
 
-    def test_get_recommendations_by_slots(self, client, app, headers, top_seller_data_importer, filters_updater_client):
+    def test_get_recommendations_by_slots(self, client, app, headers, filters_updater_client):
         items_model = app.models['products'].__models__[1]
         products = [{
             'item_id': 1,
@@ -1298,7 +1267,7 @@ class TestPlacementsGetRecomendations(object):
             "small_hash": "941e0"
         }
 
-    def test_get_recommendations_without_show_details(self, client, app, headers, top_seller_data_importer, filters_updater_client):
+    def test_get_recommendations_without_show_details(self, client, app, headers, filters_updater_client):
         items_model = app.models['products'].__models__[1]
         products = [{
             'item_id': 1,
@@ -1349,7 +1318,7 @@ class TestPlacementsGetRecomendations(object):
             {'sku': 'test2', 'item_id': 2, 'type': 'products_new'}
         ]
 
-    def test_get_recommendations_distributed(self, client, app, headers, top_seller_data_importer, filters_updater_client):
+    def test_get_recommendations_distributed(self, client, app, headers, filters_updater_client):
         random.seed(0)
         items_model = app.models['products'].__models__[1]
         products = [{
@@ -1409,7 +1378,7 @@ class TestPlacementsGetRecomendations(object):
     new=mock.MagicMock(return_value=131940827655846590526331314439483569710))
 class TestPlacementsGetRecomendationsFilters(object):
 
-    def test_get_recommendations_by_string_inclusive(self, client, app, headers, top_seller_data_importer, filters_updater_client, redis):
+    def test_get_recommendations_by_string_inclusive(self, client, app, headers, filters_updater_client, redis):
         items_model = app.models['products'].__models__[1]
         products = [{
             'item_id': 1,
@@ -1455,7 +1424,7 @@ class TestPlacementsGetRecomendationsFilters(object):
         assert json.loads(resp.body)['recommendations'] == [{'sku': 'test1', 'item_id': 1, 'filter_string': 'test', 'type': 'products_new'},
             {'sku': 'test2', 'item_id': 2, 'filter_string': 'test2', 'type': 'products_new'}]
 
-    def test_get_recommendations_by_string_exclusive(self, client, app, headers, top_seller_data_importer, filters_updater_client):
+    def test_get_recommendations_by_string_exclusive(self, client, app, headers, filters_updater_client):
         items_model = app.models['products'].__models__[1]
         products = [{
             'item_id': 1,
@@ -1500,7 +1469,7 @@ class TestPlacementsGetRecomendationsFilters(object):
         assert resp.status_code == 200
         assert json.loads(resp.body)['recommendations'] == [{'sku': 'test3', 'item_id': 3, 'type': 'products_new'}]
 
-    def test_get_recommendations_by_integer_inclusive(self, client, app, headers, top_seller_data_importer, filters_updater_client):
+    def test_get_recommendations_by_integer_inclusive(self, client, app, headers, filters_updater_client):
         items_model = app.models['products'].__models__[1]
         products = [{
             'item_id': 1,
@@ -1546,7 +1515,7 @@ class TestPlacementsGetRecomendationsFilters(object):
         assert json.loads(resp.body)['recommendations'] == [{'sku': 'test1', 'item_id': 1, 'filter_integer': 1, 'type': 'products_new'},
             {'sku': 'test2', 'item_id': 2, 'filter_integer': 2, 'type': 'products_new'}]
 
-    def test_get_recommendations_by_integer_exclusive(self, client, app, headers, top_seller_data_importer, filters_updater_client):
+    def test_get_recommendations_by_integer_exclusive(self, client, app, headers, filters_updater_client):
         items_model = app.models['products'].__models__[1]
         products = [{
             'item_id': 1,
@@ -1591,7 +1560,7 @@ class TestPlacementsGetRecomendationsFilters(object):
         assert resp.status_code == 200
         assert json.loads(resp.body)['recommendations'] == [{'sku': 'test3', 'item_id': 3, 'type': 'products_new'}]
 
-    def test_get_recommendations_by_boolean_inclusive(self, client, app, headers, top_seller_data_importer, filters_updater_client):
+    def test_get_recommendations_by_boolean_inclusive(self, client, app, headers, filters_updater_client):
         items_model = app.models['products'].__models__[1]
         products = [{
             'item_id': 1,
@@ -1637,7 +1606,7 @@ class TestPlacementsGetRecomendationsFilters(object):
         assert json.loads(resp.body)['recommendations'] == [{'sku': 'test1', 'item_id': 1, 'filter_boolean': True, 'type': 'products_new'},
             {'sku': 'test2', 'item_id': 2, 'filter_boolean': True, 'type': 'products_new'}]
 
-    def test_get_recommendations_by_boolean_exclusive(self, client, app, headers, top_seller_data_importer, filters_updater_client):
+    def test_get_recommendations_by_boolean_exclusive(self, client, app, headers, filters_updater_client):
         items_model = app.models['products'].__models__[1]
         products = [{
             'item_id': 1,
@@ -1682,7 +1651,7 @@ class TestPlacementsGetRecomendationsFilters(object):
         assert resp.status_code == 200
         assert json.loads(resp.body)['recommendations'] == [{'sku': 'test3', 'item_id': 3, 'type': 'products_new'}]
 
-    def test_get_recommendations_by_array_inclusive(self, client, app, headers, top_seller_data_importer, filters_updater_client):
+    def test_get_recommendations_by_array_inclusive(self, client, app, headers, filters_updater_client):
         items_model = app.models['products'].__models__[1]
         products = [{
             'item_id': 1,
@@ -1728,7 +1697,7 @@ class TestPlacementsGetRecomendationsFilters(object):
         assert json.loads(resp.body)['recommendations'] == [{'sku': 'test1', 'item_id': 1, 'filter_array': ['t1', 't2'], 'type': 'products_new'},
             {'sku': 'test2', 'item_id': 2, 'filter_array': ['t2', 't3'], 'type': 'products_new'}]
 
-    def test_get_recommendations_by_array_exclusive(self, client, app, headers, top_seller_data_importer, filters_updater_client):
+    def test_get_recommendations_by_array_exclusive(self, client, app, headers, filters_updater_client):
         items_model = app.models['products'].__models__[1]
         products = [{
             'item_id': 1,
@@ -1773,7 +1742,7 @@ class TestPlacementsGetRecomendationsFilters(object):
         assert resp.status_code == 200
         assert json.loads(resp.body)['recommendations'] == [{'sku': 'test3', 'item_id': 3, 'type': 'products_new'}]
 
-    def test_get_recommendations_by_object_inclusive(self, client, app, headers, top_seller_data_importer, filters_updater_client):
+    def test_get_recommendations_by_object_inclusive(self, client, app, headers, filters_updater_client):
         items_model = app.models['products'].__models__[1]
         products = [{
             'item_id': 1,
@@ -1819,7 +1788,7 @@ class TestPlacementsGetRecomendationsFilters(object):
         assert json.loads(resp.body)['recommendations'] == [{'sku': 'test1', 'item_id': 1, 'filter_object': {'id': 1}, 'type': 'products_new'},
             {'sku': 'test2', 'item_id': 2, 'filter_object': {'id': 2}, 'type': 'products_new'}]
 
-    def test_get_recommendations_by_object_exclusive(self, client, app, headers, top_seller_data_importer, filters_updater_client):
+    def test_get_recommendations_by_object_exclusive(self, client, app, headers, filters_updater_client):
         items_model = app.models['products'].__models__[1]
         products = [{
             'item_id': 1,
@@ -1869,7 +1838,7 @@ class TestPlacementsGetRecomendationsFilters(object):
     new=mock.MagicMock(return_value=131940827655846590526331314439483569710))
 class TestPlacementsGetRecomendationsFiltersOf(object):
 
-    def test_get_recommendations_of_string_inclusive(self, client, app, headers, top_seller_data_importer, filters_updater_client, redis):
+    def test_get_recommendations_of_string_inclusive(self, client, app, headers, filters_updater_client, redis):
         items_model = app.models['products'].__models__[1]
         products = [{
             'item_id': 1,
@@ -1915,7 +1884,7 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
         assert json.loads(resp.body)['recommendations'] == [{'sku': 'test1', 'item_id': 1, 'filter_string': 'test1', 'type': 'products_new'},
             {'sku': 'test2', 'item_id': 2, 'filter_string': 'test2', 'type': 'products_new'}]
 
-    def test_get_recommendations_of_string_exclusive(self, client, app, headers, top_seller_data_importer, filters_updater_client, redis):
+    def test_get_recommendations_of_string_exclusive(self, client, app, headers, filters_updater_client, redis):
         items_model = app.models['products'].__models__[1]
         products = [{
             'item_id': 1,
@@ -1960,7 +1929,7 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
         assert resp.status_code == 200
         assert json.loads(resp.body)['recommendations'] == [{'sku': 'test3', 'item_id': 3, 'type': 'products_new'}]
 
-    def test_get_recommendations_of_integer_inclusive(self, client, app, headers, top_seller_data_importer, filters_updater_client, redis):
+    def test_get_recommendations_of_integer_inclusive(self, client, app, headers, filters_updater_client, redis):
         items_model = app.models['products'].__models__[1]
         products = [{
             'item_id': 1,
@@ -2006,7 +1975,7 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
         assert json.loads(resp.body)['recommendations'] == [{'sku': 'test1', 'item_id': 1, 'filter_integer': 1, 'type': 'products_new'},
             {'sku': 'test2', 'item_id': 2, 'filter_integer': 2, 'type': 'products_new'}]
 
-    def test_get_recommendations_of_integer_exclusive(self, client, app, headers, top_seller_data_importer, filters_updater_client, redis):
+    def test_get_recommendations_of_integer_exclusive(self, client, app, headers, filters_updater_client, redis):
         items_model = app.models['products'].__models__[1]
         products = [{
             'item_id': 1,
@@ -2051,7 +2020,7 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
         assert resp.status_code == 200
         assert json.loads(resp.body)['recommendations'] == [{'sku': 'test3', 'item_id': 3, 'type': 'products_new'}]
 
-    def test_get_recommendations_of_boolean_inclusive(self, client, app, headers, top_seller_data_importer, filters_updater_client, redis):
+    def test_get_recommendations_of_boolean_inclusive(self, client, app, headers, filters_updater_client, redis):
         items_model = app.models['products'].__models__[1]
         products = [{
             'item_id': 1,
@@ -2097,7 +2066,7 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
         assert json.loads(resp.body)['recommendations'] == [{'sku': 'test1', 'item_id': 1, 'filter_boolean': True, 'type': 'products_new'},
             {'sku': 'test2', 'item_id': 2, 'filter_boolean': True, 'type': 'products_new'}]
 
-    def test_get_recommendations_of_boolean_inclusive_with_false(self, client, app, headers, top_seller_data_importer, filters_updater_client, redis):
+    def test_get_recommendations_of_boolean_inclusive_with_false(self, client, app, headers, filters_updater_client, redis):
         items_model = app.models['products'].__models__[1]
         products = [{
             'item_id': 1,
@@ -2144,7 +2113,7 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
         assert json.loads(resp.body)['recommendations'] == [{'sku': 'test1', 'item_id': 1, 'filter_boolean': True, 'type': 'products_new'},
             {'sku': 'test2', 'item_id': 2, 'filter_boolean': True, 'type': 'products_new'}]
 
-    def test_get_recommendations_of_boolean_exclusive(self, client, app, headers, top_seller_data_importer, filters_updater_client, redis):
+    def test_get_recommendations_of_boolean_exclusive(self, client, app, headers, filters_updater_client, redis):
         items_model = app.models['products'].__models__[1]
         products = [{
             'item_id': 1,
@@ -2189,7 +2158,7 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
         assert resp.status_code == 200
         assert json.loads(resp.body)['recommendations'] == [{'sku': 'test3', 'item_id': 3, 'type': 'products_new'}]
 
-    def test_get_recommendations_of_array_inclusive(self, client, app, headers, top_seller_data_importer, filters_updater_client, redis):
+    def test_get_recommendations_of_array_inclusive(self, client, app, headers, filters_updater_client, redis):
         items_model = app.models['products'].__models__[1]
         products = [{
             'item_id': 1,
@@ -2235,7 +2204,7 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
         assert json.loads(resp.body)['recommendations'] == [{'sku': 'test1', 'item_id': 1, 'filter_array': ['t1', 't2'], 'type': 'products_new'},
             {'sku': 'test2', 'item_id': 2, 'filter_array': ['t2', 't3'], 'type': 'products_new'}]
 
-    def test_get_recommendations_of_array_exclusive(self, client, app, headers, top_seller_data_importer, filters_updater_client, redis):
+    def test_get_recommendations_of_array_exclusive(self, client, app, headers, filters_updater_client, redis):
         items_model = app.models['products'].__models__[1]
         products = [{
             'item_id': 1,
@@ -2280,7 +2249,7 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
         assert resp.status_code == 200
         assert json.loads(resp.body)['recommendations'] == [{'sku': 'test3', 'item_id': 3, 'type': 'products_new'}]
 
-    def test_get_recommendations_of_object_inclusive(self, client, app, headers, top_seller_data_importer, filters_updater_client, redis):
+    def test_get_recommendations_of_object_inclusive(self, client, app, headers, filters_updater_client, redis):
         items_model = app.models['products'].__models__[1]
         products = [{
             'item_id': 1,
@@ -2326,7 +2295,7 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
         assert json.loads(resp.body)['recommendations'] == [{'sku': 'test1', 'item_id': 1, 'filter_object': {'id': 1}, 'type': 'products_new'},
             {'sku': 'test2', 'item_id': 2, 'filter_object': {'id': 2}, 'type': 'products_new'}]
 
-    def test_get_recommendations_of_object_exclusive(self, client, app, headers, top_seller_data_importer, filters_updater_client, redis):
+    def test_get_recommendations_of_object_exclusive(self, client, app, headers, filters_updater_client, redis):
         items_model = app.models['products'].__models__[1]
         products = [{
             'item_id': 1,
