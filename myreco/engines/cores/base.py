@@ -22,6 +22,7 @@
 
 
 from falconswagger.models.base import build_validator, get_module_path
+from falconswagger.mixins import LoggerMixin
 from myreco.engines.cores.items_indices_map import ItemsIndicesMap
 from jsonschema import Draft4Validator
 from abc import ABCMeta, abstractmethod
@@ -42,11 +43,12 @@ class EngineCoreMeta(ABCMeta):
             cls.__config_validator__ = build_validator(schema, get_module_path(cls))
 
 
-class EngineCore(metaclass=EngineCoreMeta):
+class EngineCore(LoggerMixin, metaclass=EngineCoreMeta):
 
     def __init__(self, engine=None, items_model=None):
         self.engine = engine
         self.items_model = items_model
+        self._build_logger()
 
     def get_variables(self):
         return []
