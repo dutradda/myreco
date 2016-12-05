@@ -22,7 +22,7 @@
 
 
 from myreco.engines.cores.base import EngineCore, EngineError
-from myreco.engines.cores.utils import build_csv_readers, build_data_path
+from myreco.engines.cores.utils import build_csv_readers, build_engine_data_path
 from falconswagger.models.base import get_model_schema
 from falconswagger.json_builder import JsonBuilder
 from concurrent.futures import ThreadPoolExecutor
@@ -31,16 +31,13 @@ import os.path
 import zlib
 
 
-def build_data_pattern(configuration):
-    return 'days_interval_{}'.format(configuration['days_interval'])
-
-
 class TopSellerEngine(EngineCore):
     __configuration_schema__ = get_model_schema(__file__)
 
     def export_objects(self, session, items_indices_map):
-        pattern = build_data_pattern(self.engine['configuration'])
-        readers = build_csv_readers(build_data_path(self.engine), pattern)
+        data_path = build_engine_data_path(self.engine)
+        readers = build_csv_readers(data_path, 'top_seller')
+
         top_seller_vector = self._build_top_seller_vector(readers, items_indices_map, session)
         redis_key = self._build_redis_key()
         session.redis_bind.set(redis_key, zlib.compress(top_seller_vector.tobytes()))
@@ -78,6 +75,11 @@ class TopSellerEngine(EngineCore):
 
     def _set_indices_values_map(self, indices_values_map, reader, items_indices_map, session):
         items_indices_map = items_indices_map.get_all(session)
+
+        if not items_indices_map:
+            raise EngineError(
+                "The Indices Map for '{}' is empty. Please update these items"
+                .format(self.engine['item_type']['name']))
 
         for line in reader:
             value = line.pop('value')
