@@ -343,6 +343,9 @@ class ItemsModelBaseMeta(RedisModelMeta):
         offset = items_per_page * (page-1)
         return RedisModelMeta.get(cls, session, ids=ids, limit=limit, offset=offset, **kwargs)
 
+    def get_all(cls, session, **kwargs):
+        return RedisModelMeta.get(cls, session, **kwargs)
+
 
 class ItemsCollectionsModelBaseMeta(RedisModelMeta):
 

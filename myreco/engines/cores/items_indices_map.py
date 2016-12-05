@@ -53,7 +53,7 @@ class ItemsIndicesMap(object):
         items_indices_map = session.redis_bind.hgetall(self.key)
         indices_items_map = session.redis_bind.hgetall(self.indices_items_key)
 
-        items = self.items_model.get(session)
+        items = self.items_model.get_all(session)
         items_keys = set([self.items_model(item).get_key().encode() for item in items])
 
         new_keys = [key for key in items_keys if key not in items_indices_map]
