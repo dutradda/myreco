@@ -247,7 +247,7 @@ def app(redis, session, temp_dir):
         'name': 'test',
         'store_id': 1,
         'engine_id': 1,
-        'engine_variables': [{
+        'slot_variables': [{
             '_operation': 'insert',
             'variable_name': 'test',
             'variable_store_id': 1,
@@ -276,7 +276,7 @@ def app(redis, session, temp_dir):
         'name': 'test2',
         'store_id': 1,
         'engine_id': 4,
-        'engine_variables': [{
+        'slot_variables': [{
             '_operation': 'insert',
             'variable_name': 'filter_string_inclusive',
             'variable_store_id': 1,
@@ -573,7 +573,7 @@ class TestPlacementsModelPost(object):
                         }],
                     },
                     'engine_id': 1,
-                    'engine_variables': [{
+                    'slot_variables': [{
                         'is_filter': True,
                         'is_inclusive_filter': True,
                         'filter_type': 'By Property',
@@ -739,7 +739,7 @@ class TestPlacementsModelGet(object):
                         }],
                     },
                     'engine_id': 1,
-                    'engine_variables': [{
+                    'slot_variables': [{
                         'is_filter': True,
                         'is_inclusive_filter': True,
                         'filter_type': 'By Property',
@@ -995,7 +995,7 @@ class TestPlacementsModelUriTemplateGet(object):
                         }],
                     },
                     'engine_id': 1,
-                    'engine_variables': [{
+                    'slot_variables': [{
                         'is_filter': True,
                         'is_inclusive_filter': True,
                         'filter_type': 'By Property',

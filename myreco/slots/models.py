@@ -81,7 +81,7 @@ class SlotsModelBase(AbstractConcreteBase):
         return sa.orm.relationship('EnginesModel')
 
     @declared_attr
-    def engine_variables(cls):
+    def slot_variables(cls):
         return sa.orm.relationship('SlotsVariablesModel', uselist=True, passive_deletes=True)
 
     @declared_attr
@@ -95,7 +95,7 @@ class SlotsModelBase(AbstractConcreteBase):
     def __init__(self, session, input_=None, **kwargs):
         super().__init__(session, input_=input_, **kwargs)
         self._validate_fallbacks(input_)
-        self._validate_engine_variables(input_)
+        self._validate_slot_variables(input_)
 
     def _validate_fallbacks(self, input_):
         for fallback in self.fallbacks:
@@ -107,11 +107,11 @@ class SlotsModelBase(AbstractConcreteBase):
                 raise ModelBaseError(
                     "Cannot set a fallback with different items types", input_)
 
-    def _validate_engine_variables(self, input_):
+    def _validate_slot_variables(self, input_):
         if self.engine is not None:
             engine = self.engine.todict()
 
-            for engine_variable in self.engine_variables:
+            for engine_variable in self.slot_variables:
                 var_name = engine_variable.inside_engine_name
                 engines_variables_map = {var['name']: var[
                     'schema'] for var in engine['variables']}
@@ -151,7 +151,7 @@ class SlotsModelBase(AbstractConcreteBase):
             value = {'id': value}
             attr_name = 'engine'
 
-        if attr_name == 'engine_variables':
+        if attr_name == 'slot_variables':
             for engine_var in value:
                 if 'variable_id' in engine_var:
                     var = {'id': engine_var.pop('variable_id')}

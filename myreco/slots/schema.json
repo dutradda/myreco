@@ -69,7 +69,7 @@
                 "store_id": {"type": "integer"},
                 "engine_id": {"type": "integer"},
                 "fallbacks": {"$ref": "#/definitions/fallbacks"},
-                "engine_variables": {"$ref": "#/definitions/engine_variables"}
+                "slot_variables": {"$ref": "#/definitions/slot_variables"}
             }
         },
         "schema_array": {
@@ -78,14 +78,14 @@
             "items": {
                 "type": "object",
                 "additionalProperties": false,
-                "required": ["engine_id", "store_id", "engine_variables", "max_recos", "name"],
+                "required": ["engine_id", "store_id", "slot_variables", "max_recos", "name"],
                 "properties": {
                     "max_recos": {"type": "integer"},
                     "name": {"type": "string"},
                     "store_id": {"type": "integer"},
                     "engine_id": {"type": "integer"},
                     "fallbacks": {"$ref": "#/definitions/fallbacks"},
-                    "engine_variables": {"$ref": "#/definitions/engine_variables"}
+                    "slot_variables": {"$ref": "#/definitions/slot_variables"}
                 }
             }
         },
@@ -101,7 +101,7 @@
                 }
             }
         },
-        "engine_variables": {
+        "slot_variables": {
             "type": "array",
             "minItems": 1,
             "items": {
@@ -118,7 +118,7 @@
                     "slot_id": {"type": "integer"},
                     "variable_name": {"type": "string"},
                     "variable_store_id": {"type": "integer"},
-                    "_operation": {"enum": ["remove", "update", "insert", "get"]},
+                    "_operation": {"enum": ["delete", "update", "insert"]},
                     "inside_engine_name": {"type": "string"},
                     "is_filter": {"type": "boolean"},
                     "filter_type": {"enum": ["By Property", "By Property Of"]},

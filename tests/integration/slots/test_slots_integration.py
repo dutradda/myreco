@@ -179,14 +179,14 @@ class TestSlotsModelPost(object):
                 'schema': {
                     'type': 'object',
                     'additionalProperties': False,
-                    'required': ['engine_id', 'store_id', 'engine_variables', 'max_recos', 'name'],
+                    'required': ['engine_id', 'store_id', 'slot_variables', 'max_recos', 'name'],
                     'properties': {
                         'max_recos': {'type': 'integer'},
                         'name': {'type': 'string'},
                         'store_id': {'type': 'integer'},
                         'engine_id': {'type': 'integer'},
                         'fallbacks': {'$ref': '#/definitions/fallbacks'},
-                        'engine_variables': {'$ref': '#/definitions/engine_variables'}
+                        'slot_variables': {'$ref': '#/definitions/slot_variables'}
                     }
                 }
             }
@@ -198,7 +198,7 @@ class TestSlotsModelPost(object):
             'name': 'test',
             'store_id': 1,
             'engine_id': 1,
-            'engine_variables': [{
+            'slot_variables': [{
                 '_operation': 'insert',
                 'variable_name': 'test',
                 'variable_store_id': 1,
@@ -215,7 +215,7 @@ class TestSlotsModelPost(object):
                     'name': 'test',
                     'engine_id': 1,
                     'store_id': 1,
-                    'engine_variables': [{
+                    'slot_variables': [{
                         '_operation': 'insert',
                         'inside_engine_name': 'test',
                         'variable_name': 'test',
@@ -240,7 +240,7 @@ class TestSlotsModelPost(object):
             'name': 'test',
             'store_id': 1,
             'engine_id': 1,
-            'engine_variables': [{
+            'slot_variables': [{
                 '_operation': 'insert',
                 'variable_name': 'test',
                 'variable_store_id': 1,
@@ -260,7 +260,7 @@ class TestSlotsModelPost(object):
                     'name': 'test',
                     'engine_id': 1,
                     'store_id': 1,
-                    'engine_variables': [{
+                    'slot_variables': [{
                         '_operation': 'insert',
                         'inside_engine_name': 'test',
                         'is_filter': True,
@@ -288,7 +288,7 @@ class TestSlotsModelPost(object):
             'name': 'test',
             'store_id': 1,
             'engine_id': 1,
-            'engine_variables': [{
+            'slot_variables': [{
                 '_operation': 'insert',
                 'variable_name': 'test',
                 'variable_store_id': 1,
@@ -308,7 +308,7 @@ class TestSlotsModelPost(object):
                     'name': 'test',
                     'engine_id': 1,
                     'store_id': 1,
-                    'engine_variables': [{
+                    'slot_variables': [{
                         '_operation': 'insert',
                         'filter_type': 'By Property',
                         'inside_engine_name': 'filter_test',
@@ -326,7 +326,7 @@ class TestSlotsModelPost(object):
             'name': 'test',
             'store_id': 1,
             'engine_id': 1,
-            'engine_variables': [{
+            'slot_variables': [{
                 '_operation': 'insert',
                 'variable_name': 'test',
                 'variable_store_id': 1,
@@ -341,7 +341,7 @@ class TestSlotsModelPost(object):
             'name': 'test',
             'fallbacks': [],
             'id': 1,
-            'engine_variables': [
+            'slot_variables': [
                 {
                     'variable': {
                         'name': 'test',
@@ -427,7 +427,7 @@ class TestSlotsModelPost(object):
             'name': 'test',
             'store_id': 1,
             'engine_id': 1,
-            'engine_variables': [{
+            'slot_variables': [{
                 '_operation': 'insert',
                 'variable_name': 'test',
                 'variable_store_id': 1,
@@ -445,7 +445,7 @@ class TestSlotsModelPost(object):
             'id': 1,
             'max_recos': 10,
             'name': 'test',
-            'engine_variables': [
+            'slot_variables': [
                 {
                     'variable': {
                         'name': 'test',
@@ -531,7 +531,7 @@ class TestSlotsModelPost(object):
             'name': 'test',
             'store_id': 1,
             'engine_id': 1,
-            'engine_variables': [{
+            'slot_variables': [{
                 '_operation': 'insert',
                 'variable_name': 'test',
                 'variable_store_id': 1,
@@ -545,7 +545,7 @@ class TestSlotsModelPost(object):
             'name': 'test',
             'store_id': 1,
             'engine_id': 1,
-            'engine_variables': [{
+            'slot_variables': [{
                 '_operation': 'insert',
                 'variable_name': 'test',
                 'variable_store_id': 1,
@@ -561,7 +561,7 @@ class TestSlotsModelPost(object):
                 'max_recos': 10,
                 'name': 'test',
                 'id': 1,
-                'engine_variables': [
+                'slot_variables': [
                     {
                         'variable': {
                             'name': 'test',
@@ -643,7 +643,7 @@ class TestSlotsModelPost(object):
             'id': 2,
             'max_recos': 10,
             'name': 'test',
-            'engine_variables': [
+            'slot_variables': [
                 {
                     'variable': {
                         'name': 'test',
@@ -729,7 +729,7 @@ class TestSlotsModelPost(object):
             'name': 'test',
             'store_id': 1,
             'engine_id': 1,
-            'engine_variables': [{
+            'slot_variables': [{
                 '_operation': 'insert',
                 'variable_name': 'test',
                 'variable_store_id': 1,
@@ -758,7 +758,7 @@ class TestSlotsModelGet(object):
             'name': 'test',
             'store_id': 1,
             'engine_id': 1,
-            'engine_variables': [{
+            'slot_variables': [{
                 '_operation': 'insert',
                 'variable_name': 'test',
                 'variable_store_id': 1,
@@ -774,7 +774,7 @@ class TestSlotsModelGet(object):
             'id': 1,
             'max_recos': 10,
             'name': 'test',
-            'engine_variables': [
+            'slot_variables': [
                 {
                     'variable': {
                         'name': 'test',
@@ -887,8 +887,8 @@ class TestSlotsModelUriTemplatePatch(object):
                         'fallbacks': {
                             '$ref': '#/definitions/fallbacks'
                         },
-                        'engine_variables': {
-                            '$ref': '#/definitions/engine_variables'
+                        'slot_variables': {
+                            '$ref': '#/definitions/slot_variables'
                         }
                     },
                     'type': 'object'
@@ -904,7 +904,7 @@ class TestSlotsModelUriTemplatePatch(object):
             'name': 'test',
             'store_id': 1,
             'engine_id': 1,
-            'engine_variables': [{
+            'slot_variables': [{
                 '_operation': 'insert',
                 'variable_name': 'test',
                 'variable_store_id': 1,
@@ -914,7 +914,7 @@ class TestSlotsModelUriTemplatePatch(object):
         resp = client.post('/slots/', headers=headers, body=json.dumps(body))
 
         body = {
-            'engine_variables': [{
+            'slot_variables': [{
                 '_operation': 'update',
                 'id': 1,
                 'inside_engine_name': 'invalid'
@@ -927,7 +927,7 @@ class TestSlotsModelUriTemplatePatch(object):
                 'message': "Invalid engine variable with 'inside_engine_name' value 'invalid'",
                 'input': {
                     'id': 1,
-                    'engine_variables': [{
+                    'slot_variables': [{
                         '_operation': 'update',
                         'id': 1,
                         'inside_engine_name': 'invalid'
@@ -951,7 +951,7 @@ class TestSlotsModelUriTemplatePatch(object):
             'name': 'test',
             'store_id': 1,
             'engine_id': 1,
-            'engine_variables': [{
+            'slot_variables': [{
                 '_operation': 'insert',
                 'variable_name': 'test',
                 'variable_store_id': 1,
@@ -978,7 +978,7 @@ class TestSlotsModelUriTemplatePatch(object):
             'name': 'test',
             'store_id': 1,
             'engine_id': 1,
-            'engine_variables': [{
+            'slot_variables': [{
                 '_operation': 'insert',
                 'variable_name': 'test',
                 'variable_store_id': 1,
@@ -989,7 +989,7 @@ class TestSlotsModelUriTemplatePatch(object):
             'name': 'test',
             'store_id': 1,
             'engine_id': 2,
-            'engine_variables': [{
+            'slot_variables': [{
                 '_operation': 'insert',
                 'variable_name': 'test',
                 'variable_store_id': 1,
@@ -1024,7 +1024,7 @@ class TestSlotsModelUriTemplatePatch(object):
             'name': 'test',
             'store_id': 1,
             'engine_id': 1,
-            'engine_variables': [{
+            'slot_variables': [{
                 '_operation': 'insert',
                 'variable_name': 'test',
                 'variable_store_id': 1,
@@ -1034,7 +1034,7 @@ class TestSlotsModelUriTemplatePatch(object):
         obj = json.loads(client.post('/slots/', headers=headers, body=json.dumps(body)).body)[0]
 
         body = {
-            'engine_variables': [{
+            'slot_variables': [{
                 '_operation': 'update',
                 'id': 1,
                 'inside_engine_name': 'filter_test'
@@ -1048,7 +1048,7 @@ class TestSlotsModelUriTemplatePatch(object):
             'id': 1,
             'max_recos': 10,
             'name': 'test',
-            'engine_variables': [
+            'slot_variables': [
                 {
                     'variable': {
                         'name': 'test',
@@ -1142,7 +1142,7 @@ class TestSlotsModelUriTemplateDelete(object):
             'name': 'test',
             'store_id': 1,
             'engine_id': 1,
-            'engine_variables': [{
+            'slot_variables': [{
                 '_operation': 'insert',
                 'variable_name': 'test',
                 'variable_store_id': 1,
@@ -1177,7 +1177,7 @@ class TestSlotsModelUriTemplateGet(object):
             'name': 'test',
             'store_id': 1,
             'engine_id': 1,
-            'engine_variables': [{
+            'slot_variables': [{
                 '_operation': 'insert',
                 'variable_name': 'test',
                 'variable_store_id': 1,
@@ -1194,7 +1194,7 @@ class TestSlotsModelUriTemplateGet(object):
             'id': 1,
             'max_recos': 10,
             'name': 'test',
-            'engine_variables': [
+            'slot_variables': [
                 {
                     'variable': {
                         'name': 'test',

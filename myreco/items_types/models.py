@@ -411,8 +411,8 @@ class ItemsCollectionsModelFiltersUpdaterBaseMeta(ItemsCollectionsModelBaseMeta)
         stock_filter = BooleanFilterBy(items_model, 'stock')
         stock_filter.update(job_session, items)
 
-        for eng_var, schema in enabled_filters:
-            filter_ = filters_factory.make(items_model, eng_var, schema)
+        for slot_var, schema in enabled_filters:
+            filter_ = filters_factory.make(items_model, slot_var, schema)
             filters_ret[filter_.name] = filter_.update(job_session, items)
 
         return {'items_indices_map': items_indices_map_ret, 'filters': filters_ret}
@@ -425,14 +425,14 @@ class ItemsCollectionsModelFiltersUpdaterBaseMeta(ItemsCollectionsModelBaseMeta)
         # used to aggregate filters inclusive and exclusive with same property
         filters_names_set = set()
 
-        for eng_manager in slots:
-            if cls.__item_type__['id'] == eng_manager['engine']['item_type_id']:
-                for engine_var in eng_manager['engine_variables']:
-                    if engine_var['is_filter']:
-                        filter_name = engine_var['inside_engine_name']
+        for slot in slots:
+            if cls.__item_type__['id'] == slot['engine']['item_type_id']:
+                for slot_var in slot['slot_variables']:
+                    if slot_var['is_filter']:
+                        filter_name = slot_var['inside_engine_name']
                         if filter_name not in filters_names_set:
                             schema = cls.__item_type__['schema']['properties'][filter_name]
-                            filters_variables.append((engine_var, schema))
+                            filters_variables.append((slot_var, schema))
                             filters_names_set.add(filter_name)
 
         return filters_variables

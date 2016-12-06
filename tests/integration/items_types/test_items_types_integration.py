@@ -806,7 +806,7 @@ def filters_updater_app(redis, session):
         'name': 'test',
         'store_id': 1,
         'engine_id': 1,
-        'engine_variables': [{
+        'slot_variables': [{
             '_operation': 'insert',
             'variable_name': 'test',
             'variable_store_id': 1,

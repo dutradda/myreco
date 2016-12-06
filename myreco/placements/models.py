@@ -154,7 +154,7 @@ class PlacementsModelRecommenderBase(PlacementsModelBase):
         filters = dict()
         engine = slot['engine']
 
-        for engine_var in slot['engine_variables']:
+        for engine_var in slot['slot_variables']:
             var_name = engine_var['variable']['name']
             var_engine_name = engine_var['inside_engine_name']
 
