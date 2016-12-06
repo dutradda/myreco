@@ -412,7 +412,7 @@ class ItemsCollectionsModelFiltersUpdaterBaseMeta(ItemsCollectionsModelBaseMeta)
         stock_filter.update(job_session, items)
 
         for slot_var, schema in enabled_filters:
-            filter_ = filters_factory.make(items_model, slot_var, schema)
+            filter_ = filters_factory.make(items_model, slot_var, schema, slot_var['skip_values'])
             filters_ret[filter_.name] = filter_.update(job_session, items)
 
         return {'items_indices_map': items_indices_map_ret, 'filters': filters_ret}

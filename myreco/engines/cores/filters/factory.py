@@ -28,7 +28,7 @@ from myreco.engines.cores.filters.filters import (BooleanFilterBy, SimpleFilterB
 class FiltersFactory(object):
 
     @classmethod
-    def make(cls, items_model, engine_variable, schema):
+    def make(cls, items_model, engine_variable, schema, skip_values=None):
         filter_type = schema['type']
         var_name = engine_variable['inside_engine_name']
         type_ = engine_variable['filter_type']
@@ -60,4 +60,4 @@ class FiltersFactory(object):
             else:
                 filter_class = ArrayFilterOf
 
-        return filter_class(items_model, var_name, is_inclusive, id_names)
+        return filter_class(items_model, var_name, is_inclusive, id_names, skip_values)

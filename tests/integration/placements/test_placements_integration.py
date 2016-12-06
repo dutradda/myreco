@@ -599,7 +599,8 @@ class TestPlacementsModelPost(object):
                         'id': 1,
                         'inside_engine_name': 'filter_test',
                         'override': False,
-                        'override_value_json': None,
+                        'override_value': None,
+                        'skip_values': None,
                         'variable': {
                             'name': 'test',
                             'store_id': 1
@@ -614,7 +615,8 @@ class TestPlacementsModelPost(object):
                         'id': 2,
                         'inside_engine_name': 'filter_test',
                         'override': False,
-                        'override_value_json': None,
+                        'override_value': None,
+                        'skip_values': None,
                         'variable': {
                             'name': 'test3',
                             'store_id': 1
@@ -629,7 +631,8 @@ class TestPlacementsModelPost(object):
                         'id': 3,
                         'inside_engine_name': 'item_id',
                         'override': False,
-                        'override_value_json': None,
+                        'override_value': None,
+                        'skip_values': None,
                         'variable': {
                             'name': 'test2',
                             'store_id': 1
@@ -765,7 +768,8 @@ class TestPlacementsModelGet(object):
                         'id': 1,
                         'inside_engine_name': 'filter_test',
                         'override': False,
-                        'override_value_json': None,
+                        'override_value': None,
+                        'skip_values': None,
                         'variable': {
                             'name': 'test',
                             'store_id': 1
@@ -780,7 +784,8 @@ class TestPlacementsModelGet(object):
                         'id': 2,
                         'inside_engine_name': 'filter_test',
                         'override': False,
-                        'override_value_json': None,
+                        'override_value': None,
+                        'skip_values': None,
                         'variable': {
                             'name': 'test3',
                             'store_id': 1
@@ -795,7 +800,8 @@ class TestPlacementsModelGet(object):
                         'id': 3,
                         'inside_engine_name': 'item_id',
                         'override': False,
-                        'override_value_json': None,
+                        'override_value': None,
+                        'skip_values': None,
                         'variable': {
                             'name': 'test2',
                             'store_id': 1
@@ -1021,7 +1027,8 @@ class TestPlacementsModelUriTemplateGet(object):
                         'id': 1,
                         'inside_engine_name': 'filter_test',
                         'override': False,
-                        'override_value_json': None,
+                        'override_value': None,
+                        'skip_values': None,
                         'variable': {
                             'name': 'test',
                             'store_id': 1
@@ -1036,7 +1043,8 @@ class TestPlacementsModelUriTemplateGet(object):
                         'id': 2,
                         'inside_engine_name': 'filter_test',
                         'override': False,
-                        'override_value_json': None,
+                        'override_value': None,
+                        'skip_values': None,
                         'variable': {
                             'name': 'test3',
                             'store_id': 1
@@ -1051,7 +1059,8 @@ class TestPlacementsModelUriTemplateGet(object):
                         'id': 3,
                         'inside_engine_name': 'item_id',
                         'override': False,
-                        'override_value_json': None,
+                        'override_value': None,
+                        'skip_values': None,
                         'variable': {
                             'name': 'test2',
                             'store_id': 1

@@ -26,6 +26,7 @@ from falconswagger.exceptions import ModelBaseError
 from jsonschema import ValidationError
 from sqlalchemy.ext.declarative import AbstractConcreteBase, declared_attr
 import sqlalchemy as sa
+import json
 
 
 class SlotsVariablesModelBase(AbstractConcreteBase):
@@ -39,6 +40,41 @@ class SlotsVariablesModelBase(AbstractConcreteBase):
     override = sa.Column(sa.Boolean, default=False)
     override_value_json = sa.Column(sa.Text)
     inside_engine_name = sa.Column(sa.String(255), nullable=False)
+    skip_values_json = sa.Column(sa.Text)
+
+    @property
+    def override_value(self):
+        if not hasattr(self, '_override_value'):
+            self._override_value = \
+                json.loads(self.override_value_json) if self.override_value_json is not None else None
+        return self._override_value
+
+    @property
+    def skip_values(self):
+        if not hasattr(self, '_skip_values'):
+            self._skip_values = \
+                json.loads(self.skip_values_json) if self.skip_values_json is not None else None
+        return self._skip_values
+
+    def _setattr(self, attr_name, value, session, input_):
+        if attr_name == 'skip_values':
+            value = json.dumps(value)
+            attr_name = 'skip_values_json'
+
+        if attr_name == 'override_value':
+            value = json.dumps(value)
+            attr_name = 'override_value_json'
+
+        super()._setattr(attr_name, value, session, input_)
+
+    def _format_output_json(self, dict_inst, schema):
+        if schema.get('skip_values') is not False:
+            dict_inst.pop('skip_values_json')
+            dict_inst['skip_values'] = self.skip_values
+
+        if schema.get('override_value') is not False:
+            dict_inst.pop('override_value_json')
+            dict_inst['override_value'] = self.override_value
 
     @declared_attr
     def variable_name(cls):

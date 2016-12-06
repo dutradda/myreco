@@ -125,6 +125,12 @@
                     "is_inclusive_filter": {"type": "boolean"},
                     "override": {"type": "boolean"},
                     "override_value": {"type": "string"},
+                    "skip_values": {
+                        "oneOf": [
+                            {"type": "array"},
+                            {"type": "null"}
+                        ]
+                    },
                     "variable": {
                         "type": "object",
                         "additionalProperties": false,

@@ -30,13 +30,14 @@ import numpy as np
 
 class FilterBaseBy(LoggerMixin):
 
-    def __init__(self, items_model, name, is_inclusive=True, id_names=None):
+    def __init__(self, items_model, name, is_inclusive=True, id_names=None, skip_values=None):
         self._build_logger()
         self.key = items_model.__key__ + '_' + name + '_filter'
         self.items_model = items_model
         self.name = name
         self.is_inclusive = is_inclusive
         self.id_names = id_names
+        self.skip_values = set(skip_values) if skip_values is not None else skip_values
 
     def _unpack_filter(self, filter_, new_size):
         filter_ = np.fromstring(decompress(filter_), dtype=np.bool)
@@ -69,6 +70,9 @@ class FilterBaseBy(LoggerMixin):
     def _log_build(self):
         self._logger.info("Building '{}' filter...".format(self.name))
 
+    def _not_skip_value(self, value):
+        return (self.skip_values is None or value not in self.skip_values)
+
 
 class BooleanFilterBy(FilterBaseBy):
 
@@ -79,7 +83,7 @@ class BooleanFilterBy(FilterBaseBy):
 
         for item in items:
             value = item.get(self.name)
-            if value is not None:
+            if value is not None and self._not_skip_value(value):
                 filter_[item['index']] = value
                 filter_ret[self._build_output_ids(item)] = value
 
@@ -127,7 +131,7 @@ class MultipleFilterBy(FilterBaseBy):
         return filter_ret
 
     def _update_filter(self, filter_map, filter_ret, value, item):
-        if value is not None:
+        if value is not None and self._not_skip_value(value):
             filter_map[value].append(item['index'])
             filter_ret[value].append(self._build_output_ids(item))
 
