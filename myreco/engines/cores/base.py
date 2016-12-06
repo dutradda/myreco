@@ -78,7 +78,7 @@ class EngineCore(LoggerMixin, metaclass=EngineCoreMeta):
         best_indices = self._get_best_indices(rec_vector, max_recos)
         best_items_keys = items_indices_map.get_items(session, best_indices)
 
-        if show_details:
+        if show_details and best_items_keys:
             return [msgpack.loads(item, encoding='utf-8') for item in session.redis_bind.hmget(
                             self.items_model.__key__, best_items_keys) if item is not None]
 

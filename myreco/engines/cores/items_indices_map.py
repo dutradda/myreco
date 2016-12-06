@@ -102,8 +102,11 @@ class ItemsIndicesMap(LoggerMixin):
         return {' | '.join([str(i) for i in eval(k)]): int(v.decode()) for k, v in output.items()}
 
     def get_items(self, session, indices):
-        return [item.decode() for item in \
-            session.redis_bind.hmget(self.indices_items_key, indices) if item is not None]
+        if indices:
+            return [item.decode() for item in \
+                session.redis_bind.hmget(self.indices_items_key, indices) if item is not None]
+        else:
+            return []
 
     def get_indices(self, session, ids):
         keys = self._build_keys(ids)
