@@ -21,6 +21,9 @@
 # SOFTWARE.
 
 
+from falconswagger.mixins import LoggerMixin
+
+
 class ItemsIndicesDict(dict):
 
     def __init__(self, items_indices_map, items_model):
@@ -34,9 +37,10 @@ class ItemsIndicesDict(dict):
             return int(value.decode())
 
 
-class ItemsIndicesMap(object):
+class ItemsIndicesMap(LoggerMixin):
 
     def __init__(self, items_model):
+        self._build_logger()
         self.items_model = items_model
         self.key = items_model.__key__ + '_indices_map'
         self.indices_items_key = items_model.__key__ + '_items_map'
@@ -50,11 +54,12 @@ class ItemsIndicesMap(object):
         return {int(k): v.decode() for k, v in map_.items()}
 
     def update(self, session):
+        self._logger.info('Updating...')
         items_indices_map = session.redis_bind.hgetall(self.key)
         indices_items_map = session.redis_bind.hgetall(self.indices_items_key)
 
         items = self.items_model.get_all(session)
-        items_keys = set([self.items_model(item).get_key().encode() for item in items])
+        items_keys = self._build_keys(items)
 
         new_keys = [key for key in items_keys if key not in items_indices_map]
         old_keys = set([key for key in items_keys if key in items_indices_map])
@@ -90,9 +95,17 @@ class ItemsIndicesMap(object):
 
         return self._format_output(self.get_all(session))
 
+    def _build_keys(self, items):
+        return set([self.items_model(item).get_key().encode() for item in items])
+
     def _format_output(self, output):
         return {' | '.join([str(i) for i in eval(k)]): int(v.decode()) for k, v in output.items()}
 
     def get_items(self, session, indices):
         return [item.decode() for item in \
             session.redis_bind.hmget(self.indices_items_key, indices) if item is not None]
+
+    def get_indices(self, session, ids):
+        keys = self._build_keys(ids)
+        return [index.decode() for index in \
+            session.redis_bind.hmget(self.key, keys) if index is not None]

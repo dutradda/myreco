@@ -21,14 +21,17 @@
 # SOFTWARE.
 
 
+from myreco.engines.cores.items_indices_map import ItemsIndicesMap
+from falconswagger.mixins import LoggerMixin
 from zlib import decompress, compress
 from collections import defaultdict
 import numpy as np
 
 
-class FilterBaseBy(object):
+class FilterBaseBy(LoggerMixin):
 
     def __init__(self, items_model, name, is_inclusive=True, id_names=None):
+        self._build_logger()
         self.key = items_model.__key__ + '_' + name + '_filter'
         self.items_model = items_model
         self.name = name
@@ -48,8 +51,7 @@ class FilterBaseBy(object):
         if not self.is_inclusive:
             filter_ = np.invert(filter_)
 
-        if np.sum(filter_):
-            rec_vector *= filter_
+        rec_vector *= filter_
 
     def _pack_filter(self, filter_):
         return compress(filter_.tobytes())
@@ -64,10 +66,14 @@ class FilterBaseBy(object):
     def _list_cast(self, obj):
         return obj if isinstance(obj, list) or isinstance(obj, tuple) else (obj,)
 
+    def _log_build(self):
+        self._logger.info("Building '{}' filter...".format(self.name))
+
 
 class BooleanFilterBy(FilterBaseBy):
 
     def update(self, session, items):
+        self._log_build()
         filter_ret = {}
         filter_ = self._build_empty_array(len(items))
 
@@ -94,14 +100,15 @@ class MultipleFilterBy(FilterBaseBy):
         filters = session.redis_bind.hmget(self.key, ids)
         filters = [self._unpack_filter(filter_, rec_vector.size)
                     for filter_ in filters if filter_ is not None]
-        final_filter = np.zeros(rec_vector.size, dtype=np.bool)
+        final_filter = np.ones(rec_vector.size, dtype=np.bool)
 
         for filter_ in filters:
-            final_filter = np.logical_or(final_filter, filter_)
+            final_filter *= filter_
 
         self._filter(final_filter, rec_vector)
 
     def update(self, session, items):
+        self._log_build()
         filter_ret = defaultdict(list)
         filter_map = defaultdict(list)
         set_data = dict()
@@ -180,3 +187,19 @@ class ArrayFilterOf(ArrayFilterBy):
         filter_ids = []
         [filter_ids.extend(item[self.name]) for item in items]
         ArrayFilterBy.filter(self, session, rec_vector, filter_ids)
+
+
+class IndexFilterOf(FilterBaseBy):
+
+    def update(self, *args, **kwargs):
+        self._log_build()
+
+    def filter(self, session, rec_vector, items_ids):
+        items_indices_map = ItemsIndicesMap(self.items_model)
+        indices = items_indices_map.get_indices(session, items_ids)
+        if indices:
+            if not self.is_inclusive:
+                rec_vector[np.array(indices, dtype=np.int32)] = 0
+            else:
+                rec_vector[:] = 0
+                rec_vector[np.array(indices, dtype=np.int32)] = 1

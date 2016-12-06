@@ -177,7 +177,7 @@ class PlacementsModelRecommenderBase(PlacementsModelBase):
         filter_input_schema = None
 
         if engine_var['is_filter']:
-            if engine_var['filter_type'] == 'Property Of':
+            if engine_var['filter_type'].endswith('Of'):
                 filter_input_schema = {'type': 'array', 'items': engine['item_type']['schema']}
 
             variables = engine['item_type']['available_filters']
@@ -187,7 +187,7 @@ class PlacementsModelRecommenderBase(PlacementsModelBase):
         for var in variables:
             if var['name'] == engine_var['inside_engine_name']:
                 if engine_var['is_filter'] and var['schema'].get('type') != 'array' \
-                        and engine_var['filter_type'] != 'Property Of':
+                        and not engine_var['filter_type'].endswith('Of'):
                     filter_input_schema = {'type': 'array', 'items': var['schema']}
 
                 return var['schema'], filter_input_schema

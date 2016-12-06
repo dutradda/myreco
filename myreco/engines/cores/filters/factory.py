@@ -22,7 +22,7 @@
 
 
 from myreco.engines.cores.filters.filters import (BooleanFilterBy, SimpleFilterBy, ObjectFilterBy,
-    ArrayFilterBy, SimpleFilterOf, ObjectFilterOf, ArrayFilterOf)
+    ArrayFilterBy, SimpleFilterOf, ObjectFilterOf, ArrayFilterOf, IndexFilterOf)
 
 
 class FiltersFactory(object):
@@ -35,7 +35,10 @@ class FiltersFactory(object):
         is_inclusive = engine_variable['is_inclusive_filter']
         id_names = None
 
-        if filter_type == 'integer' or filter_type == 'string':
+        if type_ == 'Index Of':
+            filter_class = IndexFilterOf
+
+        elif filter_type == 'integer' or filter_type == 'string':
             if type_ == 'By Property':
                 filter_class = SimpleFilterBy
             else:
