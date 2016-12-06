@@ -378,9 +378,8 @@ class ItemsCollectionsModelBaseMeta(RedisModelMeta):
 
     def _set_stock_item(cls, keys, items_model, items_indices_map, value, items):
         for k in keys:
-            item = items_model({'stock': value})
-            item.set_ids(eval(k))
-            item.index = int(items_indices_map[k])
+            item = {k_: v_ for k_, v_ in zip(items_model.__id_names__, eval(k))}
+            item.update({'stock': value, 'index': int(items_indices_map[k])})
             items.append(item)
 
     def update(cls, session, objs, ids=None, **kwargs):
@@ -407,16 +406,10 @@ class ItemsCollectionsModelFiltersUpdaterBaseMeta(ItemsCollectionsModelBaseMeta)
         enabled_filters = cls._get_enabled_filters(job_session, store_id)
         filters_ret = dict()
         items_indices_map = items_indices_map.get_all(job_session)
-        items = cls._get_items_with_indices(job_session, items_model, items_indices_map)
+        items = cls._get_items_with_indices_and_stock(job_session, items_model, items_indices_map)
 
         stock_filter = BooleanFilterBy(items_model, 'stock')
-        stock_items = []
-        for item in items:
-            stock_item = items_model(item)
-            stock_item.index = item.index
-            stock_item['stock'] = True
-            stock_items.append(stock_item)
-        stock_filter.update(job_session, stock_items)
+        stock_filter.update(job_session, items)
 
         for eng_var, schema in enabled_filters:
             filter_ = filters_factory.make(items_model, eng_var, schema)
@@ -444,21 +437,21 @@ class ItemsCollectionsModelFiltersUpdaterBaseMeta(ItemsCollectionsModelBaseMeta)
 
         return filters_variables
 
-    def _get_items_with_indices(cls, job_session, items_model, items_indices_map):
+    def _get_items_with_indices_and_stock(cls, job_session, items_model, items_indices_map):
         items = []
         page = 1
-        items_part = items_model.get(job_session, page=page)
+        items_part = items_model.get(job_session, page=page, items_per_page=100000)
 
         while items_part:
-            for item in items_part:
-                index = items_indices_map.get(item)
-                if index is not None:
-                    item = items_model(item)
-                    item.index = index
-                    items.append(item)
-
+            items.extend(items_part)
             page += 1
-            items_part = items_model.get(job_session, page=page)
+            items_part = items_model.get(job_session, page=page, items_per_page=100000)
+
+        for item in items:
+            index = items_indices_map.get(item)
+            if index is not None:
+                item['index'] = index
+                item['stock'] = True
 
         return items
 

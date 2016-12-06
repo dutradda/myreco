@@ -58,7 +58,8 @@ class FilterBaseBy(object):
         return np.zeros(size, dtype=np.bool)
 
     def _build_output_ids(self, item):
-        return ' | '.join([str(i) for i in item.get_ids_values()])
+        ids = [item.get(id_name) for id_name in self.items_model.__id_names__]
+        return ' | '.join([str(i) for i in ids])
 
     def _list_cast(self, obj):
         return obj if isinstance(obj, list) or isinstance(obj, tuple) else (obj,)
@@ -71,9 +72,9 @@ class BooleanFilterBy(FilterBaseBy):
         filter_ = self._build_empty_array(len(items))
 
         for item in items:
-            value = item.get_(self.name)
+            value = item.get(self.name)
             if value is not None:
-                filter_[item.index] = value
+                filter_[item['index']] = value
                 filter_ret[self._build_output_ids(item)] = value
 
         session.redis_bind.set(self.key, self._pack_filter(filter_))
@@ -120,14 +121,14 @@ class MultipleFilterBy(FilterBaseBy):
 
     def _update_filter(self, filter_map, filter_ret, value, item):
         if value is not None:
-            filter_map[value].append(item.index)
+            filter_map[value].append(item['index'])
             filter_ret[value].append(self._build_output_ids(item))
 
 
 class SimpleFilterBy(MultipleFilterBy):
 
     def _update_filter(self, filter_map, filter_ret, item):
-        MultipleFilterBy._update_filter(self, filter_map, filter_ret, item.get_(self.name), item)
+        MultipleFilterBy._update_filter(self, filter_map, filter_ret, item.get(self.name), item)
 
 
 class ObjectFilterBy(MultipleFilterBy):
@@ -137,21 +138,21 @@ class ObjectFilterBy(MultipleFilterBy):
         MultipleFilterBy._update_filter(self, filter_map, filter_ret, value, item)
 
     def _get_id_from_property(self, item):
-        property_obj = item.get_(self.name)
+        property_obj = item.get(self.name)
         if property_obj is not None:
             ids = [property_obj[id_name] for id_name in self.id_names]
             return repr(tuple([id_ for _, id_ in sorted(zip(self.id_names, ids), key=lambda x: x[0])]))
 
     def filter(self, session, rec_vector, properties):
         properties = self._list_cast(properties)
-        ids = [self._get_id_from_property(self.items_model({self.name: prop})) for prop in properties]
+        ids = [self._get_id_from_property({self.name: prop}) for prop in properties]
         MultipleFilterBy.filter(self, session, rec_vector, ids)
 
 
 class ArrayFilterBy(SimpleFilterBy):
 
     def _update_filter(self, filter_map, filter_ret, item):
-        property_list = item.get_(self.name, [])
+        property_list = item.get(self.name, [])
         for value in property_list:
             MultipleFilterBy._update_filter(self, filter_map, filter_ret, value, item)
 
