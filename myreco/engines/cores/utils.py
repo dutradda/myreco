@@ -20,22 +20,14 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-from glob import glob
-from collections import namedtuple
-from itertools import starmap
+
 import os.path
-import csv
-import gzip
 
 
-def build_csv_readers(path, pattern='', delimiter='#'):
-    readers = []
-    for filename in glob(os.path.join(path, '{}*.gz'.format(pattern))):
-        csv_file = gzip.open(filename, 'rt')
-        readers.append(csv.DictReader(csv_file, delimiter=delimiter))
-    return readers
+def build_engine_key_prefix(engine):
+    return 'engine_{}_{}'.format(engine['id'], engine['core']['name'])
 
 
 def build_engine_data_path(engine):
-    engine_path = 'engine_{}_{}'.format(engine['id'], engine['core']['name'])
+    engine_path = build_engine_key_prefix(engine)
     return os.path.join(engine['store']['configuration']['data_path'], engine_path)

@@ -25,8 +25,7 @@ from falconswagger.models.base import get_model_schema
 from falconswagger.json_builder import JsonBuilder
 from falconswagger.exceptions import ModelBaseError
 from myreco.engines.cores.filters.factory import FiltersFactory
-from myreco.items_types.models import build_item_key
-from myreco.utils import ModuleClassLoader
+from myreco.utils import ModuleClassLoader, get_items_model_from_api
 from falcon.errors import HTTPNotFound
 from sqlalchemy.ext.declarative import AbstractConcreteBase, declared_attr
 import random as random_
@@ -133,7 +132,7 @@ class PlacementsModelRecommenderBase(PlacementsModelBase):
     @classmethod
     def _get_recos_by_slot(cls, slot, input_variables, session, show_details, max_recos=None):
         engine = slot['engine']
-        items_model = cls._get_items_model(engine)
+        items_model = get_items_model_from_api(cls.__api__, engine)
         engine_vars, filters = \
             cls._get_variables_and_filters(slot, items_model, input_variables)
         core_config = engine['core']['configuration']['core_module']
@@ -142,11 +141,6 @@ class PlacementsModelRecommenderBase(PlacementsModelBase):
 
         return core_instance.get_recommendations(
             session, filters, max_recos, show_details, **engine_vars)
-
-    @classmethod
-    def _get_items_model(cls, engine):
-        items_types_model_key = build_item_key(engine['item_type']['name'])
-        return cls.__api__.models[items_types_model_key].__models__[engine['store_id']]
 
     @classmethod
     def _get_variables_and_filters(cls, slot, items_model, input_variables):

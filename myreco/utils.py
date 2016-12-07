@@ -22,6 +22,7 @@
 
 
 from falconswagger.exceptions import ModelBaseError
+from myreco.items_types.models import build_item_key
 from importlib import import_module
 
 
@@ -44,3 +45,11 @@ class ModuleClassLoader(object):
                                      config['path'], config['class_name'])
 
         return class_
+
+
+def get_items_model_from_api(api, engine):
+        if api:
+            items_types_model_key = build_item_key(engine['item_type']['name'])
+            items_collection = api.models.get(items_types_model_key)
+            if items_collection:
+                return items_collection.__models__.get(engine['store_id'])

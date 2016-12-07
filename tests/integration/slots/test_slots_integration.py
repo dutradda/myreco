@@ -68,8 +68,8 @@ def app(session):
         'name': 'top_seller',
         'configuration': {
             'core_module': {
-                'path': 'myreco.engines.cores.top_seller.engine',
-                'class_name': 'TopSellerEngine'
+                'path': 'myreco.engines.cores.top_seller.core',
+                'class_name': 'TopSellerEngineCore'
             },
             'data_importer_module': {
                 'path': 'tests.integration.fixtures_models',

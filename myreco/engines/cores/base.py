@@ -23,11 +23,17 @@
 
 from falconswagger.models.base import build_validator, get_module_path
 from falconswagger.mixins import LoggerMixin
+from falconswagger.json_builder import JsonBuilder
 from myreco.engines.cores.items_indices_map import ItemsIndicesMap
+from myreco.engines.cores.utils import build_engine_data_path, build_engine_key_prefix
 from jsonschema import Draft4Validator
 from abc import ABCMeta, abstractmethod
 from bottleneck import argpartition
+from glob import glob
 import msgpack
+import os.path
+import csv
+import gzip
 
 
 class EngineError(Exception):
@@ -103,6 +109,24 @@ class EngineCore(LoggerMixin, metaclass=EngineCoreMeta):
     def export_objects(self, session):
         pass
 
+    def _build_csv_readers(self, pattern, delimiter='#'):
+        path = build_engine_data_path(self.engine)
+        readers = []
+        for filename in glob(os.path.join(path, '{}*.gz'.format(pattern))):
+            csv_file = gzip.open(filename, 'rt')
+            readers.append(csv.DictReader(csv_file, delimiter=delimiter))
+        return readers
+
+    def _get_items_indices_map_dict(self, items_indices_map, session):
+        items_indices_map = items_indices_map.get_all(session)
+
+        if not items_indices_map:
+            raise EngineError(
+                "The Indices Map for '{}' is empty. Please update these items"
+                .format(self._engine_core.engine['item_type']['name']))
+
+        return items_indices_map
+
 
 class AbstractDataImporter(metaclass=ABCMeta):
 
@@ -112,3 +136,20 @@ class AbstractDataImporter(metaclass=ABCMeta):
     @abstractmethod
     def get_data(cls, items_indices_map, session):
         pass
+
+
+class RedisObjectBase(LoggerMixin):
+
+    def __init__(self, engine_core):
+        self._build_logger()
+        self._engine_core = engine_core
+        self._redis_key = build_engine_key_prefix(self._engine_core.engine)
+
+
+    def _set_item_values(self, item):
+        for k in item:
+            schema = self._engine_core.engine['item_type']['schema']['properties'].get(k)
+            if schema is None:
+                raise EngineError('Invalid Item {}'.format(item))
+
+            item[k] = JsonBuilder(item[k], schema)

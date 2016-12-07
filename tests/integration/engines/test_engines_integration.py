@@ -62,8 +62,8 @@ def app(session):
         'name': 'top_seller',
         'configuration': {
             'core_module': {
-                'path': 'myreco.engines.cores.top_seller.engine',
-                'class_name': 'TopSellerEngine'
+                'path': 'myreco.engines.cores.top_seller.core',
+                'class_name': 'TopSellerEngineCore'
             }
         }
     }
@@ -150,8 +150,8 @@ class TestEnginesModelPost(object):
             'name': 'top_seller',
             'configuration': {
                 'core_module': {
-                    'path': 'myreco.engines.cores.top_seller.engine',
-                    'class_name': 'TopSellerEngine'
+                    'path': 'myreco.engines.cores.top_seller.core',
+                    'class_name': 'TopSellerEngineCore'
                 }
             }
         }
@@ -205,8 +205,8 @@ class TestEnginesModelGet(object):
             'name': 'top_seller',
             'configuration': {
                 'core_module': {
-                    'path': 'myreco.engines.cores.top_seller.engine',
-                    'class_name': 'TopSellerEngine'
+                    'path': 'myreco.engines.cores.top_seller.core',
+                    'class_name': 'TopSellerEngineCore'
                 }
             }
         }
@@ -375,8 +375,8 @@ class TestEnginesModelUriTemplateGet(object):
             'name': 'top_seller',
             'configuration': {
                 'core_module': {
-                    'path': 'myreco.engines.cores.top_seller.engine',
-                    'class_name': 'TopSellerEngine'
+                    'path': 'myreco.engines.cores.top_seller.core',
+                    'class_name': 'TopSellerEngineCore'
                 }
             }
         }
@@ -426,8 +426,8 @@ def data_importer_app(session):
         'name': 'top_seller',
         'configuration': {
             'core_module': {
-                'path': 'myreco.engines.cores.top_seller.engine',
-                'class_name': 'TopSellerEngine'
+                'path': 'myreco.engines.cores.top_seller.core',
+                'class_name': 'TopSellerEngineCore'
             },
             'data_importer_module': {
                 'path': 'tests.integration.fixtures_models',
@@ -574,8 +574,8 @@ def objects_exporter_app(session):
         'name': 'top_seller',
         'configuration': {
             'core_module': {
-                'path': 'myreco.engines.cores.top_seller.engine',
-                'class_name': 'TopSellerEngine'
+                'path': 'myreco.engines.cores.top_seller.core',
+                'class_name': 'TopSellerEngineCore'
             },
             'data_importer_module': {
                 'path': 'tests.integration.fixtures_models',
@@ -616,7 +616,7 @@ def objects_exporter_client(objects_exporter_app):
     return Client(objects_exporter_app)
 
 
-@mock.patch('myreco.engines.cores.top_seller.engine.build_csv_readers')
+@mock.patch('myreco.engines.cores.base.EngineCore._build_csv_readers')
 @mock.patch('falconswagger.models.base.random.getrandbits',
     new=mock.MagicMock(return_value=131940827655846590526331314439483569710))
 class TestEnginesModelsObjectsExporter(object):
@@ -692,7 +692,7 @@ class TestEnginesModelsObjectsExporter(object):
         }
 
 
-@mock.patch('myreco.engines.cores.top_seller.engine.build_csv_readers')
+@mock.patch('myreco.engines.cores.base.EngineCore._build_csv_readers')
 @mock.patch('falconswagger.models.base.random.getrandbits',
     new=mock.MagicMock(return_value=131940827655846590526331314439483569710))
 class TestEnginesModelsObjectsExporterWithImport(object):
@@ -837,8 +837,8 @@ class TestEnginesCoresModelPost(object):
             'name': 'top_seller2',
             'configuration': {
                 'core_module': {
-                    'path': 'myreco.engines.cores.top_seller.engine',
-                    'class_name': 'TopSellerEngine'
+                    'path': 'myreco.engines.cores.top_seller.core',
+                    'class_name': 'TopSellerEngineCore'
                 }
             }
         }]
@@ -851,8 +851,8 @@ class TestEnginesCoresModelPost(object):
             'name': 'top_seller2',
             'configuration': {
                 'core_module': {
-                    'path': 'myreco.engines.cores.top_seller.engine',
-                    'class_name': 'TopSellerEngine'
+                    'path': 'myreco.engines.cores.top_seller.core',
+                    'class_name': 'TopSellerEngineCore'
                 },
                 'data_importer_module': {
                     'path': 'tests.integration.fixtures_models',
@@ -884,8 +884,8 @@ class TestEnginesCoresModelGet(object):
             'name': 'top_seller2',
             'configuration': {
                 'core_module': {
-                    'path': 'myreco.engines.cores.top_seller.engine',
-                    'class_name': 'TopSellerEngine'
+                    'path': 'myreco.engines.cores.top_seller.core',
+                    'class_name': 'TopSellerEngineCore'
                 },
                 'data_importer_module': {
                     'path': 'tests.integration.fixtures_models',
@@ -932,8 +932,8 @@ class TestEnginesCoresModelUriTemplatePatch(object):
             'name': 'top_seller2',
             'configuration': {
                 'core_module': {
-                    'path': 'myreco.engines.cores.top_seller.engine',
-                    'class_name': 'TopSellerEngine'
+                    'path': 'myreco.engines.cores.top_seller.core',
+                    'class_name': 'TopSellerEngineCore'
                 },
                 'data_importer_module': {
                     'path': 'tests.integration.fixtures_models',
@@ -975,8 +975,8 @@ class TestEnginesCoresModelUriTemplatePatch(object):
             'name': 'top_seller2',
             'configuration': {
                 'core_module': {
-                    'path': 'myreco.engines.cores.top_seller.engine',
-                    'class_name': 'TopSellerEngine'
+                    'path': 'myreco.engines.cores.top_seller.core',
+                    'class_name': 'TopSellerEngineCore'
                 },
                 'data_importer_module': {
                     'path': 'tests.integration.fixtures_models',
@@ -1008,8 +1008,8 @@ class TestEnginesCoresModelUriTemplateDelete(object):
             'name': 'top_seller2',
             'configuration': {
                 'core_module': {
-                    'path': 'myreco.engines.cores.top_seller.engine',
-                    'class_name': 'TopSellerEngine'
+                    'path': 'myreco.engines.cores.top_seller.core',
+                    'class_name': 'TopSellerEngineCore'
                 },
                 'data_importer_module': {
                     'path': 'tests.integration.fixtures_models',
@@ -1044,8 +1044,8 @@ class TestEnginesCoresModelUriTemplateGet(object):
             'name': 'top_seller2',
             'configuration': {
                 'core_module': {
-                    'path': 'myreco.engines.cores.top_seller.engine',
-                    'class_name': 'TopSellerEngine'
+                    'path': 'myreco.engines.cores.top_seller.core',
+                    'class_name': 'TopSellerEngineCore'
                 },
                 'data_importer_module': {
                     'path': 'tests.integration.fixtures_models',

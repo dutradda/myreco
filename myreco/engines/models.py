@@ -25,7 +25,7 @@ from falconswagger.models.base import get_model_schema
 from falconswagger.exceptions import ModelBaseError
 from myreco.engines.cores.items_indices_map import ItemsIndicesMap
 from myreco.items_types.models import build_item_key
-from myreco.utils import ModuleClassLoader
+from myreco.utils import ModuleClassLoader, get_items_model_from_api
 from types import MethodType, FunctionType
 from jsonschema import ValidationError
 from sqlalchemy.ext.declarative import AbstractConcreteBase, declared_attr
@@ -82,8 +82,13 @@ class EnginesModelBase(AbstractConcreteBase):
 
     def _set_core_instance(self):
         core_class_ = ModuleClassLoader.load(self.core.configuration['core_module'])
+        self_dict = self._build_self_dict()
+        items_model = get_items_model_from_api(type(self).__api__, self_dict)
+        self._core_instance = core_class_(self_dict, items_model)
+
+    def _build_self_dict(self):
         todict_schema = {'variables': False}
-        self._core_instance = core_class_(self.todict(todict_schema))
+        return self.todict(todict_schema)
 
     def _setattr(self, attr_name, value, session, input_):
         if attr_name == 'configuration':
@@ -135,9 +140,8 @@ class EnginesModelDataImporterBase(EnginesModelBase):
 
     @classmethod
     def _build_items_indices_map(cls, engine):
-        item_collection_model = cls.__api__.models[build_item_key(engine.item_type.name)]
-        item_model = item_collection_model.__models__[engine.store_id]
-        return ItemsIndicesMap(item_model)
+        items_model = get_items_model_from_api(cls.__api__, engine._build_self_dict())
+        return ItemsIndicesMap(items_model)
 
     @classmethod
     def _build_data_importer(cls, engine):

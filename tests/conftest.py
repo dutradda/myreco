@@ -26,7 +26,7 @@ import sys
 import pytest
 import logging.config
 
-logging.config.dictConfig({'version': 1, 'root': {'level': 'CRITICAL'}})
+logging.config.dictConfig({'version': 1, 'root': {'level': 'INFO'}})
 
 ROOT_PATH = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(os.path.join(ROOT_PATH, '..'))
