@@ -29,19 +29,26 @@ import numpy as np
 
 
 class FilterBaseBy(LoggerMixin):
+    dtype = np.bool
 
     def __init__(self, items_model, name, is_inclusive=True, id_names=None, skip_values=None):
-        self._build_logger()
         self.key = items_model.__key__ + '_' + name + '_filter'
         self.items_model = items_model
         self.name = name
         self.is_inclusive = is_inclusive
         self.id_names = id_names
         self.skip_values = set(skip_values) if skip_values is not None else skip_values
+        self._build_logger()
 
-    def _unpack_filter(self, filter_, new_size):
-        filter_ = np.fromstring(decompress(filter_), dtype=np.bool)
-        self._resize_vector(filter_, new_size)
+    def _build_logger_name(self):
+        return '{}.{}'.format(LoggerMixin._build_logger_name(self), self.name)
+
+    def _unpack_filter(self, filter_, new_size=None):
+        filter_ = np.fromstring(filter_, dtype=type(self).dtype)
+
+        if new_size is not None:
+            self._resize_vector(filter_, new_size)
+
         return filter_
 
     def _resize_vector(self, vector, new_size):
@@ -55,7 +62,7 @@ class FilterBaseBy(LoggerMixin):
         rec_vector *= filter_
 
     def _pack_filter(self, filter_):
-        return compress(filter_.tobytes())
+        return filter_.tobytes()
 
     def _build_empty_array(self, size):
         return np.zeros(size, dtype=np.bool)
@@ -68,7 +75,7 @@ class FilterBaseBy(LoggerMixin):
         return obj if isinstance(obj, list) or isinstance(obj, tuple) else (obj,)
 
     def _log_build(self):
-        self._logger.info("Building '{}' filter...".format(self.name))
+        self._logger.debug("Building '{}' filter...".format(self.name))
 
     def _not_skip_value(self, value):
         return (self.skip_values is None or value not in self.skip_values)
@@ -101,7 +108,9 @@ class MultipleFilterBy(FilterBaseBy):
 
     def filter(self, session, rec_vector, ids):
         ids = self._list_cast(ids)
+
         filters = session.redis_bind.hmget(self.key, ids)
+
         filters = [self._unpack_filter(filter_, rec_vector.size)
                     for filter_ in filters if filter_ is not None]
         final_filter = np.ones(rec_vector.size, dtype=np.bool)
@@ -119,10 +128,8 @@ class MultipleFilterBy(FilterBaseBy):
         size = len(items)
 
         [self._update_filter(filter_map, filter_ret, item) for item in items]
-
         for filter_id, items_indices in filter_map.items():
-            filter_ = self._build_empty_array(size)
-            filter_[np.array(items_indices, dtype=np.int32)] = True
+            filter_ = self._build_filter_array(items_indices, size)
             set_data[filter_id] = self._pack_filter(filter_)
 
         if set_data:
@@ -134,6 +141,11 @@ class MultipleFilterBy(FilterBaseBy):
         if value is not None and self._not_skip_value(value):
             filter_map[value].append(item['index'])
             filter_ret[value].append(self._build_output_ids(item))
+
+    def _build_filter_array(self, items_indices, size):
+        filter_ = self._build_empty_array(size)
+        filter_[np.array(items_indices, dtype=np.int32)] = True
+        return filter_
 
 
 class SimpleFilterBy(MultipleFilterBy):
@@ -202,8 +214,27 @@ class IndexFilterOf(FilterBaseBy):
         items_indices_map = ItemsIndicesMap(self.items_model)
         indices = items_indices_map.get_indices(items_ids, session)
         if indices:
-            if not self.is_inclusive:
-                rec_vector[np.array(indices, dtype=np.int32)] = 0
-            else:
-                rec_vector[:] = 0
-                rec_vector[np.array(indices, dtype=np.int32)] = 1
+            indices = np.array(indices, dtype=np.int32)
+            self._filter_by_indices(rec_vector, indices)
+
+    def _filter_by_indices(self, rec_vector, indices):
+        if not self.is_inclusive:
+            rec_vector[indices] = 0
+        else:
+            rec_vector[:] = 0
+            rec_vector[indices] = 1
+
+
+class IndexFilterByPropertyOf(SimpleFilterOf, IndexFilterOf):
+    dtype = np.int32
+
+    def _build_filter_array(self, items_indices, size):
+        return np.array(items_indices, dtype=np.int32)
+
+    def filter(self, session, rec_vector, items_ids):
+        items = self.items_model.get(session, items_ids)
+        filter_ids = [item[self.name] for item in items]
+        filters = session.redis_bind.hmget(self.key, filter_ids)
+        filters = [self._unpack_filter(filter_) for filter_ in filters if filter_ is not None]
+        indices = np.concatenate(filters)
+        self._filter_by_indices(rec_vector, indices)

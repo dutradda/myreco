@@ -37,8 +37,8 @@ import json
 class PlacementsModelBase(AbstractConcreteBase):
     __tablename__ = 'placements'
 
-    hash = sa.Column(sa.String(255), primary_key=True)
-    small_hash = sa.Column(sa.String(255), unique=True, nullable=False)
+    hash = sa.Column(sa.String(255), unique=True, nullable=False)
+    small_hash = sa.Column(sa.String(255), primary_key=True)
     name = sa.Column(sa.String(255), nullable=False)
     ab_testing = sa.Column(sa.Boolean, default=False)
     show_details = sa.Column(sa.Boolean, default=True)

@@ -120,10 +120,10 @@ class EngineCore(LoggerMixin, metaclass=EngineCoreMeta):
     def _get_items_indices_map_dict(self, items_indices_map, session):
         items_indices_map = items_indices_map.get_all(session)
 
-        if not items_indices_map:
+        if not items_indices_map.values():
             raise EngineError(
                 "The Indices Map for '{}' is empty. Please update these items"
-                .format(self._engine_core.engine['item_type']['name']))
+                .format(self.engine['item_type']['name']))
 
         return items_indices_map
 

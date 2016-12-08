@@ -33,7 +33,6 @@ from pytest_falcon.plugin import Client
 import pytest
 import json
 import numpy as np
-import zlib
 
 
 @pytest.fixture
@@ -724,8 +723,7 @@ class TestItemsModelPatch(object):
 
         body = [{'id': 'test', '_operation': 'delete'}]
         resp = client.patch('/test?store_id=1', headers=headers, body=json.dumps(body))
-        stock_filter = np.fromstring(
-            zlib.decompress(redis.get('test_1_stock_filter')), dtype=np.bool).tolist()
+        stock_filter = np.fromstring(redis.get('test_1_stock_filter'), dtype=np.bool).tolist()
         assert stock_filter == [False]
 
 
@@ -945,8 +943,7 @@ class TestItemsTypesModelFiltersUpdater(object):
             if json.loads(resp.body)['status'] != 'running':
                 break
 
-        stock_filter = np.fromstring(
-            zlib.decompress(redis.get('products_1_stock_filter')), dtype=np.bool).tolist()
+        stock_filter = np.fromstring(redis.get('products_1_stock_filter'), dtype=np.bool).tolist()
         assert stock_filter == [True, True, True]
 
     def test_if_update_filters_builds_boolean_filter(self, filters_updater_client, headers, redis, session):
@@ -995,7 +992,7 @@ class TestItemsTypesModelFiltersUpdater(object):
             expected[k] = True if eval(v)[0] == 'test' or eval(v)[0] == 'test2' else False
 
         filter_ = redis.get('products_1_filter2_filter')
-        filter_ = np.fromstring(zlib.decompress(filter_), dtype=np.bool).tolist()
+        filter_ = np.fromstring(filter_, dtype=np.bool).tolist()
         assert filter_ == expected
 
     def test_if_update_filters_builds_integer_filter(self, filters_updater_client, headers, redis, session):
@@ -1050,8 +1047,8 @@ class TestItemsTypesModelFiltersUpdater(object):
         filter_ = redis.hgetall('products_1_filter1_filter')
         key1 = '1'.encode()
         key2 = '2'.encode()
-        filter_[key1] = np.fromstring(zlib.decompress(filter_[key1]), dtype=np.bool).tolist()
-        filter_[key2] = np.fromstring(zlib.decompress(filter_[key2]), dtype=np.bool).tolist()
+        filter_[key1] = np.fromstring(filter_[key1], dtype=np.bool).tolist()
+        filter_[key2] = np.fromstring(filter_[key2], dtype=np.bool).tolist()
 
         assert filter_ == {key1: expected1, key2: expected2}
 
@@ -1107,8 +1104,8 @@ class TestItemsTypesModelFiltersUpdater(object):
         filter_ = redis.hgetall('products_1_filter3_filter')
         key1 = 'test'.encode()
         key2 = 'test2'.encode()
-        filter_[key1] = np.fromstring(zlib.decompress(filter_[key1]), dtype=np.bool).tolist()
-        filter_[key2] = np.fromstring(zlib.decompress(filter_[key2]), dtype=np.bool).tolist()
+        filter_[key1] = np.fromstring(filter_[key1], dtype=np.bool).tolist()
+        filter_[key2] = np.fromstring(filter_[key2], dtype=np.bool).tolist()
 
         assert filter_ == {key1: expected1, key2: expected2}
 
@@ -1164,8 +1161,8 @@ class TestItemsTypesModelFiltersUpdater(object):
         filter_ = redis.hgetall('products_1_filter4_filter')
         key1 = '(1,)'.encode()
         key2 = '(2,)'.encode()
-        filter_[key1] = np.fromstring(zlib.decompress(filter_[key1]), dtype=np.bool).tolist()
-        filter_[key2] = np.fromstring(zlib.decompress(filter_[key2]), dtype=np.bool).tolist()
+        filter_[key1] = np.fromstring(filter_[key1], dtype=np.bool).tolist()
+        filter_[key2] = np.fromstring(filter_[key2], dtype=np.bool).tolist()
 
         assert filter_ == {key1: expected1, key2: expected2}
 
@@ -1226,8 +1223,8 @@ class TestItemsTypesModelFiltersUpdater(object):
         key1 = '1'.encode()
         key2 = '2'.encode()
         key3 = '3'.encode()
-        filter_[key1] = np.fromstring(zlib.decompress(filter_[key1]), dtype=np.bool).tolist()
-        filter_[key2] = np.fromstring(zlib.decompress(filter_[key2]), dtype=np.bool).tolist()
-        filter_[key3] = np.fromstring(zlib.decompress(filter_[key3]), dtype=np.bool).tolist()
+        filter_[key1] = np.fromstring(filter_[key1], dtype=np.bool).tolist()
+        filter_[key2] = np.fromstring(filter_[key2], dtype=np.bool).tolist()
+        filter_[key3] = np.fromstring(filter_[key3], dtype=np.bool).tolist()
 
         assert filter_ == {key1: expected1, key2: expected2, key3: expected3}

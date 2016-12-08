@@ -31,10 +31,17 @@ class ItemsIndicesDict(dict):
         dict.__init__(self, items_indices_map)
 
     def get(self, keys, default=None):
-        key = self.items_model(keys).get_key().encode()
+        key = self.items_model(keys).get_key()
         value = dict.get(self, key, default)
         if value is not default:
-            return int(value.decode())
+            return value
+
+    def __len__(self):
+        values = self.values()
+        if values:
+            return max(self.values())
+        else:
+            return 0
 
 
 class ItemsIndicesMap(LoggerMixin):
@@ -47,6 +54,7 @@ class ItemsIndicesMap(LoggerMixin):
 
     def get_all(self, session):
         items_indices_map = session.redis_bind.hgetall(self.key)
+        items_indices_map = {k.decode(): int(v.decode()) for k, v in items_indices_map.items()}
         return ItemsIndicesDict(items_indices_map, self.items_model)
 
     def get_indices_items_map(self, session):
@@ -99,7 +107,7 @@ class ItemsIndicesMap(LoggerMixin):
         return set([self.items_model(item).get_key().encode() for item in items])
 
     def _format_output(self, output):
-        return {' | '.join([str(i) for i in eval(k)]): int(v.decode()) for k, v in output.items()}
+        return {' | '.join([str(i) for i in eval(k)]): v for k, v in output.items()}
 
     def get_items(self, indices, session):
         if indices:

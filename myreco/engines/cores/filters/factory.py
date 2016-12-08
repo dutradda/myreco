@@ -22,7 +22,8 @@
 
 
 from myreco.engines.cores.filters.filters import (BooleanFilterBy, SimpleFilterBy, ObjectFilterBy,
-    ArrayFilterBy, SimpleFilterOf, ObjectFilterOf, ArrayFilterOf, IndexFilterOf)
+    ArrayFilterBy, SimpleFilterOf, ObjectFilterOf,
+    ArrayFilterOf, IndexFilterOf, IndexFilterByPropertyOf)
 
 
 class FiltersFactory(object):
@@ -37,6 +38,9 @@ class FiltersFactory(object):
 
         if type_ == 'Index Of':
             filter_class = IndexFilterOf
+
+        elif type_ == 'Index By Property Of':
+            filter_class = IndexFilterByPropertyOf
 
         elif filter_type == 'integer' or filter_type == 'string':
             if type_ == 'By Property':

@@ -48,8 +48,8 @@ class ModuleClassLoader(object):
 
 
 def get_items_model_from_api(api, engine):
-        if api:
-            items_types_model_key = build_item_key(engine['item_type']['name'])
-            items_collection = api.models.get(items_types_model_key)
-            if items_collection:
-                return items_collection.__models__.get(engine['store_id'])
+    if api:
+        items_types_model_key = build_item_key(engine['item_type']['name'])
+        items_collection = api.models.get(items_types_model_key)
+        if items_collection:
+            return items_collection.__models__.get(engine['store_id'])

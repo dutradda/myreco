@@ -649,7 +649,15 @@ class TestEnginesModelsObjectsExporter(object):
                                     body=json.dumps(products), headers=headers)
 
         readers_builder.return_value = [[{'value': 1, 'sku': 'test'}]]
-        resp = objects_exporter_client.post('/products/update_filters?store_id=1', headers=headers)
+        objects_exporter_client.post('/products/update_filters?store_id=1', headers=headers)
+
+        while True:
+            resp = objects_exporter_client.get(
+                '/products/update_filters?store_id=1&hash=6342e10bd7dca3240c698aa79c98362e',
+                headers=headers)
+            if json.loads(resp.body)['status'] != 'running':
+                break
+
         objects_exporter_client.post('/engines/1/export_objects', headers=headers)
 
         while True:
@@ -658,9 +666,6 @@ class TestEnginesModelsObjectsExporter(object):
                 headers=headers)
             if json.loads(resp.body)['status'] != 'running':
                 break
-
-        resp = objects_exporter_client.get(
-            '/engines/1/export_objects?hash=6342e10bd7dca3240c698aa79c98362e', headers=headers)
 
         assert json.loads(resp.body) == {'status': 'done', 'result': [{'test': 1}]}
 
@@ -679,9 +684,6 @@ class TestEnginesModelsObjectsExporter(object):
                 headers=headers)
             if json.loads(resp.body)['status'] != 'running':
                 break
-
-        resp = objects_exporter_client.get(
-            '/engines/1/export_objects?hash=6342e10bd7dca3240c698aa79c98362e', headers=headers)
 
         assert json.loads(resp.body) == {
             'status': 'error',
