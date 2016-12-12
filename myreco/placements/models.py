@@ -120,7 +120,7 @@ class PlacementsModelRecommenderBase(PlacementsModelBase):
 
     @classmethod
     def _get_placement(cls, req, resp):
-        small_hash = req.context['parameters']['uri_template']['small_hash']
+        small_hash = req.context['parameters']['path']['small_hash']
         session = req.context['session']
         placements = cls.get(session, {'small_hash': small_hash})
 

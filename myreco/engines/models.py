@@ -131,7 +131,7 @@ class EnginesModelDataImporterBase(EnginesModelBase):
 
     @classmethod
     def _get_engine(cls, req, job_session):
-        id_ = req.context['parameters']['uri_template']['id']
+        id_ = req.context['parameters']['path']['id']
         engines = cls.get(job_session, {'id': id_}, todict=False)
 
         if not engines:
