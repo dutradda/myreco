@@ -22,7 +22,7 @@
 
 
 from tests.integration.fixtures_models import SQLAlchemyRedisModelBase, StoresModel, UsersModel
-from falconswagger.http_api import HttpAPI
+from falconswagger.swagger_api import SwaggerAPI
 from base64 import b64encode
 from fakeredis import FakeStrictRedis
 import pytest
@@ -44,7 +44,8 @@ def app(session):
     }
     UsersModel.insert(session, user)
 
-    return HttpAPI([StoresModel], session.bind, FakeStrictRedis())
+    return SwaggerAPI([StoresModel], session.bind, FakeStrictRedis(),
+                      title='Myreco API')
 
 
 @pytest.fixture

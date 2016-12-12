@@ -21,7 +21,7 @@
 # SOFTWARE.
 
 
-from falconswagger.models.base import get_model_schema
+from falconswagger.utils import get_model_schema
 from falconswagger.json_builder import JsonBuilder
 from falconswagger.exceptions import ModelBaseError
 from myreco.engines.cores.filters.factory import FiltersFactory
@@ -156,7 +156,7 @@ class PlacementsModelRecommenderBase(PlacementsModelBase):
                 schema, filter_input_schema = cls._get_variable_schema(engine, engine_var)
 
                 filter_input_schema = schema if filter_input_schema is None else filter_input_schema
-                var_value = JsonBuilder(input_variables[var_name], filter_input_schema)
+                var_value = JsonBuilder.build(input_variables[var_name], filter_input_schema)
 
                 if not engine_var['is_filter']:
                     engine_vars[var_engine_name] = var_value

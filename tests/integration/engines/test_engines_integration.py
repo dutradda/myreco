@@ -27,7 +27,7 @@ from tests.integration.fixtures_models import (
 from myreco.factory import ModelsFactory
 from myreco.engines.cores.items_indices_map import ItemsIndicesMap
 from pytest_falcon.plugin import Client
-from falconswagger.http_api import HttpAPI
+from falconswagger.swagger_api import SwaggerAPI
 from base64 import b64encode
 from fakeredis import FakeStrictRedis
 from unittest import mock
@@ -80,7 +80,8 @@ def app(session):
     }
     ItemsTypesModel.insert(session, item_type)
 
-    return HttpAPI([EnginesModel, EnginesCoresModel], session.bind, FakeStrictRedis())
+    return SwaggerAPI([EnginesModel, EnginesCoresModel], session.bind, FakeStrictRedis(),
+                      title='Myreco API')
 
 
 @pytest.fixture
@@ -457,7 +458,8 @@ def data_importer_app(session):
     }
     models['engines'].insert(session, engine)
 
-    api = HttpAPI([models['engines'], models['items_types']], session.bind, FakeStrictRedis())
+    api = SwaggerAPI([models['engines'], models['items_types']], session.bind, FakeStrictRedis(),
+                      title='Myreco API')
     models['items_types'].associate_all_items(session)
 
     return api
@@ -468,7 +470,7 @@ def data_importer_client(data_importer_app):
     return Client(data_importer_app)
 
 
-@mock.patch('falconswagger.models.base.random.getrandbits',
+@mock.patch('falconswagger.models.http.random.getrandbits',
     new=mock.MagicMock(return_value=131940827655846590526331314439483569710))
 class TestEnginesModelsDataImporter(object):
 
@@ -491,7 +493,7 @@ class TestEnginesModelsDataImporter(object):
         assert called
 
     def test_importer_get_running(self, data_importer_client, headers):
-        def func(x, y, z):
+        def func(x, y):
             sleep(1)
             return {}
 
@@ -605,7 +607,8 @@ def objects_exporter_app(session):
     }
     models['engines'].insert(session, engine)
 
-    api = HttpAPI([models['engines'], models['items_types']], session.bind, FakeStrictRedis())
+    api = SwaggerAPI([models['engines'], models['items_types']], session.bind, FakeStrictRedis(),
+                      title='Myreco API')
     models['items_types'].associate_all_items(session)
 
     return api
@@ -617,7 +620,7 @@ def objects_exporter_client(objects_exporter_app):
 
 
 @mock.patch('myreco.engines.cores.base.EngineCore._build_csv_readers')
-@mock.patch('falconswagger.models.base.random.getrandbits',
+@mock.patch('falconswagger.models.http.random.getrandbits',
     new=mock.MagicMock(return_value=131940827655846590526331314439483569710))
 class TestEnginesModelsObjectsExporter(object):
 
@@ -695,7 +698,7 @@ class TestEnginesModelsObjectsExporter(object):
 
 
 @mock.patch('myreco.engines.cores.base.EngineCore._build_csv_readers')
-@mock.patch('falconswagger.models.base.random.getrandbits',
+@mock.patch('falconswagger.models.http.random.getrandbits',
     new=mock.MagicMock(return_value=131940827655846590526331314439483569710))
 class TestEnginesModelsObjectsExporterWithImport(object):
 

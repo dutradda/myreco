@@ -21,7 +21,7 @@
 # SOFTWARE.
 
 
-from falconswagger.models.base import build_validator, get_module_path
+from falconswagger.utils import build_validator, get_module_path
 from falconswagger.mixins import LoggerMixin
 from falconswagger.json_builder import JsonBuilder
 from myreco.engines.cores.items_indices_map import ItemsIndicesMap
@@ -152,4 +152,4 @@ class RedisObjectBase(LoggerMixin):
             if schema is None:
                 raise EngineError('Invalid Item {}'.format(item))
 
-            item[k] = JsonBuilder(item[k], schema)
+            item[k] = JsonBuilder.build(item[k], schema)

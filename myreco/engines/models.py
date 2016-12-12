@@ -21,7 +21,7 @@
 # SOFTWARE.
 
 
-from falconswagger.models.base import get_model_schema
+from falconswagger.utils import get_model_schema
 from falconswagger.exceptions import ModelBaseError
 from myreco.engines.cores.items_indices_map import ItemsIndicesMap
 from myreco.items_types.models import build_item_key
@@ -122,7 +122,8 @@ class EnginesModelDataImporterBase(EnginesModelBase):
     __schema__ = get_model_schema(__file__, 'data_importer_schema.json')
 
     @classmethod
-    def _run_job(cls, job_session, req, resp):
+    def _run_job(cls, req, resp):
+        job_session = req.context['job_session']
         engine = cls._get_engine(req, job_session)
         items_indices_map = cls._build_items_indices_map(engine)
         data_importer = cls._build_data_importer(engine)
@@ -150,12 +151,12 @@ class EnginesModelDataImporterBase(EnginesModelBase):
         return data_importer_class(engine.todict())
 
 
-
 class EnginesModelObjectsExporterBase(EnginesModelDataImporterBase):
     __schema__ = get_model_schema(__file__, 'objects_exporter_schema.json')
 
     @classmethod
-    def _run_job(cls, job_session, req, resp):
+    def _run_job(cls, req, resp):
+        job_session = req.context['job_session']
         import_data = req.context['parameters']['query_string'].get('import_data')
         engine = cls._get_engine(req, job_session)
         items_indices_map = cls._build_items_indices_map(engine)

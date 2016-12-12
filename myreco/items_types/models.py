@@ -24,8 +24,9 @@
 from myreco.engines.cores.items_indices_map import ItemsIndicesMap
 from myreco.engines.cores.filters.factory import FiltersFactory
 from myreco.engines.cores.filters.filters import BooleanFilterBy
-from falconswagger.models.redis import RedisModelMeta, RedisModelBuilder
-from falconswagger.models.base import get_model_schema, ModelBase, get_dir_path
+from falconswagger.models.orm.redis import ModelRedisMeta, ModelRedisFactory
+from falconswagger.models.orm.redis_base import ModelRedisBase
+from falconswagger.utils import get_model_schema, get_dir_path
 from falconswagger.exceptions import ModelBaseError
 from sqlalchemy.ext.declarative import AbstractConcreteBase, declared_attr
 from jsonschema import ValidationError, Draft4Validator
@@ -46,6 +47,7 @@ class ItemsTypesModelBase(AbstractConcreteBase):
     __tablename__ = 'items_types'
     __schema__ = get_model_schema(__file__)
     __build_items_models__ = True
+    __schema_dir__ = get_dir_path(__file__)
 
     id = sa.Column(sa.Integer, primary_key=True)
     name = sa.Column(sa.String(255), unique=True, nullable=False)
@@ -106,10 +108,11 @@ class ItemsTypesModelBase(AbstractConcreteBase):
                 '__schema__': cls._build_items_collections_schema(key, schema, id_names),
                 '__models__': items_models,
                 '__all_models__': cls.__all_models__,
-                '__item_type__': item_type
+                '__item_type__': item_type,
+                '__authorizer__': cls.__authorizer__
             }
             items_collections = \
-                cls._get_items_collections_metaclass()(class_name, (ModelBase,), attributes)
+                cls._get_items_collections_metaclass()(class_name, (ModelRedisBase,), attributes)
             cls.__api__.associate_model(items_collections)
 
     @classmethod
@@ -127,7 +130,8 @@ class ItemsTypesModelBase(AbstractConcreteBase):
         class_name = cls._build_class_name(item_type['name'], store['name'])
         key = build_item_key(item_type['name'], store['id'])
         id_names = item_type['schema']['id_names']
-        items_model = RedisModelBuilder(class_name, key, id_names, None, metaclass=ItemsModelBaseMeta)
+        items_model = \
+            ModelRedisFactory.make(class_name, key, id_names, metaclass=ItemsModelBaseMeta)
         items_model.__item_type__ = item_type
         return items_model
 
@@ -331,23 +335,23 @@ class ItemsTypesModelFiltersUpdaterBase(ItemsTypesModelBase):
         return ItemsCollectionsModelFiltersUpdaterBaseMeta
 
 
-class ItemsModelBaseMeta(RedisModelMeta):
+class ItemsModelBaseMeta(ModelRedisMeta):
 
     def __init__(cls, name, bases, attrs):
-        RedisModelMeta.__init__(cls, name, bases, attrs)
+        ModelRedisMeta.__init__(cls, name, bases, attrs)
         cls.index = None
 
     def get(cls, session, ids=None, limit=None, offset=None, **kwargs):
         items_per_page, page = kwargs.get('items_per_page', 1000), kwargs.get('page', 1)
         limit = items_per_page * page
         offset = items_per_page * (page-1)
-        return RedisModelMeta.get(cls, session, ids=ids, limit=limit, offset=offset, **kwargs)
+        return ModelRedisMeta.get(cls, session, ids=ids, limit=limit, offset=offset, **kwargs)
 
     def get_all(cls, session, **kwargs):
-        return RedisModelMeta.get(cls, session, **kwargs)
+        return ModelRedisMeta.get(cls, session, **kwargs)
 
 
-class ItemsCollectionsModelBaseMeta(RedisModelMeta):
+class ItemsCollectionsModelBaseMeta(ModelRedisMeta):
 
     def insert(cls, session, objs, **kwargs):
         items_model = cls._get_model(kwargs)
@@ -395,7 +399,8 @@ class ItemsCollectionsModelBaseMeta(RedisModelMeta):
 
 class ItemsCollectionsModelFiltersUpdaterBaseMeta(ItemsCollectionsModelBaseMeta):
 
-    def _run_job(cls, job_session, req, resp):
+    def _run_job(cls, req, resp):
+        job_session = req.context['job_session']
         query_string = req.context['parameters']['query_string']
         store_id = query_string['store_id']
         items_model = cls._get_model(query_string)

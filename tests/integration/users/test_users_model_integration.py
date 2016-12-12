@@ -22,7 +22,7 @@
 
 
 from tests.integration.fixtures_models import UsersModel, SQLAlchemyRedisModelBase
-from falconswagger.http_api import HttpAPI
+from falconswagger.swagger_api import SwaggerAPI
 from base64 import b64encode
 from unittest import mock
 import pytest
@@ -78,7 +78,7 @@ class model(SQLAlchemyRedisModelBase):
 
 @pytest.fixture
 def app(session):
-    return HttpAPI([model], session.bind)
+    return SwaggerAPI([model], session.bind, title='Myreco API')
 
 
 class TestUsersModelIntegrationWithauthorization_hook(object):

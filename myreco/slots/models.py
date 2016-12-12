@@ -21,7 +21,7 @@
 # SOFTWARE.
 
 
-from falconswagger.models.base import get_model_schema
+from falconswagger.utils import get_model_schema
 from falconswagger.exceptions import ModelBaseError
 from jsonschema import ValidationError
 from sqlalchemy.ext.declarative import AbstractConcreteBase, declared_attr

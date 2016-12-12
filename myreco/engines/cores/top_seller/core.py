@@ -22,7 +22,7 @@
 
 
 from myreco.engines.cores.base import EngineCore, EngineError, RedisObjectBase
-from falconswagger.models.base import get_model_schema
+from falconswagger.utils import get_model_schema
 from falconswagger.json_builder import JsonBuilder
 from concurrent.futures import ThreadPoolExecutor
 import numpy as np

@@ -24,8 +24,8 @@
 from tests.integration.fixtures_models import (
     SQLAlchemyRedisModelBase, StoresModel, UsersModel,
     GrantsModel, URIsModel, MethodsModel)
-from falconswagger.http_api import HttpAPI
-from falconswagger.models.base import get_model_schema
+from falconswagger.swagger_api import SwaggerAPI
+from falconswagger.utils import get_model_schema
 from fakeredis import FakeStrictRedis
 from unittest import mock
 from base64 import b64encode
@@ -74,7 +74,8 @@ def init_(session):
 
 @pytest.fixture
 def app(session, init_):
-    return HttpAPI([UsersModel, StoresModel], session.bind, FakeStrictRedis())
+    return SwaggerAPI([UsersModel, StoresModel], session.bind, FakeStrictRedis(),
+                      title='Myreco API')
 
 
 @pytest.fixture
@@ -604,7 +605,7 @@ class TestUsersResourcePutUpdateOne(object):
     def test_put_update_primary_key_with_redis(self, session, init_, headers):
         redis = mock.MagicMock()
         redis.hmget.return_value = [None]
-        client = Client(HttpAPI([UsersModel], session.bind, redis))
+        client = Client(SwaggerAPI([UsersModel], session.bind, redis, title='Myreco API'))
         user = {
             'name': 'test2',
             'password': 'test',
@@ -1097,12 +1098,3 @@ class TestUsersResourceDeleteGet(object):
 
         resp = client.get('/users?stores=id:1', body=json.dumps([{'email': 'test2'}]), headers=headers)
         assert resp.status_code == 404
-
-
-class TestUsersResourceSchemas(object):
-    def test_get_put_schemas(self, client, headers, root_path):
-        resp = client.get('/users/_schema/', headers=headers)
-        expected_schema = get_model_schema(root_path + '/../myreco/users/models.py')
-
-        assert resp.status_code == 200
-        assert json.loads(resp.body) == expected_schema

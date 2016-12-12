@@ -28,7 +28,7 @@ from tests.integration.fixtures_models import (
     EnginesModel, EnginesCoresModel, DataImporter, TestEngine)
 from pytest_falcon.plugin import Client
 from myreco.factory import ModelsFactory
-from falconswagger.http_api import HttpAPI
+from falconswagger.swagger_api import SwaggerAPI
 from base64 import b64encode
 from fakeredis import FakeStrictRedis
 from unittest import mock
@@ -467,7 +467,8 @@ def app(redis, session, temp_dir):
     SlotsModel.insert(session, slot)
 
     PlacementsModel.__api__ = None
-    api = HttpAPI([PlacementsModel, ItemsTypesModel], session.bind, session.redis_bind)
+    api = SwaggerAPI([PlacementsModel, ItemsTypesModel], session.bind, session.redis_bind,
+                     title='Myreco API')
     ItemsTypesModel.associate_all_items(session)
     return api
 
@@ -1085,7 +1086,8 @@ def filters_updater_app(session):
     factory = ModelsFactory('myreco', commons_models_attributes={'__table_args__': table_args},
                             commons_tables_attributes=table_args)
     models = factory.make_all_models('exporter')
-    api = HttpAPI([models['items_types'], models['engines']], session.bind, FakeStrictRedis())
+    api = SwaggerAPI([models['items_types'], models['engines']], session.bind, FakeStrictRedis(),
+                      title='Myreco API')
     models['items_types'].associate_all_items(session)
 
     return api
@@ -1096,7 +1098,7 @@ def filters_updater_client(filters_updater_app):
     return Client(filters_updater_app)
 
 
-@mock.patch('falconswagger.models.base.random.getrandbits',
+@mock.patch('falconswagger.models.http.random.getrandbits',
     new=mock.MagicMock(return_value=131940827655846590526331314439483569710))
 class TestPlacementsGetRecomendations(object):
 
@@ -1402,7 +1404,7 @@ class TestPlacementsGetRecomendations(object):
         ]
 
 
-@mock.patch('falconswagger.models.base.random.getrandbits',
+@mock.patch('falconswagger.models.http.random.getrandbits',
     new=mock.MagicMock(return_value=131940827655846590526331314439483569710))
 class TestPlacementsGetRecomendationsFilters(object):
 
@@ -1867,7 +1869,7 @@ class TestPlacementsGetRecomendationsFilters(object):
             {'sku': 'test2', 'item_id': 2, 'filter_object': {'id': 2}, 'type': 'products_new'}]
 
 
-@mock.patch('falconswagger.models.base.random.getrandbits',
+@mock.patch('falconswagger.models.http.random.getrandbits',
     new=mock.MagicMock(return_value=131940827655846590526331314439483569710))
 class TestPlacementsGetRecomendationsFiltersOf(object):
 

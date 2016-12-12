@@ -34,7 +34,7 @@ from myreco.engines.models import (
     EnginesModelObjectsExporterBase, EnginesCoresModelBase)
 from myreco.items_types.models import (ItemsTypesModelBase, build_items_types_stores_table,
     ItemsTypesModelFiltersUpdaterBase)
-from falconswagger.models.sqlalchemy_redis import SQLAlchemyRedisModelBuilder
+from falconswagger.models.orm.sqlalchemy_redis import ModelSQLAlchemyRedisFactory
 from falconswagger.hooks import Authorizer
 
 
@@ -56,7 +56,7 @@ class MyrecoAuthorizer(Authorizer):
 class ModelsFactory(object):
 
     def __init__(self, realm, commons_models_attributes=None, commons_tables_attributes=None):
-        self.base_model = SQLAlchemyRedisModelBuilder(authorizer=MyrecoAuthorizer(realm))
+        self.base_model = ModelSQLAlchemyRedisFactory.make(authorizer=MyrecoAuthorizer(realm))
         self.base_model.__authorizer__.base_model = self.base_model
         self.meta_class = type(self.base_model)
         self._commons_models_attrs = self._init_attributes(commons_models_attributes)

@@ -23,7 +23,7 @@
 
 from tests.integration.fixtures_models import UsersModel, StoresModel, SQLAlchemyRedisModelBase
 from tests.integration.fixtures_models import ItemsTypesModel, SlotsModel
-from falconswagger.http_api import HttpAPI
+from falconswagger.swagger_api import SwaggerAPI
 from myreco.factory import ModelsFactory
 from myreco.engines.cores.items_indices_map import ItemsIndicesMap
 from base64 import b64encode
@@ -63,7 +63,7 @@ def app(redis, session):
     }
     StoresModel.insert(session, store)
 
-    return HttpAPI([ItemsTypesModel], session.bind, redis)
+    return SwaggerAPI([ItemsTypesModel], session.bind, redis, title='Myreco API')
 
 
 @pytest.fixture
@@ -296,7 +296,7 @@ class TestItemsTypesModelUriTemplateDelete(object):
             'stores': [{'id': 1}],
             'schema': {'properties': {'test': {'type': 'string'}}, 'type': 'object', 'id_names': ['test']}
         }]
-        client.post('/items_types/', headers=headers, body=json.dumps(body))
+        resp = client.post('/items_types/', headers=headers, body=json.dumps(body))
 
         resp = client.get('/items_types/1/', headers=headers)
         assert resp.status_code == 200
@@ -313,14 +313,14 @@ class TestItemsTypesModelUriTemplateDelete(object):
             'stores': [{'id': 1}],
             'schema': {'properties': {'test': {'type': 'string'}}, 'type': 'object', 'id_names': ['test']}
         }]
-        client.post('/items_types/', headers=headers, body=json.dumps(body))
+        resp = client.post('/items_types/', headers=headers, body=json.dumps(body))
 
-        resp = client.get('/test/_schema', headers=headers)
-        assert resp.status_code == 200
+        resp = client.options('/test/', headers=headers)
+        assert resp.status_code == 204
 
         client.delete('/items_types/1/', headers=headers)
 
-        resp = client.get('/test/_schema', headers=headers)
+        resp = client.options('/test/', headers=headers)
         assert resp.status_code == 404
 
 
@@ -366,9 +366,13 @@ class TestItemsModelSchema(object):
         }]
         resp = client.post('/items_types/', headers=headers, body=json.dumps(body))
 
-        resp = client.get('/test/_schema', headers=headers)
+        resp = client.get('/swagger.json', headers=headers)
         assert resp.status_code == 200
-        assert json.loads(resp.body) == {
+        paths = {
+            '/test': json.loads(resp.body)['paths'].get('/test'),
+            '/test/{id}': json.loads(resp.body)['paths'].get('/test/{id}')
+        }
+        assert paths == {
             '/test': {
                 'parameters': [{
                     'name': 'Authorization',
@@ -396,7 +400,7 @@ class TestItemsModelSchema(object):
                             }
                         }
                     }],
-                    'operationId': 'post_by_body',
+                    'operationId': 'TestModel.post_by_body',
                     'responses': {'201': {'description': 'Created'}}
                 },
                 'patch': {
@@ -417,7 +421,7 @@ class TestItemsModelSchema(object):
                             }
                         }
                     }],
-                    'operationId': 'patch_by_body',
+                    'operationId': 'TestModel.patch_by_body',
                     'responses': {'200': {'description': 'Updated'}}
                 },
                 'get': {
@@ -436,7 +440,7 @@ class TestItemsModelSchema(object):
                         'in': 'query',
                         'type': 'string'
                     }],
-                    'operationId': 'get_by_body',
+                    'operationId': 'TestModel.get_by_body',
                     'responses': {'200': {'description': 'Got'}}
                 },
             },
@@ -458,7 +462,7 @@ class TestItemsModelSchema(object):
                     'required': True
                 }],
                 'get': {
-                    'operationId': 'get_by_uri_template',
+                    'operationId': 'TestModel.get_by_uri_template',
                     'responses': {'200': {'description': 'Got'}}
                 }
             }
@@ -480,9 +484,13 @@ class TestItemsModelSchema(object):
         }]
         client.post('/items_types/', headers=headers, body=json.dumps(body))
 
-        resp = client.get('/test/_schema', headers=headers)
+        resp = client.get('/swagger.json', headers=headers)
         assert resp.status_code == 200
-        assert json.loads(resp.body) == {
+        paths = {
+            '/test': json.loads(resp.body)['paths'].get('/test'),
+            '/test/{id}/{id2}': json.loads(resp.body)['paths'].get('/test/{id}/{id2}')
+        }
+        assert paths == {
             '/test': {
                 'parameters': [{
                     'name': 'Authorization',
@@ -513,7 +521,7 @@ class TestItemsModelSchema(object):
                             }
                         }
                     }],
-                    'operationId': 'post_by_body',
+                    'operationId': 'TestModel.post_by_body',
                     'responses': {'201': {'description': 'Created'}}
                 },
                 'patch': {
@@ -535,7 +543,7 @@ class TestItemsModelSchema(object):
                             }
                         }
                     }],
-                    'operationId': 'patch_by_body',
+                    'operationId': 'TestModel.patch_by_body',
                     'responses': {'200': {'description': 'Updated'}}
                 },
                 'get': {
@@ -558,7 +566,7 @@ class TestItemsModelSchema(object):
                         'in': 'query',
                         'type': 'integer'
                     }],
-                    'operationId': 'get_by_body',
+                    'operationId': 'TestModel.get_by_body',
                     'responses': {'200': {'description': 'Got'}}
                 },
             },
@@ -585,7 +593,7 @@ class TestItemsModelSchema(object):
                     'required': True
                 }],
                 'get': {
-                    'operationId': 'get_by_uri_template',
+                    'operationId': 'TestModel.get_by_uri_template',
                     'responses': {'200': {'description': 'Got'}}
                 }
             }
@@ -848,7 +856,8 @@ def filters_updater_app(redis, session):
     }
     models['slots'].insert(session, slot)
 
-    api = HttpAPI([models['items_types']], session.bind, FakeStrictRedis())
+    api = SwaggerAPI([models['items_types']], session.bind, FakeStrictRedis(),
+                      title='Myreco API')
     models['items_types'].associate_all_items(session)
 
     return api
@@ -859,7 +868,7 @@ def filters_updater_client(filters_updater_app):
     return Client(filters_updater_app)
 
 
-@mock.patch('falconswagger.models.base.random.getrandbits',
+@mock.patch('falconswagger.models.http.random.getrandbits',
     new=mock.MagicMock(return_value=131940827655846590526331314439483569710))
 class TestItemsTypesModelFiltersUpdater(object):
 
