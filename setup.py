@@ -13,7 +13,7 @@
 # limitations under the License.
 
 
-from myreco.version import VERSION
+from version import VERSION
 from setuptools import setup, find_packages
 
 
