@@ -30,6 +30,7 @@ from types import MethodType, FunctionType
 from jsonschema import ValidationError
 from sqlalchemy.ext.declarative import AbstractConcreteBase, declared_attr
 from falcon import HTTPNotFound
+from copy import deepcopy
 import sqlalchemy as sa
 import json
 
@@ -118,8 +119,12 @@ class EnginesModelBase(AbstractConcreteBase):
             dict_inst['variables'] = self.core_instance.get_variables()
 
 
+data_importer_schema = get_model_schema(__file__, 'data_importer_schema.json')
+data_importer_schema.update(deepcopy(EnginesModelBase.__schema__))
+
+
 class EnginesModelDataImporterBase(EnginesModelBase):
-    __schema__ = get_model_schema(__file__, 'data_importer_schema.json')
+    __schema__ = data_importer_schema
 
     @classmethod
     def _run_job(cls, req, resp):
@@ -151,8 +156,12 @@ class EnginesModelDataImporterBase(EnginesModelBase):
         return data_importer_class(engine.todict())
 
 
+objects_exporter_schema = get_model_schema(__file__, 'objects_exporter_schema.json')
+objects_exporter_schema.update(deepcopy(EnginesModelDataImporterBase.__schema__))
+
+
 class EnginesModelObjectsExporterBase(EnginesModelDataImporterBase):
-    __schema__ = get_model_schema(__file__, 'objects_exporter_schema.json')
+    __schema__ = objects_exporter_schema
 
     @classmethod
     def _run_job(cls, req, resp):
