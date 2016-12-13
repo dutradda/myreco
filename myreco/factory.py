@@ -56,7 +56,8 @@ class MyrecoAuthorizer(Authorizer):
 class ModelsFactory(object):
 
     def __init__(self, realm, commons_models_attributes=None, commons_tables_attributes=None):
-        self.base_model = ModelSQLAlchemyRedisFactory.make(authorizer=MyrecoAuthorizer(realm))
+        self.authorizer = MyrecoAuthorizer(realm)
+        self.base_model = ModelSQLAlchemyRedisFactory.make(authorizer=self.authorizer)
         self.base_model.__authorizer__.base_model = self.base_model
         self.meta_class = type(self.base_model)
         self._commons_models_attrs = self._init_attributes(commons_models_attributes)
