@@ -25,8 +25,8 @@ from myreco.users.models import (GrantsModelBase, URIsModelBase, MethodsModelBas
     UsersModelBase, build_users_grants_table, build_users_stores_table)
 from myreco.stores.model import StoresModelBase
 from myreco.variables.model import VariablesModelBase
-from myreco.placements.models import (PlacementsModelBase, PlacementsModelRecommenderBase,
-    VariationsModelBase, ABTestUsersModelBase, build_variations_slots_table)
+from myreco.placements.models import (PlacementsModelBase, VariationsModelBase,
+    ABTestUsersModelBase, build_variations_slots_table)
 from myreco.slots.models import (SlotsVariablesModelBase,
     SlotsModelBase, build_slots_fallbacks_table)
 from myreco.engines.models import (
@@ -87,7 +87,7 @@ class ModelsFactory(object):
             'slots': self.make_slots_model(),
             'slots_variables': self.make_slots_variables_model(),
             'items_types': self.make_items_types_model(app_type),
-            'placements': self.make_placements_model(app_type),
+            'placements': self.make_placements_model(),
             'variations': self.make_variations_model(),
             'ab_test_users': self.make_ab_test_users_model(),
             'stores': self.make_stores_model(),
@@ -165,16 +165,10 @@ class ModelsFactory(object):
 
         return self.meta_class('ItemsTypesModel', bases_classes, attributes)
 
-    def make_placements_model(self, app_type, attributes=None):
+    def make_placements_model(self, attributes=None):
         attributes = self._init_attributes(attributes, self._commons_models_attrs)
-
-        if app_type == 'recommender':
-            bases_classes = (PlacementsModelRecommenderBase, self.base_model)
-        else:
-            bases_classes = (PlacementsModelBase, self.base_model)
-
         return self.meta_class(
-            'PlacementsModel', bases_classes, attributes)
+            'PlacementsModel', (PlacementsModelBase, self.base_model), attributes)
 
     def make_variations_model(self, attributes=None):
         attributes = self._init_attributes(attributes, self._commons_models_attrs)
