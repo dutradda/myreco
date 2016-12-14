@@ -36,7 +36,23 @@ def redis():
 
 
 @pytest.fixture(scope='session')
-def engine(variables):
+def pymysql_conn(variables):
+    conn = pymysql.connect(
+        user=variables['database']['user'], password=variables['database']['password'])
+
+    with conn.cursor() as cursor:
+        try:
+            cursor.execute('create database {};'.format(variables['database']['database']))
+        except:
+            pass
+        cursor.execute('use {};'.format(variables['database']['database']))
+    conn.commit()
+
+    return conn
+
+
+@pytest.fixture(scope='session')
+def engine(variables, pymysql_conn):
     if variables['database']['password']:
         url = 'mysql+pymysql://{user}:{password}'\
             '@{host}:{port}/{database}'.format(**variables['database'])
@@ -50,22 +66,25 @@ def engine(variables):
 
 
 @pytest.fixture
-def session(model_base, request, variables, redis, engine):
-    conn = pymysql.connect(
-        user=variables['database']['user'], password=variables['database']['password'])
-
-    with conn.cursor() as cursor:
-        try:
-            cursor.execute('drop database {};'.format(variables['database']['database']))
-        except:
-            pass
-
-        cursor.execute('create database {};'.format(variables['database']['database']))
-    conn.commit()
-    conn.close()
-
+def session(model_base, request, variables, redis, engine, pymysql_conn):
     model_base.metadata.bind = engine
     model_base.metadata.create_all()
+
+    with pymysql_conn.cursor() as cursor:
+        tables = ['placements', 'variables', 'slots', 'engines',
+                  'stores', 'engines_cores', 'users', 'grants',
+                  'items_types', 'items_types_stores', 'methods',
+                  'slots_fallbacks', 'slots_variables', 'uris',
+                  'users_grants', 'users_stores', 'variations',
+                  'variations_slots', 'ab_test_users']
+        for table in tables:
+            cursor.execute('delete from {};'.format(table))
+
+            try:
+                cursor.execute('alter table {} auto_increment=1;'.format(table))
+            except:
+                pass
+    pymysql_conn.commit()
 
     session = Session(bind=engine, redis_bind=redis)
 
