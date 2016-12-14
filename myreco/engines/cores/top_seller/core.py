@@ -38,15 +38,7 @@ class TopSellerEngineCore(EngineCore):
         items_indices_map_dict = self._get_items_indices_map_dict(items_indices_map, session)
 
         top_seller = TopSellerRedisObject(self)
-        top_seller.update(readers, session, items_indices_map_dict)
-
-        result = sorted(
-            enumerate(top_seller.numpy_array), key=(lambda x: (x[1], x[0])), reverse=True)
-        indices_items_map = items_indices_map.get_indices_items_map(session)
-        return [{self._format_output(indices_items_map, r): int(r[1])} for r in result]
-
-    def _format_output(self, indices_items_map, r):
-        return ' | '.join([str(i) for i in eval(indices_items_map[r[0]])])
+        return top_seller.update(readers, session, items_indices_map_dict)
 
     def _build_rec_vector(self, session, **variables):
         return TopSellerRedisObject(self).get_numpy_array(session)
@@ -63,6 +55,12 @@ class TopSellerRedisObject(RedisObjectBase):
             self._redis_key,
             zlib.compress(self.numpy_array.tobytes())
         )
+
+        return {
+            'length': int(self.numpy_array.size),
+            'max_sells': int(max(self.numpy_array)),
+            'min_sells': int(min(self.numpy_array))
+        }
 
     def _build_top_seller_vector(self, readers, session, items_indices_map_dict):
         error_message = "No data found for engine '{}'".format(self._engine_core.engine['name'])

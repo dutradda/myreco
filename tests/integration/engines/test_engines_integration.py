@@ -670,7 +670,8 @@ class TestEnginesModelsObjectsExporter(object):
             if json.loads(resp.body)['status'] != 'running':
                 break
 
-        assert json.loads(resp.body) == {'status': 'done', 'result': [{'test': 1}]}
+        assert json.loads(resp.body) == {'status': 'done',
+            'result': {'length': 1, 'max_sells': 1, 'min_sells': 1}}
 
     def test_exporter_get_with_error(
             self, readers_builder, objects_exporter_client, headers):
@@ -762,7 +763,8 @@ class TestEnginesModelsObjectsExporterWithImport(object):
         resp = objects_exporter_client.get(
             '/engines/1/export_objects?hash=6342e10bd7dca3240c698aa79c98362e', headers=headers)
 
-        assert json.loads(resp.body) == {'status': 'done', 'result': [{'test': 1}]}
+        assert json.loads(resp.body) == {'status': 'done',
+            'result': {'length': 1, 'max_sells': 1, 'min_sells': 1}}
 
     def test_exporter_get_with_error_in_import_with_import(
             self, readers_builder, objects_exporter_client, headers):

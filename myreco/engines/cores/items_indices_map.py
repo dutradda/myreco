@@ -107,7 +107,7 @@ class ItemsIndicesMap(LoggerMixin):
         return set([self.items_model(item).get_key().encode() for item in items])
 
     def _format_output(self, output):
-        return {' | '.join([str(i) for i in eval(k)]): v for k, v in output.items()}
+        return {'total_items': len(output.keys()), 'maximum_index': max(output.values())}
 
     def get_items(self, indices, session):
         if indices:

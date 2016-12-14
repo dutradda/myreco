@@ -903,13 +903,13 @@ class TestItemsTypesModelFiltersUpdater(object):
         assert json.loads(resp.body) == {
             'status': 'done',
             'result': {
-                'items_indices_map': {'test': 0},
+                'items_indices_map': {'maximum_index': 0, 'total_items': 1},
                 'filters': {
-                    'filter1': {'1': ['test']},
-                    'filter2': {'test': True},
-                    'filter3': {'test': ['test']},
-                    'filter4': {"(1,)": ['test']},
-                    'filter5': {'1': ['test']}
+                    'filter1': {'filters_quantity': 1},
+                    'filter2': {'true_values': 1},
+                    'filter3': {'filters_quantity': 1},
+                    'filter4': {'filters_quantity': 1},
+                    'filter5': {'filters_quantity': 1}
                 }
             }
         }

@@ -85,17 +85,15 @@ class BooleanFilterBy(FilterBaseBy):
 
     def update(self, session, items):
         self._log_build()
-        filter_ret = {}
         filter_ = self._build_empty_array(len(items))
 
         for item in items:
             value = item.get(self.name)
             if value is not None and self._not_skip_value(value):
                 filter_[item['index']] = value
-                filter_ret[self._build_output_ids(item)] = value
 
         session.redis_bind.set(self.key, self._pack_filter(filter_))
-        return filter_ret
+        return {'true_values': np.nonzero(filter_)[0].size}
 
     def filter(self, session, rec_vector, *args, **kwargs):
         filter_ = session.redis_bind.get(self.key)
@@ -122,12 +120,11 @@ class MultipleFilterBy(FilterBaseBy):
 
     def update(self, session, items):
         self._log_build()
-        filter_ret = defaultdict(list)
         filter_map = defaultdict(list)
         set_data = dict()
         size = len(items)
 
-        [self._update_filter(filter_map, filter_ret, item) for item in items]
+        [self._update_filter(filter_map, item) for item in items]
         for filter_id, items_indices in filter_map.items():
             filter_ = self._build_filter_array(items_indices, size)
             set_data[filter_id] = self._pack_filter(filter_)
@@ -135,12 +132,11 @@ class MultipleFilterBy(FilterBaseBy):
         if set_data:
             session.redis_bind.hmset(self.key, set_data)
 
-        return filter_ret
+        return {'filters_quantity': len(set_data)}
 
-    def _update_filter(self, filter_map, filter_ret, value, item):
+    def _update_filter(self, filter_map, value, item):
         if value is not None and self._not_skip_value(value):
             filter_map[value].append(item['index'])
-            filter_ret[value].append(self._build_output_ids(item))
 
     def _build_filter_array(self, items_indices, size):
         filter_ = self._build_empty_array(size)
@@ -150,15 +146,15 @@ class MultipleFilterBy(FilterBaseBy):
 
 class SimpleFilterBy(MultipleFilterBy):
 
-    def _update_filter(self, filter_map, filter_ret, item):
-        MultipleFilterBy._update_filter(self, filter_map, filter_ret, item.get(self.name), item)
+    def _update_filter(self, filter_map, item):
+        MultipleFilterBy._update_filter(self, filter_map, item.get(self.name), item)
 
 
 class ObjectFilterBy(MultipleFilterBy):
 
-    def _update_filter(self, filter_map, filter_ret, item):
+    def _update_filter(self, filter_map, item):
         value = self._get_id_from_property(item)
-        MultipleFilterBy._update_filter(self, filter_map, filter_ret, value, item)
+        MultipleFilterBy._update_filter(self, filter_map, value, item)
 
     def _get_id_from_property(self, item):
         property_obj = item.get(self.name)
@@ -174,10 +170,10 @@ class ObjectFilterBy(MultipleFilterBy):
 
 class ArrayFilterBy(SimpleFilterBy):
 
-    def _update_filter(self, filter_map, filter_ret, item):
+    def _update_filter(self, filter_map, item):
         property_list = item.get(self.name, [])
         for value in property_list:
-            MultipleFilterBy._update_filter(self, filter_map, filter_ret, value, item)
+            MultipleFilterBy._update_filter(self, filter_map, value, item)
 
 
 class SimpleFilterOf(SimpleFilterBy):
