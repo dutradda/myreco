@@ -91,8 +91,9 @@ class EngineCore(LoggerMixin, metaclass=EngineCoreMeta):
         else:
             items_ids = []
             for key in best_items_keys:
-                item = self.items_model()
-                item.set_ids(eval(key))
+                item = {}
+                self.items_model.set_ids(item, key)
+                self._set_item_values(item)
                 items_ids.append(item)
 
             return items_ids
@@ -105,6 +106,14 @@ class EngineCore(LoggerMixin, metaclass=EngineCoreMeta):
         best_values = rec_vector[best_indices]
         return [i for i, v in
             sorted(zip(best_indices, best_values), key=lambda x: x[1], reverse=True) if v > 0.0]
+
+    def _set_item_values(self, item):
+        for k in item:
+            schema = self.engine['item_type']['schema']['properties'].get(k)
+            if schema is None:
+                raise EngineError('Invalid Item {}'.format(item))
+
+            item[k] = JsonBuilder.build(item[k], schema)
 
     def export_objects(self, session):
         pass
@@ -144,12 +153,3 @@ class RedisObjectBase(LoggerMixin):
         self._build_logger()
         self._engine_core = engine_core
         self._redis_key = build_engine_key_prefix(self._engine_core.engine)
-
-
-    def _set_item_values(self, item):
-        for k in item:
-            schema = self._engine_core.engine['item_type']['schema']['properties'].get(k)
-            if schema is None:
-                raise EngineError('Invalid Item {}'.format(item))
-
-            item[k] = JsonBuilder.build(item[k], schema)

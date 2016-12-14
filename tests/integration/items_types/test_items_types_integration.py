@@ -998,7 +998,7 @@ class TestItemsTypesModelFiltersUpdater(object):
 
         expected = [None, None, None]
         for k, v in indices_items_map.items():
-            expected[k] = True if eval(v)[0] == 'test' or eval(v)[0] == 'test2' else False
+            expected[k] = True if v == 'test' or v == 'test2' else False
 
         filter_ = redis.get('products_1_filter2_filter')
         filter_ = np.fromstring(filter_, dtype=np.bool).tolist()
@@ -1047,11 +1047,11 @@ class TestItemsTypesModelFiltersUpdater(object):
 
         expected1 = [None, None, None]
         for k, v in indices_items_map.items():
-            expected1[k] = True if eval(v)[0] == 'test' or eval(v)[0] == 'test2' else False
+            expected1[k] = True if v == 'test' or v == 'test2' else False
 
         expected2 = [None, None, None]
         for k, v in indices_items_map.items():
-            expected2[k] = False if eval(v)[0] == 'test' or eval(v)[0] == 'test2' else True
+            expected2[k] = False if v == 'test' or v == 'test2' else True
 
         filter_ = redis.hgetall('products_1_filter1_filter')
         key1 = '1'.encode()
@@ -1104,11 +1104,11 @@ class TestItemsTypesModelFiltersUpdater(object):
 
         expected1 = [None, None, None]
         for k, v in indices_items_map.items():
-            expected1[k] = True if eval(v)[0] == 'test' or eval(v)[0] == 'test2' else False
+            expected1[k] = True if v == 'test' or v == 'test2' else False
 
         expected2 = [None, None, None]
         for k, v in indices_items_map.items():
-            expected2[k] = False if eval(v)[0] == 'test' or eval(v)[0] == 'test2' else True
+            expected2[k] = False if v == 'test' or v == 'test2' else True
 
         filter_ = redis.hgetall('products_1_filter3_filter')
         key1 = 'test'.encode()
@@ -1161,11 +1161,11 @@ class TestItemsTypesModelFiltersUpdater(object):
 
         expected1 = [None, None, None]
         for k, v in indices_items_map.items():
-            expected1[k] = True if eval(v)[0] == 'test' or eval(v)[0] == 'test2' else False
+            expected1[k] = True if v == 'test' or v == 'test2' else False
 
         expected2 = [None, None, None]
         for k, v in indices_items_map.items():
-            expected2[k] = False if eval(v)[0] == 'test' or eval(v)[0] == 'test2' else True
+            expected2[k] = False if v == 'test' or v == 'test2' else True
 
         filter_ = redis.hgetall('products_1_filter4_filter')
         key1 = '(1,)'.encode()
@@ -1218,15 +1218,15 @@ class TestItemsTypesModelFiltersUpdater(object):
 
         expected1 = [None, None, None]
         for k, v in indices_items_map.items():
-            expected1[k] = True if eval(v)[0] == 'test' or eval(v)[0] == 'test2' else False
+            expected1[k] = True if v == 'test' or v == 'test2' else False
 
         expected2 = [None, None, None]
         for k, v in indices_items_map.items():
-            expected2[k] = True if eval(v)[0] == 'test2' or eval(v)[0] == 'test3' else False
+            expected2[k] = True if v == 'test2' or v == 'test3' else False
 
         expected3 = [None, None, None]
         for k, v in indices_items_map.items():
-            expected3[k] = True if eval(v)[0] == 'test3' else False
+            expected3[k] = True if v == 'test3' else False
 
         filter_ = redis.hgetall('products_1_filter5_filter')
         key1 = '1'.encode()

@@ -31,7 +31,7 @@ class ItemsIndicesDict(dict):
         dict.__init__(self, items_indices_map)
 
     def get(self, keys, default=None):
-        key = self.items_model(keys).get_key()
+        key = self.items_model.get_instance_key(keys)
         value = dict.get(self, key, default)
         if value is not default:
             return value

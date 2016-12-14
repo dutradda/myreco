@@ -381,9 +381,10 @@ class ItemsCollectionsModelBaseMeta(ModelRedisMeta):
         stock_filter.update(session, items)
 
     def _set_stock_item(cls, keys, items_model, items_indices_map, value, items):
-        for k in keys:
-            item = {k_: v_ for k_, v_ in zip(items_model.__id_names__, eval(k))}
-            item.update({'stock': value, 'index': int(items_indices_map[k])})
+        for key in keys:
+            item = {}
+            items_model.set_ids(item, key)
+            item.update({'stock': value, 'index': int(items_indices_map[key])})
             items.append(item)
 
     def update(cls, session, objs, ids=None, **kwargs):
