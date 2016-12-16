@@ -205,6 +205,7 @@ class IndexFilterOf(FilterBaseBy):
 
     def update(self, *args, **kwargs):
         self._log_build()
+        return 'OK'
 
     def filter(self, session, rec_vector, items_ids):
         items_indices_map = ItemsIndicesMap(self.items_model)
