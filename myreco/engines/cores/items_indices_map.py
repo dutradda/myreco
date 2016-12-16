@@ -75,7 +75,7 @@ class ItemsIndicesMap(LoggerMixin):
         free_indices = [int(v) for k, v in items_indices_map.items() if k in keys_to_delete]
 
         [items_indices_map.pop(k) for k in keys_to_delete]
-        [indices_items_map.pop(i) for i in free_indices]
+        [indices_items_map.pop(i, None) for i in free_indices]
 
         if old_keys:
             iterable = (int(v) for k, v in items_indices_map.items() if k in old_keys)
@@ -83,12 +83,13 @@ class ItemsIndicesMap(LoggerMixin):
         else:
             counter = 0
 
-        i = 0
-        for i, key, index in enumerate(zip(new_keys, free_indices)):
+        free_indices_length = len(free_indices)
+
+        for key, index in zip(new_keys[:free_indices_length], free_indices):
             items_indices_map[key] = index
             indices_items_map[index] = key
 
-        for key in new_keys[i:]:
+        for key in new_keys[free_indices_length:]:
             items_indices_map[key] = counter
             indices_items_map[counter] = key
             counter += 1
