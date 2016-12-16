@@ -454,7 +454,8 @@ class ItemsCollectionsModelFiltersUpdaterBaseMeta(ItemsCollectionsModelBaseMeta)
             items_part = items_model.get(job_session, page=page, items_per_page=100000)
 
         for item in items:
-            index = items_indices_map.get(item)
+            item_key = items_model.get_instance_key(item)
+            index = items_indices_map.get(item_key)
             if index is not None:
                 item['index'] = index
                 item['stock'] = True

@@ -30,12 +30,6 @@ class ItemsIndicesDict(dict):
         self.items_model = items_model
         dict.__init__(self, items_indices_map)
 
-    def get(self, keys, default=None):
-        key = self.items_model.get_instance_key(keys)
-        value = dict.get(self, key, default)
-        if value is not default:
-            return value
-
     def __len__(self):
         values = self.values()
         if values:

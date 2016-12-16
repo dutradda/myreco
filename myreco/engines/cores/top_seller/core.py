@@ -83,7 +83,8 @@ class TopSellerRedisObject(RedisObjectBase):
     def _set_indices_values_map(self, indices_values_map, items_indices_map_dict, reader):
         for line in reader:
             value = line.pop('value')
-            index = items_indices_map_dict.get(line)
+            item_key = self._engine_core.items_model.get_instance_key(line)
+            index = items_indices_map_dict.get(item_key)
             if index is not None:
                 indices_values_map[int(index)] = int(value)
 
