@@ -32,6 +32,7 @@ from base64 import b64encode
 from fakeredis import FakeStrictRedis
 from unittest import mock
 from time import sleep
+from datetime import datetime
 import pytest
 import json
 
@@ -470,8 +471,15 @@ def data_importer_client(data_importer_app):
     return Client(data_importer_app)
 
 
+def datetime_mock():
+    mock_ = mock.MagicMock()
+    mock_.now.return_value = datetime(1900, 1, 1)
+    return mock_
+
+
 @mock.patch('falconswagger.models.http.random.getrandbits',
     new=mock.MagicMock(return_value=131940827655846590526331314439483569710))
+@mock.patch('falconswagger.models.orm.http.datetime', new=datetime_mock())
 class TestEnginesModelsDataImporter(object):
 
     def test_importer_post(self, data_importer_client, headers):
@@ -530,7 +538,7 @@ class TestEnginesModelsDataImporter(object):
             '/engines/1/import_data?hash=6342e10bd7dca3240c698aa79c98362e', headers=headers)
         DataImporter().get_data = mock.MagicMock()
 
-        assert json.loads(resp.body) == {'status': 'done', 'result': 'testing'}
+        assert json.loads(resp.body) == {'status': 'done', 'result': 'testing', 'elapsed_time': '0:00'}
 
     def test_importer_get_with_error(self, data_importer_client, headers):
         DataImporter().get_data.side_effect = Exception('testing')
@@ -548,7 +556,7 @@ class TestEnginesModelsDataImporter(object):
         DataImporter().get_data = mock.MagicMock()
 
         assert json.loads(resp.body) == \
-            {'status': 'error', 'result': {'message': 'testing', 'name': 'Exception'}}
+            {'status': 'error', 'result': {'message': 'testing', 'name': 'Exception'}, 'elapsed_time': '0:00'}
 
 
 @pytest.fixture
@@ -622,6 +630,7 @@ def objects_exporter_client(objects_exporter_app):
 @mock.patch('myreco.engines.cores.base.EngineCore._build_csv_readers')
 @mock.patch('falconswagger.models.http.random.getrandbits',
     new=mock.MagicMock(return_value=131940827655846590526331314439483569710))
+@mock.patch('falconswagger.models.orm.http.datetime', new=datetime_mock())
 class TestEnginesModelsObjectsExporter(object):
 
     def test_exporter_post(self, readers_builder, objects_exporter_client, headers):
@@ -671,7 +680,7 @@ class TestEnginesModelsObjectsExporter(object):
                 break
 
         assert json.loads(resp.body) == {'status': 'done',
-            'result': {'length': 1, 'max_sells': 1, 'min_sells': 1}}
+            'result': {'length': 1, 'max_sells': 1, 'min_sells': 1}, 'elapsed_time': '0:00'}
 
     def test_exporter_get_with_error(
             self, readers_builder, objects_exporter_client, headers):
@@ -694,13 +703,15 @@ class TestEnginesModelsObjectsExporter(object):
             'result': {
                 'message': "No data found for engine 'Seven Days Top Seller'",
                 'name': 'EngineError'
-            }
+            },
+            'elapsed_time': '0:00'
         }
 
 
 @mock.patch('myreco.engines.cores.base.EngineCore._build_csv_readers')
 @mock.patch('falconswagger.models.http.random.getrandbits',
     new=mock.MagicMock(return_value=131940827655846590526331314439483569710))
+@mock.patch('falconswagger.models.orm.http.datetime', new=datetime_mock())
 class TestEnginesModelsObjectsExporterWithImport(object):
 
     def test_exporter_post_with_import(self, readers_builder, objects_exporter_client, headers):
@@ -764,7 +775,7 @@ class TestEnginesModelsObjectsExporterWithImport(object):
             '/engines/1/export_objects?hash=6342e10bd7dca3240c698aa79c98362e', headers=headers)
 
         assert json.loads(resp.body) == {'status': 'done',
-            'result': {'length': 1, 'max_sells': 1, 'min_sells': 1}}
+            'result': {'length': 1, 'max_sells': 1, 'min_sells': 1}, 'elapsed_time': '0:00'}
 
     def test_exporter_get_with_error_in_import_with_import(
             self, readers_builder, objects_exporter_client, headers):
@@ -783,7 +794,8 @@ class TestEnginesModelsObjectsExporterWithImport(object):
         DataImporter().get_data = mock.MagicMock()
 
         assert json.loads(resp.body) == \
-            {'status': 'error', 'result': {'message': 'testing', 'name': 'Exception'}}
+            {'status': 'error', 'result': {'message': 'testing', 'name': 'Exception'},
+             'elapsed_time': '0:00'}
 
     def test_exporter_get_with_error_in_export_with_import(
             self, readers_builder, objects_exporter_client, headers):
@@ -809,7 +821,8 @@ class TestEnginesModelsObjectsExporterWithImport(object):
             'result': {
                 'message': "No data found for engine 'Seven Days Top Seller'",
                 'name': 'EngineError'
-            }
+            },
+            'elapsed_time': '0:00'
         }
 
 

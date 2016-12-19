@@ -30,6 +30,7 @@ from base64 import b64encode
 from fakeredis import FakeStrictRedis
 from unittest import mock
 from pytest_falcon.plugin import Client
+from datetime import datetime
 import pytest
 import json
 import numpy as np
@@ -868,8 +869,15 @@ def filters_updater_client(filters_updater_app):
     return Client(filters_updater_app)
 
 
+def datetime_mock():
+    mock_ = mock.MagicMock()
+    mock_.now.return_value = datetime(1900, 1, 1)
+    return mock_
+
+
 @mock.patch('falconswagger.models.http.random.getrandbits',
     new=mock.MagicMock(return_value=131940827655846590526331314439483569710))
+@mock.patch('falconswagger.models.orm.http.datetime', new=datetime_mock())
 class TestItemsTypesModelFiltersUpdater(object):
 
     def test_filters_updater_post(self, filters_updater_client, headers):
@@ -911,7 +919,8 @@ class TestItemsTypesModelFiltersUpdater(object):
                     'filter4': {'filters_quantity': 1},
                     'filter5': {'filters_quantity': 1}
                 }
-            }
+            },
+            'elapsed_time': '0:00'
         }
 
     def test_if_update_filters_builds_stock_filter(self, filters_updater_client, headers, redis):
