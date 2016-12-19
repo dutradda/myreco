@@ -231,7 +231,8 @@ class IndexFilterByPropertyOf(SimpleFilterOf, IndexFilterOf):
     def filter(self, session, rec_vector, items_ids):
         items = self.items_model.get(session, items_ids)
         filter_ids = [item[self.name] for item in items]
-        filters = session.redis_bind.hmget(self.key, filter_ids)
-        filters = [self._unpack_filter(filter_) for filter_ in filters if filter_ is not None]
-        indices = np.concatenate(filters)
-        self._filter_by_indices(rec_vector, indices)
+        if filter_ids:
+            filters = session.redis_bind.hmget(self.key, filter_ids)
+            filters = [self._unpack_filter(filter_) for filter_ in filters if filter_ is not None]
+            indices = np.concatenate(filters)
+            self._filter_by_indices(rec_vector, indices)
