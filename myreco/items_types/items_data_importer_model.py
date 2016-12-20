@@ -44,7 +44,9 @@ class ItemsCollectionsModelDataImporterBaseMeta(ItemsCollectionsModelBaseMeta):
         items_model = cls._get_model(req.context['parameters']['query_string'])
 
         session = req.context['session']
-        session = type(session)(redis_bind=session.redis_bind)
+        session = type(session)(
+            bind=session.bind.engine.connect(),
+            redis_bind=session.redis_bind)
 
         stream = BytesIO()
         stream.write(req.stream.read())
