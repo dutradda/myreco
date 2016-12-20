@@ -169,7 +169,7 @@ class TestUsersModelIntegrationWithauthorization_hook(object):
 
 
 class TestUsersModel(object):
-    def test_user_authorized_without_uri_and_methods(self, session, redis):
+    def test_user_authorized_without_uri_and_methods(self, session):
         user = {
             'name': 'test',
             'email': 'test@test',
@@ -178,11 +178,10 @@ class TestUsersModel(object):
         }
         UsersModel.insert(session, user)
         authorization = b64encode('{}:{}'.format(user['email'], user['password']).encode())
-        redis.hmget.return_value = [None]
 
         assert UsersModel.authorize(session, authorization, None, None, None) is True
 
-    def test_user_authorized_with_uri_and_methods(self, session, redis):
+    def test_user_authorized_with_uri_and_methods(self, session):
         user = {
             'name': 'test',
             'email': 'test@test',
@@ -195,11 +194,10 @@ class TestUsersModel(object):
         }
         UsersModel.insert(session, user)
         authorization = b64encode('{}:{}'.format(user['email'], user['password']).encode())
-        redis.hmget.return_value = [None]
 
         assert UsersModel.authorize(session, authorization, '', '/test', 'POST') is True
 
-    def test_user_not_authorized_with_wrong_uri(self, session, redis):
+    def test_user_not_authorized_with_wrong_uri(self, session):
         user = {
             'name': 'test',
             'email': 'test@test',
@@ -212,18 +210,15 @@ class TestUsersModel(object):
         }
         UsersModel.insert(session, user)
         authorization = b64encode('{}:{}'.format(user['email'], user['password']).encode())
-        redis.hmget.return_value = [None]
 
         assert UsersModel.authorize(session, authorization, '', '/tes', 'POST') is None
 
-    def test_user_not_authorized_without_user(self, session, redis):
+    def test_user_not_authorized_without_user(self, session):
         authorization = b64encode('test:test'.encode())
-        redis.hmget.return_value = [None]
 
         assert UsersModel.authorize(session, authorization, '', '/tes', 'POST') is None
 
-    def test_user_not_authorized_with_authorization_without_colon(self, session, redis):
+    def test_user_not_authorized_with_authorization_without_colon(self, session):
         authorization = b64encode('test'.encode())
-        redis.hmget.return_value = [None]
 
         assert UsersModel.authorize(session, authorization, '', '/tes', 'POST') is None

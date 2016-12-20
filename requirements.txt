@@ -1,4 +1,5 @@
-falcon-swagger==0.14.0
+falcon-swagger==0.14.1
 numpy==1.11.2
 scipy==0.18.1
 Bottleneck==1.2.0
+boto3==1.4.2

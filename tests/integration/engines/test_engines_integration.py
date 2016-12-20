@@ -29,7 +29,6 @@ from myreco.engines.cores.items_indices_map import ItemsIndicesMap
 from pytest_falcon.plugin import Client
 from falconswagger.swagger_api import SwaggerAPI
 from base64 import b64encode
-from fakeredis import FakeStrictRedis
 from unittest import mock
 from time import sleep
 from datetime import datetime
@@ -43,7 +42,7 @@ def model_base():
 
 
 @pytest.fixture
-def app(session):
+def app(session, redis):
     user = {
         'name': 'test',
         'email': 'test',
@@ -81,7 +80,7 @@ def app(session):
     }
     ItemsTypesModel.insert(session, item_type)
 
-    return SwaggerAPI([EnginesModel, EnginesCoresModel], session.bind, FakeStrictRedis(),
+    return SwaggerAPI([EnginesModel, EnginesCoresModel], session.bind, redis,
                       title='Myreco API')
 
 
@@ -404,7 +403,7 @@ class TestEnginesModelUriTemplateGet(object):
 
 
 @pytest.fixture
-def data_importer_app(session):
+def data_importer_app(session, redis):
     table_args = {'mysql_engine':'innodb'}
     factory = ModelsFactory('myreco', commons_models_attributes={'__table_args__': table_args},
                             commons_tables_attributes=table_args)
@@ -459,7 +458,7 @@ def data_importer_app(session):
     }
     models['engines'].insert(session, engine)
 
-    api = SwaggerAPI([models['engines'], models['items_types']], session.bind, FakeStrictRedis(),
+    api = SwaggerAPI([models['engines'], models['items_types']], session.bind, redis,
                       title='Myreco API')
     models['items_types'].associate_all_items(session)
 
@@ -487,6 +486,7 @@ class TestEnginesModelsDataImporter(object):
         resp = data_importer_client.post('/engines/1/import_data', headers=headers)
         hash_ = json.loads(resp.body)
 
+        sleep(0.01)
         while True:
             resp = data_importer_client.get(
                 '/engines/1/import_data?hash=6342e10bd7dca3240c698aa79c98362e',
@@ -515,6 +515,7 @@ class TestEnginesModelsDataImporter(object):
 
         assert json.loads(resp.body) == {'status': 'running'}
 
+        sleep(0.01)
         while True:
             resp = data_importer_client.get(
                 '/engines/1/import_data?hash=6342e10bd7dca3240c698aa79c98362e',
@@ -527,6 +528,7 @@ class TestEnginesModelsDataImporter(object):
         DataImporter().get_data.return_value = 'testing'
         data_importer_client.post('/engines/1/import_data', headers=headers)
 
+        sleep(0.01)
         while True:
             resp = data_importer_client.get(
                 '/engines/1/import_data?hash=6342e10bd7dca3240c698aa79c98362e',
@@ -544,6 +546,7 @@ class TestEnginesModelsDataImporter(object):
         DataImporter().get_data.side_effect = Exception('testing')
         data_importer_client.post('/engines/1/import_data', headers=headers)
 
+        sleep(0.01)
         while True:
             resp = data_importer_client.get(
                 '/engines/1/import_data?hash=6342e10bd7dca3240c698aa79c98362e',
@@ -560,7 +563,7 @@ class TestEnginesModelsDataImporter(object):
 
 
 @pytest.fixture
-def objects_exporter_app(session):
+def objects_exporter_app(session, redis):
     table_args = {'mysql_engine':'innodb'}
     factory = ModelsFactory('myreco', commons_models_attributes={'__table_args__': table_args},
                             commons_tables_attributes=table_args)
@@ -615,7 +618,7 @@ def objects_exporter_app(session):
     }
     models['engines'].insert(session, engine)
 
-    api = SwaggerAPI([models['engines'], models['items_types']], session.bind, FakeStrictRedis(),
+    api = SwaggerAPI([models['engines'], models['items_types']], session.bind, redis,
                       title='Myreco API')
     models['items_types'].associate_all_items(session)
 
@@ -663,6 +666,7 @@ class TestEnginesModelsObjectsExporter(object):
         readers_builder.return_value = [[{'value': 1, 'sku': 'test'}]]
         objects_exporter_client.post('/products/update_filters?store_id=1', headers=headers)
 
+        sleep(0.01)
         while True:
             resp = objects_exporter_client.get(
                 '/products/update_filters?store_id=1&hash=6342e10bd7dca3240c698aa79c98362e',
@@ -672,6 +676,7 @@ class TestEnginesModelsObjectsExporter(object):
 
         objects_exporter_client.post('/engines/1/export_objects', headers=headers)
 
+        sleep(0.01)
         while True:
             resp = objects_exporter_client.get(
                 '/engines/1/export_objects?hash=6342e10bd7dca3240c698aa79c98362e',
@@ -687,10 +692,12 @@ class TestEnginesModelsObjectsExporter(object):
         products = [{'sku': 'test'}]
         objects_exporter_client.post('/products?store_id=1',
                                     body=json.dumps(products), headers=headers)
+        objects_exporter_client.post('/products/update_filters?store_id=1', headers=headers)
 
         readers_builder.return_value = [[]]
         objects_exporter_client.post('/engines/1/export_objects', headers=headers)
 
+        sleep(0.01)
         while True:
             resp = objects_exporter_client.get(
                 '/engines/1/export_objects?hash=6342e10bd7dca3240c698aa79c98362e',
@@ -715,11 +722,17 @@ class TestEnginesModelsObjectsExporter(object):
 class TestEnginesModelsObjectsExporterWithImport(object):
 
     def test_exporter_post_with_import(self, readers_builder, objects_exporter_client, headers):
+        products = [{'sku': 'test'}]
+        objects_exporter_client.post('/products?store_id=1',
+                                    body=json.dumps(products), headers=headers)
+        objects_exporter_client.post('/products/update_filters?store_id=1', headers=headers)
+
         readers_builder.return_value = [[{'sku': 'test', 'value': 1}]]
         DataImporter().get_data.return_value = {}
         resp = objects_exporter_client.post('/engines/1/export_objects?import_data=true', headers=headers)
         hash_ = json.loads(resp.body)
 
+        sleep(0.01)
         while True:
             resp = objects_exporter_client.get(
                 '/engines/1/export_objects?hash=6342e10bd7dca3240c698aa79c98362e',
@@ -738,6 +751,11 @@ class TestEnginesModelsObjectsExporterWithImport(object):
             sleep(1)
             return {}
 
+        products = [{'sku': 'test'}]
+        objects_exporter_client.post('/products?store_id=1',
+                                    body=json.dumps(products), headers=headers)
+        objects_exporter_client.post('/products/update_filters?store_id=1', headers=headers)
+
         readers_builder.return_value = [[{'sku': 'test', 'value': 1}]]
         DataImporter().get_data = func
         objects_exporter_client.post('/engines/1/export_objects?import_data=true', headers=headers)
@@ -748,6 +766,7 @@ class TestEnginesModelsObjectsExporterWithImport(object):
 
         assert json.loads(resp.body) == {'status': 'running'}
 
+        sleep(0.01)
         while True:
             resp = objects_exporter_client.get(
                 '/engines/1/export_objects?hash=6342e10bd7dca3240c698aa79c98362e',
@@ -764,6 +783,7 @@ class TestEnginesModelsObjectsExporterWithImport(object):
         objects_exporter_client.post('/products/update_filters?store_id=1', headers=headers)
         objects_exporter_client.post('/engines/1/export_objects?import_data=true', headers=headers)
 
+        sleep(0.01)
         while True:
             resp = objects_exporter_client.get(
                 '/engines/1/export_objects?hash=6342e10bd7dca3240c698aa79c98362e',
@@ -782,6 +802,7 @@ class TestEnginesModelsObjectsExporterWithImport(object):
         DataImporter().get_data.side_effect = Exception('testing')
         objects_exporter_client.post('/engines/1/export_objects?import_data=true', headers=headers)
 
+        sleep(0.01)
         while True:
             resp = objects_exporter_client.get(
                 '/engines/1/export_objects?hash=6342e10bd7dca3240c698aa79c98362e',
@@ -802,10 +823,12 @@ class TestEnginesModelsObjectsExporterWithImport(object):
         products = [{'sku': 'test'}]
         objects_exporter_client.post('/products?store_id=1',
                                     body=json.dumps(products), headers=headers)
+        objects_exporter_client.post('/products/update_filters?store_id=1', headers=headers)
 
         readers_builder.return_value = [[]]
         objects_exporter_client.post('/engines/1/export_objects?import_data=true', headers=headers)
 
+        sleep(0.01)
         while True:
             resp = objects_exporter_client.get(
                 '/engines/1/export_objects?hash=6342e10bd7dca3240c698aa79c98362e',

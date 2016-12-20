@@ -670,7 +670,7 @@ class TestUsersResourcePutUpdateOne(object):
                 }
             }]
         }
-        assert redis.hdel.call_args_list == [mock.call('users', 'test2:test')]
+        assert redis.hdel.call_args_list == [mock.call('users', b'test2:test')]
 
 
 class TestUsersResourcePutUpdateMany(object):

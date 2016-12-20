@@ -3,6 +3,7 @@ python:
   - "3.5"
 services:
   - mysql
+  - redis-server
 script: py.test -c pytest-travis.ini
 install: 
   - pip install cython

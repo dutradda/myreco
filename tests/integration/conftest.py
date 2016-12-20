@@ -24,15 +24,18 @@
 from falconswagger.models.orm.session import Session
 from unittest import mock
 from sqlalchemy import create_engine
+from redis import StrictRedis
+
 
 import pytest
 import pymysql
 
 
-
 @pytest.fixture
-def redis():
-    return mock.MagicMock()
+def redis(request):
+    r = StrictRedis(db=5)
+    request.addfinalizer(lambda: r.flushdb())
+    return r
 
 
 @pytest.fixture(scope='session')

@@ -48,7 +48,7 @@ class ItemsIndicesMap(LoggerMixin):
 
     def get_all(self, session):
         items_indices_map = session.redis_bind.hgetall(self.key)
-        items_indices_map = {k.decode(): int(v.decode()) for k, v in items_indices_map.items()}
+        items_indices_map = {k: int(v.decode()) for k, v in items_indices_map.items()}
         return ItemsIndicesDict(items_indices_map, self.items_model)
 
     def get_indices_items_map(self, session):
@@ -99,19 +99,19 @@ class ItemsIndicesMap(LoggerMixin):
         return self._format_output(self.get_all(session))
 
     def _build_keys(self, items):
-        return set([self.items_model(item).get_key().encode() for item in items])
+        return set([self.items_model.get_instance_key(item) for item in items])
 
     def _format_output(self, output):
         return {'total_items': len(output.keys()), 'maximum_index': max(output.values())}
 
     def get_items(self, indices, session):
         if indices:
-            return [item.decode() for item in \
+            return [item for item in \
                 session.redis_bind.hmget(self.indices_items_key, indices) if item is not None]
         else:
             return []
 
     def get_indices(self, ids, session):
         keys = self._build_keys(ids)
-        return [index.decode() for index in \
+        return [int(index.decode()) for index in \
             session.redis_bind.hmget(self.key, keys) if index is not None]

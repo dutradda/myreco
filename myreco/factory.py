@@ -32,8 +32,9 @@ from myreco.slots.models import (SlotsVariablesModelBase,
 from myreco.engines.models import (
     EnginesModelBase, EnginesModelDataImporterBase,
     EnginesModelObjectsExporterBase, EnginesCoresModelBase)
-from myreco.items_types.models import (ItemsTypesModelBase, build_items_types_stores_table,
-    ItemsTypesModelFiltersUpdaterBase)
+from myreco.items_types.models import ItemsTypesModelBase, build_items_types_stores_table
+from myreco.items_types.items_data_importer_model import ItemsTypesModelDataImporterBase
+from myreco.items_types.items_update_filters_model import ItemsTypesModelFiltersUpdaterBase
 from falconswagger.models.orm.sqlalchemy_redis import ModelSQLAlchemyRedisFactory
 from falconswagger.hooks import Authorizer
 
@@ -160,7 +161,9 @@ class ModelsFactory(object):
 
         if app_type == 'recommender':
             bases_classes = (ItemsTypesModelBase, self.base_model)
-        else:
+        elif app_type == 'importer':
+            bases_classes = (ItemsTypesModelDataImporterBase, self.base_model)
+        elif app_type == 'exporter':
             bases_classes = (ItemsTypesModelFiltersUpdaterBase, self.base_model)
 
         return self.meta_class('ItemsTypesModel', bases_classes, attributes)

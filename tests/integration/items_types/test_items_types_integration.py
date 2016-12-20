@@ -27,10 +27,10 @@ from falconswagger.swagger_api import SwaggerAPI
 from myreco.factory import ModelsFactory
 from myreco.engines.cores.items_indices_map import ItemsIndicesMap
 from base64 import b64encode
-from fakeredis import FakeStrictRedis
 from unittest import mock
 from pytest_falcon.plugin import Client
 from datetime import datetime
+from time import sleep
 import pytest
 import json
 import numpy as np
@@ -39,12 +39,6 @@ import numpy as np
 @pytest.fixture
 def model_base():
     return SQLAlchemyRedisModelBase
-
-
-@pytest.fixture
-def redis():
-    FakeStrictRedis().flushall()
-    return FakeStrictRedis()
 
 
 @pytest.fixture
@@ -654,7 +648,7 @@ class TestItemsModelPatch(object):
         client.post('/items_types/', headers=headers, body=json.dumps(body))
 
         body = [{'id': 'test', 't1': 1}]
-        client.post('/test?store_id=1', headers=headers, body=json.dumps(body))
+        resp = client.post('/test?store_id=1', headers=headers, body=json.dumps(body))
 
         body = [{'id': 'test', 't1': 2}]
         resp = client.patch('/test?store_id=1', headers=headers, body=json.dumps(body))
@@ -716,7 +710,6 @@ class TestItemsModelPatch(object):
         }
 
     def test_if_items_patch_updates_stock_filter(self, client, headers, redis, app, session):
-        redis.flushall()
         body = [{
             'name': 'test',
             'stores': [{'id': 1}],
@@ -857,7 +850,7 @@ def filters_updater_app(redis, session):
     }
     models['slots'].insert(session, slot)
 
-    api = SwaggerAPI([models['items_types']], session.bind, FakeStrictRedis(),
+    api = SwaggerAPI([models['items_types']], session.bind, redis,
                       title='Myreco API')
     models['items_types'].associate_all_items(session)
 
@@ -897,6 +890,7 @@ class TestItemsTypesModelFiltersUpdater(object):
         filters_updater_client.post('/products?store_id=1',
                                     body=json.dumps(products), headers=headers)
         resp = filters_updater_client.post('/products/update_filters?store_id=1', headers=headers)
+        sleep(0.01)
 
         while True:
             resp = filters_updater_client.get(
@@ -953,6 +947,7 @@ class TestItemsTypesModelFiltersUpdater(object):
         filters_updater_client.post('/products?store_id=1',
                                     body=json.dumps(list(products.values())), headers=headers)
         filters_updater_client.post('/products/update_filters?store_id=1', headers=headers)
+        sleep(0.01)
 
         while True:
             resp = filters_updater_client.get(
@@ -994,6 +989,7 @@ class TestItemsTypesModelFiltersUpdater(object):
         filters_updater_client.post('/products?store_id=1',
                                     body=json.dumps(list(products.values())), headers=headers)
         filters_updater_client.post('/products/update_filters?store_id=1', headers=headers)
+        sleep(0.01)
 
         while True:
             resp = filters_updater_client.get(
@@ -1043,6 +1039,7 @@ class TestItemsTypesModelFiltersUpdater(object):
         filters_updater_client.post('/products?store_id=1',
                                     body=json.dumps(list(products.values())), headers=headers)
         filters_updater_client.post('/products/update_filters?store_id=1', headers=headers)
+        sleep(0.01)
 
         while True:
             resp = filters_updater_client.get(
@@ -1100,6 +1097,7 @@ class TestItemsTypesModelFiltersUpdater(object):
         filters_updater_client.post('/products?store_id=1',
                                     body=json.dumps(list(products.values())), headers=headers)
         filters_updater_client.post('/products/update_filters?store_id=1', headers=headers)
+        sleep(0.01)
 
         while True:
             resp = filters_updater_client.get(
@@ -1157,6 +1155,7 @@ class TestItemsTypesModelFiltersUpdater(object):
         filters_updater_client.post('/products?store_id=1',
                                     body=json.dumps(list(products.values())), headers=headers)
         filters_updater_client.post('/products/update_filters?store_id=1', headers=headers)
+        sleep(0.01)
 
         while True:
             resp = filters_updater_client.get(
@@ -1214,6 +1213,7 @@ class TestItemsTypesModelFiltersUpdater(object):
         filters_updater_client.post('/products?store_id=1',
                                     body=json.dumps(list(products.values())), headers=headers)
         filters_updater_client.post('/products/update_filters?store_id=1', headers=headers)
+        sleep(0.01)
 
         while True:
             resp = filters_updater_client.get(
