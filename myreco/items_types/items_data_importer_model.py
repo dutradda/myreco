@@ -86,7 +86,7 @@ class ItemsCollectionsModelDataImporterBaseMeta(ItemsCollectionsModelBaseMeta):
             os.remove(filename)
 
         except Exception as error:
-            cls._logger.exception(error)
+            cls._logger.exception('ERROR importing data file')
 
     def _update_items_from_file(cls, stream, items_model, session):
         warning_message = "Invalid line for model '{}': ".format(items_model.__key__) + '{}'
