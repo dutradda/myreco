@@ -486,7 +486,7 @@ class TestEnginesModelsDataImporter(object):
         resp = data_importer_client.post('/engines/1/import_data', headers=headers)
         hash_ = json.loads(resp.body)
 
-        sleep(0.01)
+        sleep(0.05)
         while True:
             resp = data_importer_client.get(
                 '/engines/1/import_data?hash=6342e10bd7dca3240c698aa79c98362e',
@@ -515,7 +515,7 @@ class TestEnginesModelsDataImporter(object):
 
         assert json.loads(resp.body) == {'status': 'running'}
 
-        sleep(0.01)
+        sleep(0.05)
         while True:
             resp = data_importer_client.get(
                 '/engines/1/import_data?hash=6342e10bd7dca3240c698aa79c98362e',
@@ -528,7 +528,7 @@ class TestEnginesModelsDataImporter(object):
         DataImporter().get_data.return_value = 'testing'
         data_importer_client.post('/engines/1/import_data', headers=headers)
 
-        sleep(0.01)
+        sleep(0.05)
         while True:
             resp = data_importer_client.get(
                 '/engines/1/import_data?hash=6342e10bd7dca3240c698aa79c98362e',
@@ -546,7 +546,7 @@ class TestEnginesModelsDataImporter(object):
         DataImporter().get_data.side_effect = Exception('testing')
         data_importer_client.post('/engines/1/import_data', headers=headers)
 
-        sleep(0.01)
+        sleep(0.05)
         while True:
             resp = data_importer_client.get(
                 '/engines/1/import_data?hash=6342e10bd7dca3240c698aa79c98362e',
@@ -649,6 +649,15 @@ class TestEnginesModelsObjectsExporter(object):
         products = [{'sku': 'test'}]
         objects_exporter_client.post('/products?store_id=1',
                                     body=json.dumps(products), headers=headers)
+        objects_exporter_client.post('/products/update_filters?store_id=1', headers=headers)
+
+        sleep(0.05)
+        while True:
+            resp = objects_exporter_client.get(
+                '/products/update_filters?store_id=1&hash=6342e10bd7dca3240c698aa79c98362e',
+                headers=headers)
+            if json.loads(resp.body)['status'] != 'running':
+                break
 
         readers_builder.return_value = \
             [[{'value': 1, 'sku': 'test{}'.format(i)}] for i in range(1000)]
@@ -666,7 +675,7 @@ class TestEnginesModelsObjectsExporter(object):
         readers_builder.return_value = [[json.dumps({'value': 1, 'item_key': 'test'})]]
         objects_exporter_client.post('/products/update_filters?store_id=1', headers=headers)
 
-        sleep(0.01)
+        sleep(0.05)
         while True:
             resp = objects_exporter_client.get(
                 '/products/update_filters?store_id=1&hash=6342e10bd7dca3240c698aa79c98362e',
@@ -676,7 +685,7 @@ class TestEnginesModelsObjectsExporter(object):
 
         objects_exporter_client.post('/engines/1/export_objects', headers=headers)
 
-        sleep(0.01)
+        sleep(0.05)
         while True:
             resp = objects_exporter_client.get(
                 '/engines/1/export_objects?hash=6342e10bd7dca3240c698aa79c98362e',
@@ -697,7 +706,7 @@ class TestEnginesModelsObjectsExporter(object):
         readers_builder.return_value = [[]]
         objects_exporter_client.post('/engines/1/export_objects', headers=headers)
 
-        sleep(0.01)
+        sleep(0.05)
         while True:
             resp = objects_exporter_client.get(
                 '/engines/1/export_objects?hash=6342e10bd7dca3240c698aa79c98362e',
@@ -732,7 +741,7 @@ class TestEnginesModelsObjectsExporterWithImport(object):
         resp = objects_exporter_client.post('/engines/1/export_objects?import_data=true', headers=headers)
         hash_ = json.loads(resp.body)
 
-        sleep(0.01)
+        sleep(0.05)
         while True:
             resp = objects_exporter_client.get(
                 '/engines/1/export_objects?hash=6342e10bd7dca3240c698aa79c98362e',
@@ -766,7 +775,7 @@ class TestEnginesModelsObjectsExporterWithImport(object):
 
         assert json.loads(resp.body) == {'status': 'running'}
 
-        sleep(0.01)
+        sleep(0.05)
         while True:
             resp = objects_exporter_client.get(
                 '/engines/1/export_objects?hash=6342e10bd7dca3240c698aa79c98362e',
@@ -783,7 +792,7 @@ class TestEnginesModelsObjectsExporterWithImport(object):
         objects_exporter_client.post('/products/update_filters?store_id=1', headers=headers)
         objects_exporter_client.post('/engines/1/export_objects?import_data=true', headers=headers)
 
-        sleep(0.01)
+        sleep(0.05)
         while True:
             resp = objects_exporter_client.get(
                 '/engines/1/export_objects?hash=6342e10bd7dca3240c698aa79c98362e',
@@ -802,7 +811,7 @@ class TestEnginesModelsObjectsExporterWithImport(object):
         DataImporter().get_data.side_effect = Exception('testing')
         objects_exporter_client.post('/engines/1/export_objects?import_data=true', headers=headers)
 
-        sleep(0.01)
+        sleep(0.05)
         while True:
             resp = objects_exporter_client.get(
                 '/engines/1/export_objects?hash=6342e10bd7dca3240c698aa79c98362e',
@@ -828,7 +837,7 @@ class TestEnginesModelsObjectsExporterWithImport(object):
         readers_builder.return_value = [[]]
         objects_exporter_client.post('/engines/1/export_objects?import_data=true', headers=headers)
 
-        sleep(0.01)
+        sleep(0.05)
         while True:
             resp = objects_exporter_client.get(
                 '/engines/1/export_objects?hash=6342e10bd7dca3240c698aa79c98362e',

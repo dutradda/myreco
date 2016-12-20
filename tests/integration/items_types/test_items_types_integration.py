@@ -890,7 +890,7 @@ class TestItemsTypesModelFiltersUpdater(object):
         filters_updater_client.post('/products?store_id=1',
                                     body=json.dumps(products), headers=headers)
         resp = filters_updater_client.post('/products/update_filters?store_id=1', headers=headers)
-        sleep(0.01)
+        sleep(0.05)
 
         while True:
             resp = filters_updater_client.get(
@@ -947,7 +947,7 @@ class TestItemsTypesModelFiltersUpdater(object):
         filters_updater_client.post('/products?store_id=1',
                                     body=json.dumps(list(products.values())), headers=headers)
         filters_updater_client.post('/products/update_filters?store_id=1', headers=headers)
-        sleep(0.01)
+        sleep(0.05)
 
         while True:
             resp = filters_updater_client.get(
@@ -989,7 +989,7 @@ class TestItemsTypesModelFiltersUpdater(object):
         filters_updater_client.post('/products?store_id=1',
                                     body=json.dumps(list(products.values())), headers=headers)
         filters_updater_client.post('/products/update_filters?store_id=1', headers=headers)
-        sleep(0.01)
+        sleep(0.05)
 
         while True:
             resp = filters_updater_client.get(
@@ -1039,7 +1039,7 @@ class TestItemsTypesModelFiltersUpdater(object):
         filters_updater_client.post('/products?store_id=1',
                                     body=json.dumps(list(products.values())), headers=headers)
         filters_updater_client.post('/products/update_filters?store_id=1', headers=headers)
-        sleep(0.01)
+        sleep(0.05)
 
         while True:
             resp = filters_updater_client.get(
@@ -1097,7 +1097,7 @@ class TestItemsTypesModelFiltersUpdater(object):
         filters_updater_client.post('/products?store_id=1',
                                     body=json.dumps(list(products.values())), headers=headers)
         filters_updater_client.post('/products/update_filters?store_id=1', headers=headers)
-        sleep(0.01)
+        sleep(0.05)
 
         while True:
             resp = filters_updater_client.get(
@@ -1155,7 +1155,7 @@ class TestItemsTypesModelFiltersUpdater(object):
         filters_updater_client.post('/products?store_id=1',
                                     body=json.dumps(list(products.values())), headers=headers)
         filters_updater_client.post('/products/update_filters?store_id=1', headers=headers)
-        sleep(0.01)
+        sleep(0.05)
 
         while True:
             resp = filters_updater_client.get(
@@ -1213,7 +1213,7 @@ class TestItemsTypesModelFiltersUpdater(object):
         filters_updater_client.post('/products?store_id=1',
                                     body=json.dumps(list(products.values())), headers=headers)
         filters_updater_client.post('/products/update_filters?store_id=1', headers=headers)
-        sleep(0.01)
+        sleep(0.05)
 
         while True:
             resp = filters_updater_client.get(

@@ -1146,7 +1146,7 @@ class TestPlacementsGetRecomendations(object):
         client.post('/products_new/?store_id=1', headers=headers, body=json.dumps(products))
 
         filters_updater_client.post('/products_new/update_filters?store_id=1', headers=headers)
-        sleep(0.01)
+        sleep(0.05)
         while True:
             resp = filters_updater_client.get(
                 '/products_new/update_filters?store_id=1&hash=6342e10bd7dca3240c698aa79c98362e',
@@ -1155,7 +1155,7 @@ class TestPlacementsGetRecomendations(object):
                 break
 
         filters_updater_client.post('/engines/4/export_objects?import_data=true', headers=headers)
-        sleep(0.01)
+        sleep(0.05)
         while True:
             resp = filters_updater_client.get(
                 '/engines/1/export_objects?hash=6342e10bd7dca3240c698aa79c98362e',
@@ -1192,7 +1192,7 @@ class TestPlacementsGetRecomendations(object):
         client.post('/products_new/?store_id=1', headers=headers, body=json.dumps(products))
 
         filters_updater_client.post('/products_new/update_filters?store_id=1', headers=headers)
-        sleep(0.01)
+        sleep(0.05)
         while True:
             resp = filters_updater_client.get(
                 '/products_new/update_filters?store_id=1&hash=6342e10bd7dca3240c698aa79c98362e',
@@ -1201,7 +1201,7 @@ class TestPlacementsGetRecomendations(object):
                 break
 
         filters_updater_client.post('/engines/4/export_objects?import_data=true', headers=headers)
-        sleep(0.01)
+        sleep(0.05)
         while True:
             resp = filters_updater_client.get(
                 '/engines/1/export_objects?hash=6342e10bd7dca3240c698aa79c98362e',
@@ -1242,7 +1242,7 @@ class TestPlacementsGetRecomendations(object):
         client.post('/products_new/?store_id=1', headers=headers, body=json.dumps(products))
 
         filters_updater_client.post('/products_new/update_filters?store_id=1', headers=headers)
-        sleep(0.01)
+        sleep(0.05)
         while True:
             resp = filters_updater_client.get(
                 '/products_new/update_filters?store_id=1&hash=6342e10bd7dca3240c698aa79c98362e',
@@ -1251,7 +1251,7 @@ class TestPlacementsGetRecomendations(object):
                 break
 
         filters_updater_client.post('/engines/4/export_objects?import_data=true', headers=headers)
-        sleep(0.01)
+        sleep(0.05)
         while True:
             resp = filters_updater_client.get(
                 '/engines/1/export_objects?hash=6342e10bd7dca3240c698aa79c98362e',
@@ -1317,7 +1317,7 @@ class TestPlacementsGetRecomendations(object):
 
         filters_updater_client.post('/products_new/update_filters?store_id=1', headers=headers)
 
-        sleep(0.01)
+        sleep(0.05)
         while True:
             resp = filters_updater_client.get(
                 '/products_new/update_filters?store_id=1&hash=6342e10bd7dca3240c698aa79c98362e',
@@ -1326,7 +1326,7 @@ class TestPlacementsGetRecomendations(object):
                 break
 
         filters_updater_client.post('/engines/4/export_objects?import_data=true', headers=headers)
-        sleep(0.01)
+        sleep(0.05)
         while True:
             resp = filters_updater_client.get(
                 '/engines/1/export_objects?hash=6342e10bd7dca3240c698aa79c98362e',
@@ -1368,7 +1368,7 @@ class TestPlacementsGetRecomendations(object):
         client.post('/products_new/?store_id=1', headers=headers, body=json.dumps(products))
 
         filters_updater_client.post('/products_new/update_filters?store_id=1', headers=headers)
-        sleep(0.01)
+        sleep(0.05)
         while True:
             resp = filters_updater_client.get(
                 '/products_new/update_filters?store_id=1&hash=6342e10bd7dca3240c698aa79c98362e',
@@ -1377,7 +1377,7 @@ class TestPlacementsGetRecomendations(object):
                 break
 
         filters_updater_client.post('/engines/4/export_objects?import_data=true', headers=headers)
-        sleep(0.01)
+        sleep(0.05)
         while True:
             resp = filters_updater_client.get(
                 '/engines/1/export_objects?hash=6342e10bd7dca3240c698aa79c98362e',
@@ -1431,7 +1431,7 @@ class TestPlacementsGetRecomendationsFilters(object):
         client.post('/products_new/?store_id=1', headers=headers, body=json.dumps(products))
 
         filters_updater_client.post('/products_new/update_filters?store_id=1', headers=headers)
-        sleep(0.01)
+        sleep(0.05)
         while True:
             resp = filters_updater_client.get(
                 '/products_new/update_filters?store_id=1&hash=6342e10bd7dca3240c698aa79c98362e',
@@ -1440,7 +1440,7 @@ class TestPlacementsGetRecomendationsFilters(object):
                 break
 
         filters_updater_client.post('/engines/4/export_objects?import_data=true', headers=headers)
-        sleep(0.01)
+        sleep(0.05)
         while True:
             resp = filters_updater_client.get(
                 '/engines/1/export_objects?hash=6342e10bd7dca3240c698aa79c98362e',
@@ -1480,7 +1480,7 @@ class TestPlacementsGetRecomendationsFilters(object):
         client.post('/products_new/?store_id=1', headers=headers, body=json.dumps(products))
 
         filters_updater_client.post('/products_new/update_filters?store_id=1', headers=headers)
-        sleep(0.01)
+        sleep(0.05)
         while True:
             resp = filters_updater_client.get(
                 '/products_new/update_filters?store_id=1&hash=6342e10bd7dca3240c698aa79c98362e',
@@ -1489,7 +1489,7 @@ class TestPlacementsGetRecomendationsFilters(object):
                 break
 
         filters_updater_client.post('/engines/4/export_objects?import_data=true', headers=headers)
-        sleep(0.01)
+        sleep(0.05)
         while True:
             resp = filters_updater_client.get(
                 '/engines/1/export_objects?hash=6342e10bd7dca3240c698aa79c98362e',
@@ -1527,7 +1527,7 @@ class TestPlacementsGetRecomendationsFilters(object):
         client.post('/products_new/?store_id=1', headers=headers, body=json.dumps(products))
 
         filters_updater_client.post('/products_new/update_filters?store_id=1', headers=headers)
-        sleep(0.01)
+        sleep(0.05)
         while True:
             resp = filters_updater_client.get(
                 '/products_new/update_filters?store_id=1&hash=6342e10bd7dca3240c698aa79c98362e',
@@ -1536,7 +1536,7 @@ class TestPlacementsGetRecomendationsFilters(object):
                 break
 
         filters_updater_client.post('/engines/4/export_objects?import_data=true', headers=headers)
-        sleep(0.01)
+        sleep(0.05)
         while True:
             resp = filters_updater_client.get(
                 '/engines/1/export_objects?hash=6342e10bd7dca3240c698aa79c98362e',
@@ -1576,7 +1576,7 @@ class TestPlacementsGetRecomendationsFilters(object):
         client.post('/products_new/?store_id=1', headers=headers, body=json.dumps(products))
 
         filters_updater_client.post('/products_new/update_filters?store_id=1', headers=headers)
-        sleep(0.01)
+        sleep(0.05)
         while True:
             resp = filters_updater_client.get(
                 '/products_new/update_filters?store_id=1&hash=6342e10bd7dca3240c698aa79c98362e',
@@ -1585,7 +1585,7 @@ class TestPlacementsGetRecomendationsFilters(object):
                 break
 
         filters_updater_client.post('/engines/4/export_objects?import_data=true', headers=headers)
-        sleep(0.01)
+        sleep(0.05)
         while True:
             resp = filters_updater_client.get(
                 '/engines/1/export_objects?hash=6342e10bd7dca3240c698aa79c98362e',
@@ -1623,7 +1623,7 @@ class TestPlacementsGetRecomendationsFilters(object):
         client.post('/products_new/?store_id=1', headers=headers, body=json.dumps(products))
 
         filters_updater_client.post('/products_new/update_filters?store_id=1', headers=headers)
-        sleep(0.01)
+        sleep(0.05)
         while True:
             resp = filters_updater_client.get(
                 '/products_new/update_filters?store_id=1&hash=6342e10bd7dca3240c698aa79c98362e',
@@ -1632,7 +1632,7 @@ class TestPlacementsGetRecomendationsFilters(object):
                 break
 
         filters_updater_client.post('/engines/4/export_objects?import_data=true', headers=headers)
-        sleep(0.01)
+        sleep(0.05)
         while True:
             resp = filters_updater_client.get(
                 '/engines/1/export_objects?hash=6342e10bd7dca3240c698aa79c98362e',
@@ -1671,7 +1671,7 @@ class TestPlacementsGetRecomendationsFilters(object):
         client.post('/products_new/?store_id=1', headers=headers, body=json.dumps(products))
 
         filters_updater_client.post('/products_new/update_filters?store_id=1', headers=headers)
-        sleep(0.01)
+        sleep(0.05)
         while True:
             resp = filters_updater_client.get(
                 '/products_new/update_filters?store_id=1&hash=6342e10bd7dca3240c698aa79c98362e',
@@ -1680,7 +1680,7 @@ class TestPlacementsGetRecomendationsFilters(object):
                 break
 
         filters_updater_client.post('/engines/4/export_objects?import_data=true', headers=headers)
-        sleep(0.01)
+        sleep(0.05)
         while True:
             resp = filters_updater_client.get(
                 '/engines/1/export_objects?hash=6342e10bd7dca3240c698aa79c98362e',
@@ -1718,7 +1718,7 @@ class TestPlacementsGetRecomendationsFilters(object):
         client.post('/products_new/?store_id=1', headers=headers, body=json.dumps(products))
 
         filters_updater_client.post('/products_new/update_filters?store_id=1', headers=headers)
-        sleep(0.01)
+        sleep(0.05)
         while True:
             resp = filters_updater_client.get(
                 '/products_new/update_filters?store_id=1&hash=6342e10bd7dca3240c698aa79c98362e',
@@ -1727,7 +1727,7 @@ class TestPlacementsGetRecomendationsFilters(object):
                 break
 
         filters_updater_client.post('/engines/4/export_objects?import_data=true', headers=headers)
-        sleep(0.01)
+        sleep(0.05)
         while True:
             resp = filters_updater_client.get(
                 '/engines/1/export_objects?hash=6342e10bd7dca3240c698aa79c98362e',
@@ -1766,7 +1766,7 @@ class TestPlacementsGetRecomendationsFilters(object):
         client.post('/products_new/?store_id=1', headers=headers, body=json.dumps(products))
 
         filters_updater_client.post('/products_new/update_filters?store_id=1', headers=headers)
-        sleep(0.01)
+        sleep(0.05)
         while True:
             resp = filters_updater_client.get(
                 '/products_new/update_filters?store_id=1&hash=6342e10bd7dca3240c698aa79c98362e',
@@ -1775,7 +1775,7 @@ class TestPlacementsGetRecomendationsFilters(object):
                 break
 
         filters_updater_client.post('/engines/4/export_objects?import_data=true', headers=headers)
-        sleep(0.01)
+        sleep(0.05)
         while True:
             resp = filters_updater_client.get(
                 '/engines/1/export_objects?hash=6342e10bd7dca3240c698aa79c98362e',
@@ -1813,7 +1813,7 @@ class TestPlacementsGetRecomendationsFilters(object):
         client.post('/products_new/?store_id=1', headers=headers, body=json.dumps(products))
 
         filters_updater_client.post('/products_new/update_filters?store_id=1', headers=headers)
-        sleep(0.01)
+        sleep(0.05)
         while True:
             resp = filters_updater_client.get(
                 '/products_new/update_filters?store_id=1&hash=6342e10bd7dca3240c698aa79c98362e',
@@ -1822,7 +1822,7 @@ class TestPlacementsGetRecomendationsFilters(object):
                 break
 
         filters_updater_client.post('/engines/4/export_objects?import_data=true', headers=headers)
-        sleep(0.01)
+        sleep(0.05)
         while True:
             resp = filters_updater_client.get(
                 '/engines/1/export_objects?hash=6342e10bd7dca3240c698aa79c98362e',
@@ -1862,7 +1862,7 @@ class TestPlacementsGetRecomendationsFilters(object):
         client.post('/products_new/?store_id=1', headers=headers, body=json.dumps(products))
 
         filters_updater_client.post('/products_new/update_filters?store_id=1', headers=headers)
-        sleep(0.01)
+        sleep(0.05)
         while True:
             resp = filters_updater_client.get(
                 '/products_new/update_filters?store_id=1&hash=6342e10bd7dca3240c698aa79c98362e',
@@ -1871,7 +1871,7 @@ class TestPlacementsGetRecomendationsFilters(object):
                 break
 
         filters_updater_client.post('/engines/4/export_objects?import_data=true', headers=headers)
-        sleep(0.01)
+        sleep(0.05)
         while True:
             resp = filters_updater_client.get(
                 '/engines/1/export_objects?hash=6342e10bd7dca3240c698aa79c98362e',
@@ -1916,7 +1916,7 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
         client.post('/products_new/?store_id=1', headers=headers, body=json.dumps(products))
 
         filters_updater_client.post('/products_new/update_filters?store_id=1', headers=headers)
-        sleep(0.01)
+        sleep(0.05)
         while True:
             resp = filters_updater_client.get(
                 '/products_new/update_filters?store_id=1&hash=6342e10bd7dca3240c698aa79c98362e',
@@ -1925,7 +1925,7 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
                 break
 
         filters_updater_client.post('/engines/4/export_objects?import_data=true', headers=headers)
-        sleep(0.01)
+        sleep(0.05)
         while True:
             resp = filters_updater_client.get(
                 '/engines/1/export_objects?hash=6342e10bd7dca3240c698aa79c98362e',
@@ -1964,7 +1964,7 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
         client.post('/products_new/?store_id=1', headers=headers, body=json.dumps(products))
 
         filters_updater_client.post('/products_new/update_filters?store_id=1', headers=headers)
-        sleep(0.01)
+        sleep(0.05)
         while True:
             resp = filters_updater_client.get(
                 '/products_new/update_filters?store_id=1&hash=6342e10bd7dca3240c698aa79c98362e',
@@ -1973,7 +1973,7 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
                 break
 
         filters_updater_client.post('/engines/4/export_objects?import_data=true', headers=headers)
-        sleep(0.01)
+        sleep(0.05)
         while True:
             resp = filters_updater_client.get(
                 '/engines/1/export_objects?hash=6342e10bd7dca3240c698aa79c98362e',
@@ -2013,7 +2013,7 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
         client.post('/products_new/?store_id=1', headers=headers, body=json.dumps(products))
 
         filters_updater_client.post('/products_new/update_filters?store_id=1', headers=headers)
-        sleep(0.01)
+        sleep(0.05)
         while True:
             resp = filters_updater_client.get(
                 '/products_new/update_filters?store_id=1&hash=6342e10bd7dca3240c698aa79c98362e',
@@ -2022,7 +2022,7 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
                 break
 
         filters_updater_client.post('/engines/4/export_objects?import_data=true', headers=headers)
-        sleep(0.01)
+        sleep(0.05)
         while True:
             resp = filters_updater_client.get(
                 '/engines/1/export_objects?hash=6342e10bd7dca3240c698aa79c98362e',
@@ -2061,7 +2061,7 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
         client.post('/products_new/?store_id=1', headers=headers, body=json.dumps(products))
 
         filters_updater_client.post('/products_new/update_filters?store_id=1', headers=headers)
-        sleep(0.01)
+        sleep(0.05)
         while True:
             resp = filters_updater_client.get(
                 '/products_new/update_filters?store_id=1&hash=6342e10bd7dca3240c698aa79c98362e',
@@ -2070,7 +2070,7 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
                 break
 
         filters_updater_client.post('/engines/4/export_objects?import_data=true', headers=headers)
-        sleep(0.01)
+        sleep(0.05)
         while True:
             resp = filters_updater_client.get(
                 '/engines/1/export_objects?hash=6342e10bd7dca3240c698aa79c98362e',
@@ -2110,7 +2110,7 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
         client.post('/products_new/?store_id=1', headers=headers, body=json.dumps(products))
 
         filters_updater_client.post('/products_new/update_filters?store_id=1', headers=headers)
-        sleep(0.01)
+        sleep(0.05)
         while True:
             resp = filters_updater_client.get(
                 '/products_new/update_filters?store_id=1&hash=6342e10bd7dca3240c698aa79c98362e',
@@ -2119,7 +2119,7 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
                 break
 
         filters_updater_client.post('/engines/4/export_objects?import_data=true', headers=headers)
-        sleep(0.01)
+        sleep(0.05)
         while True:
             resp = filters_updater_client.get(
                 '/engines/1/export_objects?hash=6342e10bd7dca3240c698aa79c98362e',
@@ -2160,7 +2160,7 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
         client.post('/products_new/?store_id=1', headers=headers, body=json.dumps(products))
 
         filters_updater_client.post('/products_new/update_filters?store_id=1', headers=headers)
-        sleep(0.01)
+        sleep(0.05)
         while True:
             resp = filters_updater_client.get(
                 '/products_new/update_filters?store_id=1&hash=6342e10bd7dca3240c698aa79c98362e',
@@ -2169,7 +2169,7 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
                 break
 
         filters_updater_client.post('/engines/4/export_objects?import_data=true', headers=headers)
-        sleep(0.01)
+        sleep(0.05)
         while True:
             resp = filters_updater_client.get(
                 '/engines/1/export_objects?hash=6342e10bd7dca3240c698aa79c98362e',
@@ -2209,7 +2209,7 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
         client.post('/products_new/?store_id=1', headers=headers, body=json.dumps(products))
 
         filters_updater_client.post('/products_new/update_filters?store_id=1', headers=headers)
-        sleep(0.01)
+        sleep(0.05)
         while True:
             resp = filters_updater_client.get(
                 '/products_new/update_filters?store_id=1&hash=6342e10bd7dca3240c698aa79c98362e',
@@ -2218,7 +2218,7 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
                 break
 
         filters_updater_client.post('/engines/4/export_objects?import_data=true', headers=headers)
-        sleep(0.01)
+        sleep(0.05)
         while True:
             resp = filters_updater_client.get(
                 '/engines/1/export_objects?hash=6342e10bd7dca3240c698aa79c98362e',
@@ -2257,7 +2257,7 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
         client.post('/products_new/?store_id=1', headers=headers, body=json.dumps(products))
 
         filters_updater_client.post('/products_new/update_filters?store_id=1', headers=headers)
-        sleep(0.01)
+        sleep(0.05)
         while True:
             resp = filters_updater_client.get(
                 '/products_new/update_filters?store_id=1&hash=6342e10bd7dca3240c698aa79c98362e',
@@ -2266,7 +2266,7 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
                 break
 
         filters_updater_client.post('/engines/4/export_objects?import_data=true', headers=headers)
-        sleep(0.01)
+        sleep(0.05)
         while True:
             resp = filters_updater_client.get(
                 '/engines/1/export_objects?hash=6342e10bd7dca3240c698aa79c98362e',
@@ -2305,7 +2305,7 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
         client.post('/products_new/?store_id=1', headers=headers, body=json.dumps(products))
 
         filters_updater_client.post('/products_new/update_filters?store_id=1', headers=headers)
-        sleep(0.01)
+        sleep(0.05)
         while True:
             resp = filters_updater_client.get(
                 '/products_new/update_filters?store_id=1&hash=6342e10bd7dca3240c698aa79c98362e',
@@ -2314,7 +2314,7 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
                 break
 
         filters_updater_client.post('/engines/4/export_objects?import_data=true', headers=headers)
-        sleep(0.01)
+        sleep(0.05)
         while True:
             resp = filters_updater_client.get(
                 '/engines/1/export_objects?hash=6342e10bd7dca3240c698aa79c98362e',
@@ -2354,7 +2354,7 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
         client.post('/products_new/?store_id=1', headers=headers, body=json.dumps(products))
 
         filters_updater_client.post('/products_new/update_filters?store_id=1', headers=headers)
-        sleep(0.01)
+        sleep(0.05)
         while True:
             resp = filters_updater_client.get(
                 '/products_new/update_filters?store_id=1&hash=6342e10bd7dca3240c698aa79c98362e',
@@ -2363,7 +2363,7 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
                 break
 
         filters_updater_client.post('/engines/4/export_objects?import_data=true', headers=headers)
-        sleep(0.01)
+        sleep(0.05)
         while True:
             resp = filters_updater_client.get(
                 '/engines/1/export_objects?hash=6342e10bd7dca3240c698aa79c98362e',
@@ -2401,7 +2401,7 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
         client.post('/products_new/?store_id=1', headers=headers, body=json.dumps(products))
 
         filters_updater_client.post('/products_new/update_filters?store_id=1', headers=headers)
-        sleep(0.01)
+        sleep(0.05)
         while True:
             resp = filters_updater_client.get(
                 '/products_new/update_filters?store_id=1&hash=6342e10bd7dca3240c698aa79c98362e',
@@ -2410,7 +2410,7 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
                 break
 
         filters_updater_client.post('/engines/4/export_objects?import_data=true', headers=headers)
-        sleep(0.01)
+        sleep(0.05)
         while True:
             resp = filters_updater_client.get(
                 '/engines/1/export_objects?hash=6342e10bd7dca3240c698aa79c98362e',
@@ -2450,7 +2450,7 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
         client.post('/products_new/?store_id=1', headers=headers, body=json.dumps(products))
 
         filters_updater_client.post('/products_new/update_filters?store_id=1', headers=headers)
-        sleep(0.01)
+        sleep(0.05)
         while True:
             resp = filters_updater_client.get(
                 '/products_new/update_filters?store_id=1&hash=6342e10bd7dca3240c698aa79c98362e',
@@ -2459,7 +2459,7 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
                 break
 
         filters_updater_client.post('/engines/4/export_objects?import_data=true', headers=headers)
-        sleep(0.01)
+        sleep(0.05)
         while True:
             resp = filters_updater_client.get(
                 '/engines/1/export_objects?hash=6342e10bd7dca3240c698aa79c98362e',
@@ -2500,7 +2500,7 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
         client.post('/products_new/?store_id=1', headers=headers, body=json.dumps(products))
 
         filters_updater_client.post('/products_new/update_filters?store_id=1', headers=headers)
-        sleep(0.01)
+        sleep(0.05)
         while True:
             resp = filters_updater_client.get(
                 '/products_new/update_filters?store_id=1&hash=6342e10bd7dca3240c698aa79c98362e',
@@ -2509,7 +2509,7 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
                 break
 
         filters_updater_client.post('/engines/4/export_objects?import_data=true', headers=headers)
-        sleep(0.01)
+        sleep(0.05)
         while True:
             resp = filters_updater_client.get(
                 '/engines/1/export_objects?hash=6342e10bd7dca3240c698aa79c98362e',
