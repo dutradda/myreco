@@ -640,7 +640,7 @@ class TestEnginesModelsObjectsExporter(object):
         products = [{'sku': 'test'}]
         objects_exporter_client.post('/products?store_id=1',
                                     body=json.dumps(products), headers=headers)
-        readers_builder.return_value = [[{'value': 1, 'sku': 'test'}]]
+        readers_builder.return_value = [[json.dumps({'value': 1, 'item_key': 'test'})]]
 
         resp = objects_exporter_client.post('/engines/1/export_objects', headers=headers)
         assert json.loads(resp.body) == {'hash': '6342e10bd7dca3240c698aa79c98362e'}
@@ -663,7 +663,7 @@ class TestEnginesModelsObjectsExporter(object):
         objects_exporter_client.post('/products?store_id=1',
                                     body=json.dumps(products), headers=headers)
 
-        readers_builder.return_value = [[{'value': 1, 'sku': 'test'}]]
+        readers_builder.return_value = [[json.dumps({'value': 1, 'item_key': 'test'})]]
         objects_exporter_client.post('/products/update_filters?store_id=1', headers=headers)
 
         sleep(0.01)
@@ -779,7 +779,7 @@ class TestEnginesModelsObjectsExporterWithImport(object):
         objects_exporter_client.post('/products?store_id=1',
                                     body=json.dumps(products), headers=headers)
 
-        readers_builder.return_value = [[{'value': 1, 'sku': 'test'}]]
+        readers_builder.return_value = [[json.dumps({'value': 1, 'item_key': 'test'})]]
         objects_exporter_client.post('/products/update_filters?store_id=1', headers=headers)
         objects_exporter_client.post('/engines/1/export_objects?import_data=true', headers=headers)
 

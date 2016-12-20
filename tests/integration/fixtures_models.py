@@ -39,6 +39,7 @@ from os import makedirs
 from csv import DictWriter
 import os.path
 import gzip
+import json
 
 
 table_args = {'mysql_engine':'innodb'}
@@ -86,16 +87,17 @@ class TestDataImporter(AbstractDataImporter):
             if not os.path.isdir(data_path):
                 makedirs(data_path)
 
+            data = [{'item_key': '2|test2', 'value': 1},
+                    {'item_key': '1|test1', 'value': 3},
+                    {'item_key': '3|test3', 'value': 2}]
+            data = map(json.dumps, data)
+            data = '\n'.join(data)
+
             filename_prefix = 'top_seller'
-            data = [{'item_id': 2, 'sku': 'test2', 'value': 1},
-                    {'item_id': 1, 'sku': 'test1', 'value': 3},
-                    {'item_id': 3, 'sku': 'test3', 'value': 2}]
             file_ = gzip.open(os.path.join(data_path, filename_prefix) + '-000000001.gz', 'wt')
-            writer = DictWriter(file_, ['sku', 'value', 'item_id'], delimiter='#')
-            writer.writeheader()
-            writer.writerows(data)
+            file_.write(data)
             file_.close()
-            return {'lines_count': len(data)}
+            return {'lines_count': 3}
 
 
 class TestEngine(EngineCore):

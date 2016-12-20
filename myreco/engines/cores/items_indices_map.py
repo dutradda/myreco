@@ -37,6 +37,11 @@ class ItemsIndicesDict(dict):
         else:
             return 0
 
+    def get(self, key, default=None):
+        if isinstance(key, str):
+            key = key.encode()
+        return dict.get(self, key, default)
+
 
 class ItemsIndicesMap(LoggerMixin):
 

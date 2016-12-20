@@ -28,6 +28,7 @@ from concurrent.futures import ThreadPoolExecutor
 import numpy as np
 import os.path
 import zlib
+import json
 
 
 class TopSellerEngineCore(EngineCore):
@@ -82,11 +83,10 @@ class TopSellerRedisObject(RedisObjectBase):
 
     def _set_indices_values_map(self, indices_values_map, items_indices_map_dict, reader):
         for line in reader:
-            value = line.pop('value')
-            item_key = self._engine_core.items_model.get_instance_key(line)
-            index = items_indices_map_dict.get(item_key)
+            line = json.loads(line)
+            index = items_indices_map_dict.get(line['item_key'])
             if index is not None:
-                indices_values_map[int(index)] = int(value)
+                indices_values_map[int(index)] = int(line['value'])
 
     def get_numpy_array(self, session):
         rec_vector = session.redis_bind.get(self._redis_key)

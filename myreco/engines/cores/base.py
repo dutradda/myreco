@@ -32,7 +32,6 @@ from bottleneck import argpartition
 from glob import glob
 import msgpack
 import os.path
-import csv
 import gzip
 
 
@@ -118,12 +117,12 @@ class EngineCore(LoggerMixin, metaclass=EngineCoreMeta):
     def export_objects(self, session):
         pass
 
-    def _build_csv_readers(self, pattern, delimiter='#'):
+    def _build_csv_readers(self, pattern):
         path = build_engine_data_path(self.engine)
         readers = []
         for filename in glob(os.path.join(path, '{}*.gz'.format(pattern))):
-            csv_file = gzip.open(filename, 'rt')
-            readers.append(csv.DictReader(csv_file, delimiter=delimiter))
+            file_ = gzip.open(filename, 'rt')
+            readers.append(file_)
         return readers
 
     def _get_items_indices_map_dict(self, items_indices_map, session):
