@@ -32,10 +32,12 @@ from myreco.items_types.items_data_importer_model import (
 class ItemsCollectionsModelFiltersUpdaterBaseMeta(ItemsCollectionsModelDataImporterBaseMeta):
 
     def _run_job(cls, req, resp):
-        job_session = req.context['job_session']
         query_string = req.context['parameters']['query_string']
         store_id = query_string['store_id']
         items_model = cls._get_model(query_string)
+        cls._logger.info("Started update filters for '{}'".format(items_model.__key__))
+
+        job_session = req.context['job_session']
         items_indices_map = ItemsIndicesMap(items_model)
         items_indices_map_ret = items_indices_map.update(job_session)
 
@@ -52,6 +54,7 @@ class ItemsCollectionsModelFiltersUpdaterBaseMeta(ItemsCollectionsModelDataImpor
             filter_ = filters_factory.make(items_model, slot_var, schema, slot_var['skip_values'])
             filters_ret[filter_.name] = filter_.update(job_session, items)
 
+        cls._logger.info("Finished update filters for '{}'".format(items_model.__key__))
         return {'items_indices_map': items_indices_map_ret, 'filters': filters_ret}
 
     def _get_enabled_filters(cls, session, store_id):

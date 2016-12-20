@@ -61,6 +61,8 @@ class ItemsCollectionsModelDataImporterBaseMeta(ItemsCollectionsModelBaseMeta):
             cls._update_items_from_zipped_file, stream, items_model, session)
 
     def _put_file_on_s3(cls, stream, items_model, session, store_id):
+        cls._logger.info("Started put file on S3 for '{}'".format(items_model.__key__))
+
         store = cls.__all_models__['stores'].get(session, [{'id': store_id}])[0]
         s3_bucket = store['configuration']['aws']['s3']['bucket']
         access_key_id = store['configuration']['aws'].get('access_key_id')
@@ -72,6 +74,8 @@ class ItemsCollectionsModelDataImporterBaseMeta(ItemsCollectionsModelBaseMeta):
             aws_access_key_id=access_key_id,
             aws_secret_access_key=secret_access_key
         ).Bucket(s3_bucket).put_object(Body=stream, Key=s3_key)
+
+        cls._logger.info("Finished put file on S3 for '{}'".format(items_model.__key__))
 
     def _update_items_from_zipped_file(cls, stream, items_model, session):
         try:
@@ -93,6 +97,8 @@ class ItemsCollectionsModelDataImporterBaseMeta(ItemsCollectionsModelBaseMeta):
             cls._logger.exception('ERROR importing data file')
 
     def _update_items_from_file(cls, stream, items_model, session):
+        cls._logger.info("Started update items from file for '{}'".format(items_model.__key__))
+
         warning_message = "Invalid line for model '{}': ".format(items_model.__key__) + '{}'
         validator = Draft4Validator(items_model.__item_type__['schema'])
         lines = []
@@ -125,6 +131,8 @@ class ItemsCollectionsModelDataImporterBaseMeta(ItemsCollectionsModelBaseMeta):
             session.redis_bind.hdel(items_model.__key__, *old_keys)
 
         cls._set_stock_filter(session, items_model)
+
+        cls._logger.info("Finished update items from file for '{}'".format(items_model.__key__))
 
 
 class ItemsTypesModelDataImporterBase(ItemsTypesModelBase):

@@ -22,6 +22,7 @@
 
 
 from myreco.engines.cores.base import EngineCore, EngineError, RedisObjectBase
+from myreco.engines.cores.utils import build_engine_key_prefix
 from falconswagger.utils import get_model_schema
 from falconswagger.json_builder import JsonBuilder
 from concurrent.futures import ThreadPoolExecutor
@@ -35,11 +36,17 @@ class TopSellerEngineCore(EngineCore):
     __configuration_schema__ = get_model_schema(__file__)
 
     def export_objects(self, session, items_indices_map):
+        key = build_engine_key_prefix(self.engine)
+        self._logger.info("Started export objects for '{}'".format(key))
+
         readers = self._build_csv_readers('top_seller')
         items_indices_map_dict = self._get_items_indices_map_dict(items_indices_map, session)
 
         top_seller = TopSellerRedisObject(self)
-        return top_seller.update(readers, session, items_indices_map_dict)
+        ret = top_seller.update(readers, session, items_indices_map_dict)
+
+        self._logger.info("Finished export objects for '{}'".format(key))
+        return ret
 
     def _build_rec_vector(self, session, **variables):
         return TopSellerRedisObject(self).get_numpy_array(session)

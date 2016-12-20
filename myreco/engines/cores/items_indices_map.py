@@ -61,7 +61,6 @@ class ItemsIndicesMap(LoggerMixin):
         return {int(k): v.decode() for k, v in map_.items()}
 
     def update(self, session):
-        self._logger.info('Updating...')
         items_indices_map = session.redis_bind.hgetall(self.key)
         indices_items_map = session.redis_bind.hgetall(self.indices_items_key)
 
