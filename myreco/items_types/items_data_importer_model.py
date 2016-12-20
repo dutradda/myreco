@@ -41,6 +41,7 @@ class ItemsCollectionsModelDataImporterBaseMeta(ItemsCollectionsModelBaseMeta):
             raise ModelBaseError("Invalid content type '{}'".format(req.content_type))
 
         store_id = req.context['parameters']['query_string']['store_id']
+        upload_file = req.context['parameters']['query_string'].get('upload_file', True)
         items_model = cls._get_model(req.context['parameters']['query_string'])
 
         session = req.context['session']
@@ -52,7 +53,8 @@ class ItemsCollectionsModelDataImporterBaseMeta(ItemsCollectionsModelBaseMeta):
         stream.write(req.stream.read())
         stream.seek(0)
 
-        cls._put_file_on_s3(stream, items_model, session, store_id)
+        if upload_file:
+            cls._put_file_on_s3(stream, items_model, session, store_id)
 
         stream.seek(0)
         ThreadPoolExecutor(1).submit(
@@ -142,6 +144,11 @@ class ItemsTypesModelDataImporterBase(ItemsTypesModelBase):
                     'in': 'query',
                     'required': True,
                     'type': 'integer'
+                },{
+                    'name': 'upload_file',
+                    'in': 'query',
+                    'default': True,
+                    'type': 'boolean'
                 }],
                 'post': {
                     'consumes': ['application/zip'],
