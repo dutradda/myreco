@@ -108,8 +108,6 @@ class PlacementsModelBase(AbstractConcreteBase):
             if distribute_recos:
                 recos = cls._distribute_recos(recos)
 
-            recos = cls._unique_recos(recos)
-
         placement = {'name': placement['name'], 'small_hash': placement['small_hash']}
         placement[recos_key] = recos
 
@@ -195,7 +193,15 @@ class PlacementsModelBase(AbstractConcreteBase):
 
                 fallback_recos = cls._get_recos_by_slot(
                     fallback, input_variables, session, show_details, max_recos)
+                all_recos = cls._get_all_recos(slot_recos)
+                fallback_recos = cls._unique_recos(fallback_recos, all_recos)
                 slot_recos['fallbacks'].append(fallback_recos)
+
+    @classmethod
+    def _get_all_recos(cls, slot_recos):
+        all_recos = list(slot_recos['main'])
+        [all_recos.extend(fallback_recos) for fallback_recos in slot_recos['fallbacks']]
+        return all_recos
 
     @classmethod
     def _get_recos(cls, recos, slot_recos, slot, distribute_recos):
@@ -236,9 +242,9 @@ class PlacementsModelBase(AbstractConcreteBase):
         return [i[0] for i in sorted_items]
 
     @classmethod
-    def _unique_recos(cls, recos):
+    def _unique_recos(cls, recos, all_recos):
         unique = list()
-        [unique.append(reco) for reco in recos if not unique.count(reco)]
+        [unique.append(reco) for reco in recos if not all_recos.count(reco)]
         return unique
 
     @classmethod
