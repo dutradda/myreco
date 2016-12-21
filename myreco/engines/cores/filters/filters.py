@@ -107,16 +107,16 @@ class MultipleFilterBy(FilterBaseBy):
     def filter(self, session, rec_vector, ids):
         ids = self._list_cast(ids)
 
-        filters = session.redis_bind.hmget(self.key, ids)
+        if ids:
+            filters = session.redis_bind.hmget(self.key, ids)
+            filters = [self._unpack_filter(filter_, rec_vector.size)
+                        for filter_ in filters if filter_ is not None]
+            final_filter = np.ones(rec_vector.size, dtype=np.bool)
 
-        filters = [self._unpack_filter(filter_, rec_vector.size)
-                    for filter_ in filters if filter_ is not None]
-        final_filter = np.ones(rec_vector.size, dtype=np.bool)
+            for filter_ in filters:
+                final_filter *= filter_
 
-        for filter_ in filters:
-            final_filter *= filter_
-
-        self._filter(final_filter, rec_vector)
+            self._filter(final_filter, rec_vector)
 
     def update(self, session, items):
         self._log_build()
@@ -234,5 +234,7 @@ class IndexFilterByPropertyOf(SimpleFilterOf, IndexFilterOf):
         if filter_ids:
             filters = session.redis_bind.hmget(self.key, filter_ids)
             filters = [self._unpack_filter(filter_) for filter_ in filters if filter_ is not None]
-            indices = np.concatenate(filters)
-            self._filter_by_indices(rec_vector, indices)
+
+            if filters:
+                indices = np.concatenate(filters)
+                self._filter_by_indices(rec_vector, indices)
