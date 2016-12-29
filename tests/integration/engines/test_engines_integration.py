@@ -1,6 +1,6 @@
 # MIT License
 
-# Copyright (c) 2016 Diogo Dutra
+# Copyright (c) 2016 Diogo Dutra <dutradda@gmail.com>
 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -21,42 +21,34 @@
 # SOFTWARE.
 
 
-from tests.integration.fixtures_models import (
-    SQLAlchemyRedisModelBase, StoresModel, UsersModel,
-    ItemsTypesModel, EnginesModel, EnginesCoresModel, DataImporter)
-from myreco.factory import ModelsFactory
-from myreco.engines.cores.items_indices_map import ItemsIndicesMap
-from pytest_falcon.plugin import Client
-from falconswagger.swagger_api import SwaggerAPI
-from base64 import b64encode
 from unittest import mock
 from time import sleep
 from datetime import datetime
+from tests.integration.fixtures import DataImporterTest, EngineCoreTest
+from swaggerit.models._base import _all_models
+import asyncio
+import tempfile
 import pytest
-import json
+import ujson
 
 
 @pytest.fixture
-def model_base():
-    return SQLAlchemyRedisModelBase
-
-
-@pytest.fixture
-def app(session, redis):
+def init_db(models, session, api):
     user = {
         'name': 'test',
         'email': 'test',
         'password': 'test',
         'admin': True
     }
-    UsersModel.insert(session, user)
+    session.loop.run_until_complete(models['users'].insert(session, user))
 
+    tmp = tempfile.TemporaryDirectory()
     store = {
         'name': 'test',
         'country': 'test',
-        'configuration': {'data_path': '/test'}
+        'configuration': {'data_path': tmp.name}
     }
-    StoresModel.insert(session, store)
+    session.loop.run_until_complete(models['stores'].insert(session, store))
 
     core = {
         'name': 'top_seller',
@@ -64,10 +56,14 @@ def app(session, redis):
             'core_module': {
                 'path': 'myreco.engines.cores.top_seller.core',
                 'class_name': 'TopSellerEngineCore'
+            },
+            'data_importer_module': {
+                'path': 'tests.integration.fixtures',
+                'class_name': 'DataImporterTest'
             }
         }
     }
-    EnginesCoresModel.insert(session, core)
+    session.loop.run_until_complete(models['engines_cores'].insert(session, core))
 
     item_type = {
         'name': 'products',
@@ -78,376 +74,7 @@ def app(session, redis):
         },
         'stores': [{'id': 1}]
     }
-    ItemsTypesModel.insert(session, item_type)
-
-    return SwaggerAPI([EnginesModel, EnginesCoresModel], session.bind, redis,
-                      title='Myreco API')
-
-
-@pytest.fixture
-def headers():
-    return {
-        'Authorization': b64encode('test:test'.encode()).decode()
-    }
-
-
-
-class TestEnginesModelPost(object):
-
-    def test_post_without_body(self, client, headers):
-        resp = client.post('/engines/', headers=headers)
-        assert resp.status_code == 400
-        assert json.loads(resp.body) == {'error': 'Request body is missing'}
-
-    def test_post_with_invalid_body(self, client, headers):
-        resp = client.post('/engines/', headers=headers, body='[{}]')
-        assert resp.status_code == 400
-        assert json.loads(resp.body) ==  {
-            'error': {
-                'input': {},
-                'message': "'configuration' is a required property",
-                'schema': {
-                    'type': 'object',
-                    'additionalProperties': False,
-                    'required': ['configuration', 'store_id', 'core_id', 'item_type_id'],
-                    'properties': {
-                        'name': {'type': 'string'},
-                        'configuration': {'$ref': 'http://json-schema.org/draft-04/schema#'},
-                        'store_id': {'type': 'integer'},
-                        'core_id': {'type': 'integer'},
-                        'item_type_id': {'type': 'integer'}
-                    }
-                }
-            }
-        }
-
-    def test_post_with_invalid_grant(self, client):
-        body = [{
-            'name': 'Seven Days Top Seller',
-            'configuration': {"days_interval": 7, 'data_importer_path': 'test.test'},
-            'store_id': 1,
-            'core_id': 1,
-            'item_type_id': 1
-        }]
-        resp = client.post('/engines/', headers={'Authorization': 'invalid'},body=json.dumps(body))
-        assert resp.status_code == 401
-        assert json.loads(resp.body) ==  {'error': 'Invalid authorization'}
-
-    def test_post(self, client, headers):
-        body = [{
-            'name': 'Seven Days Top Seller',
-            'configuration': {"days_interval": 7, 'data_importer_path': 'test.test'},
-            'store_id': 1,
-            'core_id': 1,
-            'item_type_id': 1
-        }]
-        resp = client.post('/engines/', headers=headers, body=json.dumps(body))
-        body[0]['id'] = 1
-        body[0]['variables'] = []
-        body[0]['store'] = \
-            {'id': 1, 'name': 'test', 'country': 'test', 'configuration': {'data_path': '/test'}}
-        body[0]['core'] = {
-            'id': 1,
-            'name': 'top_seller',
-            'configuration': {
-                'core_module': {
-                    'path': 'myreco.engines.cores.top_seller.core',
-                    'class_name': 'TopSellerEngineCore'
-                }
-            }
-        }
-        body[0]['item_type'] = {
-            'id': 1,
-            'stores': [{
-                'configuration': {'data_path': '/test'},
-                'country': 'test',
-                'id': 1,
-                'name': 'test'
-            }],
-            'name': 'products',
-            'schema': {
-                'type': 'object',
-                'id_names': ['sku'],
-                'properties': {'sku': {'type': 'string'}}
-            },
-            'available_filters': [{'name': 'sku', 'schema': {'type': 'string'}}]
-        }
-
-        assert resp.status_code == 201
-        assert json.loads(resp.body) ==  body
-
-
-class TestEnginesModelGet(object):
-
-    def test_get_not_found(self, client, headers):
-        resp = client.get('/engines/?store_id=1', headers=headers)
-        assert resp.status_code == 404
-
-    def test_get_invalid_with_body(self, client, headers):
-        resp = client.get('/engines/?store_id=1', headers=headers, body='{}')
-        assert resp.status_code == 400
-        assert json.loads(resp.body) == {'error': 'Request body is not acceptable'}
-
-    def test_get(self, client, headers):
-        body = [{
-            'name': 'Seven Days Top Seller',
-            'configuration': {"days_interval": 7, 'data_importer_path': 'test.test'},
-            'store_id': 1,
-            'core_id': 1,
-            'item_type_id': 1
-        }]
-        client.post('/engines/', headers=headers, body=json.dumps(body))
-        body[0]['id'] = 1
-        body[0]['variables'] = []
-        body[0]['store'] = \
-            {'id': 1, 'name': 'test', 'country': 'test', 'configuration': {'data_path': '/test'}}
-        body[0]['core'] = {
-            'id': 1,
-            'name': 'top_seller',
-            'configuration': {
-                'core_module': {
-                    'path': 'myreco.engines.cores.top_seller.core',
-                    'class_name': 'TopSellerEngineCore'
-                }
-            }
-        }
-        body[0]['item_type'] = {
-            'id': 1,
-            'stores': [{
-                'configuration': {'data_path': '/test'},
-                'country': 'test',
-                'id': 1,
-                'name': 'test'
-            }],
-            'name': 'products',
-            'schema': {
-                'type': 'object',
-                'id_names': ['sku'],
-                'properties': {'sku': {'type': 'string'}}
-            },
-            'available_filters': [{'name': 'sku', 'schema': {'type': 'string'}}]
-        }
-
-        resp = client.get('/engines/?store_id=1', headers=headers)
-        assert resp.status_code == 200
-        assert json.loads(resp.body) ==  body
-
-
-class TestEnginesModelUriTemplatePatch(object):
-
-    def test_patch_without_body(self, client, headers):
-        resp = client.patch('/engines/1/', headers=headers, body='')
-        assert resp.status_code == 400
-        assert json.loads(resp.body) == {'error': 'Request body is missing'}
-
-    def test_patch_with_invalid_body(self, client, headers):
-        resp = client.patch('/engines/1/', headers=headers, body='{}')
-        assert resp.status_code == 400
-        assert json.loads(resp.body) ==  {
-            'error': {
-                'input': {},
-                'message': '{} does not have enough properties',
-                'schema': {
-                    'type': 'object',
-                    'additionalProperties': False,
-                    'minProperties': 1,
-                    'properties': {
-                        'name': {'type': 'string'},
-                        'configuration': {'$ref': 'http://json-schema.org/draft-04/schema#'},
-                        'store_id': {'type': 'integer'},
-                        'core_id': {'type': 'integer'},
-                        'item_type_id': {'type': 'integer'}
-                    }
-                }
-            }
-        }
-
-    def test_patch_with_invalid_configuration(self, client, headers):
-        body = [{
-            'name': 'Seven Days Top Seller',
-            'configuration': {'days_interval': 7},
-            'store_id': 1,
-            'core_id': 1,
-            'item_type_id': 1
-        }]
-        client.post('/engines/', headers=headers, body=json.dumps(body))
-
-        body = {
-            'configuration': {}
-        }
-        resp = client.patch('/engines/1/', headers=headers, body=json.dumps(body))
-        assert resp.status_code == 400
-        assert json.loads(resp.body) ==  {
-            'error': {
-                'input': {},
-                'message': "'days_interval' is a required property",
-                'schema': {
-                    'type': 'object',
-                    'required': ['days_interval'],
-                    'properties': {
-                        'days_interval': {'type': 'integer'}
-                    }
-                }
-            }
-        }
-
-    def test_patch_not_found(self, client, headers):
-        body = {
-            'name': 'test',
-            'store_id': 1
-        }
-        resp = client.patch('/engines/1/', headers=headers, body=json.dumps(body))
-        assert resp.status_code == 404
-
-    def test_patch(self, client, headers):
-        body = [{
-            'name': 'Seven Days Top Seller',
-            'configuration': {"days_interval": 7},
-            'store_id': 1,
-            'core_id': 1,
-            'item_type_id': 1
-        }]
-        obj = json.loads(client.post('/engines/', headers=headers, body=json.dumps(body)).body)[0]
-
-        body = {
-            'name': 'test2'
-        }
-        resp = client.patch('/engines/1/', headers=headers, body=json.dumps(body))
-        obj['name'] = 'test2'
-
-        assert resp.status_code == 200
-        assert json.loads(resp.body) ==  obj
-
-
-class TestEnginesModelUriTemplateDelete(object):
-
-    def test_delete_with_body(self, client, headers):
-        resp = client.delete('/engines/1/', headers=headers, body='{}')
-        assert resp.status_code == 400
-        assert json.loads(resp.body) == {'error': 'Request body is not acceptable'}
-
-    def test_delete(self, client, headers):
-        body = [{
-            'name': 'Seven Days Top Seller',
-            'configuration': {"days_interval": 7},
-            'store_id': 1,
-            'core_id': 1,
-            'item_type_id': 1
-        }]
-        client.post('/engines/', headers=headers, body=json.dumps(body))
-        resp = client.get('/engines/1/', headers=headers)
-        assert resp.status_code == 200
-
-        resp = client.delete('/engines/1/', headers=headers)
-        assert resp.status_code == 204
-
-        resp = client.get('/engines/1/', headers=headers)
-        assert resp.status_code == 404
-
-
-class TestEnginesModelUriTemplateGet(object):
-
-    def test_get_with_body(self, client, headers):
-        resp = client.get('/engines/1/', headers=headers, body='{}')
-        assert resp.status_code == 400
-        assert json.loads(resp.body) == {'error': 'Request body is not acceptable'}
-
-    def test_get_not_found(self, client, headers):
-        resp = client.get('/engines/1/', headers=headers)
-        assert resp.status_code == 404
-
-    def test_get(self, client, headers):
-        body = [{
-            'name': 'Seven Days Top Seller',
-            'configuration': {"days_interval": 7},
-            'store_id': 1,
-            'core_id': 1,
-            'item_type_id': 1
-        }]
-        client.post('/engines/', headers=headers, body=json.dumps(body))
-
-        resp = client.get('/engines/1/', headers=headers)
-        body[0]['id'] = 1
-        body[0]['variables'] = []
-        body[0]['store'] = \
-            {'id': 1, 'name': 'test', 'country': 'test', 'configuration': {'data_path': '/test'}}
-        body[0]['core'] = {
-            'id': 1,
-            'name': 'top_seller',
-            'configuration': {
-                'core_module': {
-                    'path': 'myreco.engines.cores.top_seller.core',
-                    'class_name': 'TopSellerEngineCore'
-                }
-            }
-        }
-        body[0]['item_type'] = {
-            'id': 1,
-            'stores': [{
-                'configuration': {'data_path': '/test'},
-                'country': 'test',
-                'id': 1,
-                'name': 'test'
-            }],
-            'name': 'products',
-            'schema': {
-                'type': 'object',
-                'id_names': ['sku'],
-                'properties': {'sku': {'type': 'string'}}
-            },
-            'available_filters': [{'name': 'sku', 'schema': {'type': 'string'}}]
-        }
-
-        assert resp.status_code == 200
-        assert json.loads(resp.body) == body[0]
-
-
-@pytest.fixture
-def data_importer_app(session, redis):
-    table_args = {'mysql_engine':'innodb'}
-    factory = ModelsFactory('myreco', commons_models_attributes={'__table_args__': table_args},
-                            commons_tables_attributes=table_args)
-    models = factory.make_all_models('importer')
-    user = {
-        'name': 'test',
-        'email': 'test',
-        'password': 'test',
-        'admin': True
-    }
-    models['users'].insert(session, user)
-
-    store = {
-        'name': 'test',
-        'country': 'test',
-        'configuration': {'data_path': '/test'}
-    }
-    models['stores'].insert(session, store)
-
-    engine_core = {
-        'name': 'top_seller',
-        'configuration': {
-            'core_module': {
-                'path': 'myreco.engines.cores.top_seller.core',
-                'class_name': 'TopSellerEngineCore'
-            },
-            'data_importer_module': {
-                'path': 'tests.integration.fixtures_models',
-                'class_name': 'DataImporter'
-            }
-        }
-    }
-    models['engines_cores'].insert(session, engine_core)
-
-    item_type = {
-        'name': 'products',
-        'stores': [{'id': 1}],
-        'schema': {
-            'type': 'object',
-            'id_names': ['sku'],
-            'properties': {'sku': {'type': 'string'}}
-        }
-    }
-    models['items_types'].insert(session, item_type)
+    session.loop.run_until_complete(models['items_types'].insert(session, item_type))
 
     engine = {
         'name': 'Seven Days Top Seller',
@@ -456,18 +83,310 @@ def data_importer_app(session, redis):
         'core_id': 1,
         'item_type_id': 1
     }
-    models['engines'].insert(session, engine)
+    session.loop.run_until_complete(models['engines'].insert(session, engine))
 
-    api = SwaggerAPI([models['engines'], models['items_types']], session.bind, redis,
-                      title='Myreco API')
-    models['items_types'].associate_all_items(session)
+    yield tmp.name
 
-    return api
+    tmp.cleanup()
+    _all_models.pop('products_1')
+    api.remove_swagger_paths(_all_models.pop('products_collection'))
 
 
-@pytest.fixture
-def data_importer_client(data_importer_app):
-    return Client(data_importer_app)
+class TestEnginesModelPost(object):
+
+    async def test_post_without_body(self, init_db, headers, client):
+        client = await client
+        resp = await client.post('/engines/', headers=headers)
+        assert resp.status == 400
+        assert await resp.json() == {'message': 'Request body is missing'}
+
+    async def test_post_with_invalid_body(self, init_db, headers, client):
+        client = await client
+        resp = await client.post('/engines/', headers=headers, data='[{}]')
+        assert resp.status == 400
+        assert await resp.json() ==  {
+            'message': "'configuration' is a required property",
+            'schema': {
+                'type': 'object',
+                'additionalProperties': False,
+                'required': ['configuration', 'store_id', 'core_id', 'item_type_id'],
+                'properties': {
+                    'name': {'type': 'string'},
+                    'configuration': {'$ref': 'http://json-schema.org/draft-04/schema#'},
+                    'store_id': {'type': 'integer'},
+                    'core_id': {'type': 'integer'},
+                    'item_type_id': {'type': 'integer'}
+                }
+            }
+        }
+
+    async def test_post_with_invalid_grant(self, init_db, client):
+        client = await client
+        resp = await client.post('/engines/', headers={'Authorization': 'invalid'})
+        assert resp.status == 401
+        assert await resp.json() ==  {'message': 'Invalid authorization'}
+
+    async def test_post_valid(self, init_db, headers, client):
+        body = [{
+            'name': 'Seven Days Top Seller 2',
+            'configuration': {"days_interval": 7, 'data_importer_path': 'test.test'},
+            'store_id': 1,
+            'core_id': 1,
+            'item_type_id': 1
+        }]
+        client = await client
+        resp = await client.post('/engines/', headers=headers, data=ujson.dumps(body))
+        body[0]['id'] = 2
+        body[0]['variables'] = []
+        body[0]['store'] = \
+            {'id': 1, 'name': 'test', 'country': 'test', 'configuration': {'data_path': init_db}}
+        body[0]['core'] = {
+            'id': 1,
+            'name': 'top_seller',
+            'configuration': {
+                'core_module': {
+                    'path': 'myreco.engines.cores.top_seller.core',
+                    'class_name': 'TopSellerEngineCore'
+                },
+                'data_importer_module': {
+                    'path': 'tests.integration.fixtures',
+                    'class_name': 'DataImporterTest'
+                }
+            }
+        }
+        body[0]['item_type'] = {
+            'id': 1,
+            'stores': [{
+                'configuration': {'data_path': init_db},
+                'country': 'test',
+                'id': 1,
+                'name': 'test'
+            }],
+            'name': 'products',
+            'schema': {
+                'type': 'object',
+                'id_names': ['sku'],
+                'properties': {'sku': {'type': 'string'}}
+            },
+            'available_filters': [{'name': 'sku', 'schema': {'type': 'string'}}]
+        }
+
+        assert resp.status == 201
+        assert await resp.json() ==  body
+
+
+class TestEnginesModelGet(object):
+
+    async def test_get_not_found(self, init_db, headers_without_content_type, client):
+        client = await client
+        resp = await client.get('/engines/?store_id=2', headers=headers_without_content_type)
+        assert resp.status == 404
+
+    async def test_get_invalid_with_body(self, init_db, headers, client):
+        client = await client
+        resp = await client.get('/engines/?store_id=1', headers=headers, data='{}')
+        assert resp.status == 400
+        assert await resp.json() == {'message': 'Request body is not acceptable'}
+
+    async def test_get_valid(self, init_db, headers, headers_without_content_type, client):
+        body = [{
+            'name': 'Seven Days Top Seller',
+            'configuration': {"days_interval": 7},
+            'store_id': 1,
+            'core_id': 1,
+            'item_type_id': 1
+        }]
+        body[0]['id'] = 1
+        body[0]['variables'] = []
+        body[0]['store'] = \
+            {'id': 1, 'name': 'test', 'country': 'test', 'configuration': {'data_path': init_db}}
+        body[0]['core'] = {
+            'id': 1,
+            'name': 'top_seller',
+            'configuration': {
+                'core_module': {
+                    'path': 'myreco.engines.cores.top_seller.core',
+                    'class_name': 'TopSellerEngineCore'
+                },
+                'data_importer_module': {
+                    'path': 'tests.integration.fixtures',
+                    'class_name': 'DataImporterTest'
+                }
+            }
+        }
+        body[0]['item_type'] = {
+            'id': 1,
+            'stores': [{
+                'configuration': {'data_path': init_db},
+                'country': 'test',
+                'id': 1,
+                'name': 'test'
+            }],
+            'name': 'products',
+            'schema': {
+                'type': 'object',
+                'id_names': ['sku'],
+                'properties': {'sku': {'type': 'string'}}
+            },
+            'available_filters': [{'name': 'sku', 'schema': {'type': 'string'}}]
+        }
+
+        client = await client
+        resp = await client.get('/engines/?store_id=1', headers=headers_without_content_type)
+        assert resp.status == 200
+        assert await resp.json() ==  body
+
+
+class TestEnginesModelUriTemplatePatch(object):
+
+    async def test_patch_without_body(self, init_db, headers, client):
+        client = await client
+        resp = await client.patch('/engines/1/', headers=headers, data='')
+        assert resp.status == 400
+        assert await resp.json() == {'message': 'Request body is missing'}
+
+    async def test_patch_with_invalid_body(self, init_db, headers, client):
+        client = await client
+        resp = await client.patch('/engines/1/', headers=headers, data='{}')
+        assert resp.status == 400
+        assert await resp.json() ==  {
+            'message': '{} does not have enough properties',
+            'schema': {
+                'type': 'object',
+                'additionalProperties': False,
+                'minProperties': 1,
+                'properties': {
+                    'name': {'type': 'string'},
+                    'configuration': {'$ref': 'http://json-schema.org/draft-04/schema#'},
+                    'store_id': {'type': 'integer'},
+                    'core_id': {'type': 'integer'},
+                    'item_type_id': {'type': 'integer'}
+                }
+            }
+        }
+
+    async def test_patch_with_invalid_configuration(self, init_db, headers, client):
+        body = {
+            'configuration': {}
+        }
+        client = await client
+        resp = await client.patch('/engines/1/', headers=headers, data=ujson.dumps(body))
+        assert resp.status == 400
+        assert await resp.json() ==  {
+            'message': "'days_interval' is a required property",
+            'schema': {
+                'type': 'object',
+                'required': ['days_interval'],
+                'properties': {
+                    'days_interval': {'type': 'integer'}
+                }
+            }
+        }
+
+    async def test_patch_not_found(self, init_db, headers, client):
+        body = {
+            'name': 'test',
+            'store_id': 1
+        }
+        client = await client
+        resp = await client.patch('/engines/2/', headers=headers, data=ujson.dumps(body))
+        assert resp.status == 404
+
+    async def test_patch(self, init_db, headers, headers_without_content_type, client):
+        client = await client
+        resp = await client.get('/engines/1', headers=headers_without_content_type)
+        obj = await resp.json()
+
+        body = {
+            'name': 'test2'
+        }
+        resp = await client.patch('/engines/1/', headers=headers, data=ujson.dumps(body))
+        obj['name'] = 'test2'
+
+        assert resp.status == 200
+        assert await resp.json() ==  obj
+
+
+class TestEnginesModelUriTemplateDelete(object):
+
+    async def test_delete_with_body(self, init_db, headers, client):
+        client = await client
+        resp = await client.delete('/engines/1/', headers=headers, data='{}')
+        assert resp.status == 400
+        assert await resp.json() == {'message': 'Request body is not acceptable'}
+
+    async def test_delete(self, init_db, headers, headers_without_content_type, client):
+        client = await client
+        resp = await client.get('/engines/1/', headers=headers_without_content_type)
+        assert resp.status == 200
+
+        resp = await client.delete('/engines/1/', headers=headers_without_content_type)
+        assert resp.status == 204
+
+        resp = await client.get('/engines/1/', headers=headers_without_content_type)
+        assert resp.status == 404
+
+
+class TestEnginesModelUriTemplateGet(object):
+
+    async def test_get_with_body(self, init_db, headers, client):
+        client = await client
+        resp = await client.get('/engines/1/', headers=headers, data='{}')
+        assert resp.status == 400
+        assert await resp.json() == {'message': 'Request body is not acceptable'}
+
+    async def test_get_not_found(self, init_db, headers_without_content_type, client):
+        client = await client
+        resp = await client.get('/engines/2/', headers=headers_without_content_type)
+        assert resp.status == 404
+
+    async def test_get(self, init_db, headers, headers_without_content_type, client):
+        client = await client
+        resp = await client.get('/engines/1/', headers=headers_without_content_type)
+        body = [{
+            'name': 'Seven Days Top Seller',
+            'configuration': {"days_interval": 7},
+            'store_id': 1,
+            'core_id': 1,
+            'item_type_id': 1
+        }]
+        body[0]['id'] = 1
+        body[0]['variables'] = []
+        body[0]['store'] = \
+            {'id': 1, 'name': 'test', 'country': 'test', 'configuration': {'data_path': init_db}}
+        body[0]['core'] = {
+            'id': 1,
+            'name': 'top_seller',
+            'configuration': {
+                'core_module': {
+                    'path': 'myreco.engines.cores.top_seller.core',
+                    'class_name': 'TopSellerEngineCore'
+                },
+                'data_importer_module': {
+                    'path': 'tests.integration.fixtures',
+                    'class_name': 'DataImporterTest'
+                }
+            }
+        }
+        body[0]['item_type'] = {
+            'id': 1,
+            'stores': [{
+                'configuration': {'data_path': init_db},
+                'country': 'test',
+                'id': 1,
+                'name': 'test'
+            }],
+            'name': 'products',
+            'schema': {
+                'type': 'object',
+                'id_names': ['sku'],
+                'properties': {'sku': {'type': 'string'}}
+            },
+            'available_filters': [{'name': 'sku', 'schema': {'type': 'string'}}]
+        }
+
+        assert resp.status == 200
+        assert await resp.json() == body[0]
 
 
 def datetime_mock():
@@ -476,415 +395,359 @@ def datetime_mock():
     return mock_
 
 
-@mock.patch('falconswagger.models.http.random.getrandbits',
-    new=mock.MagicMock(return_value=131940827655846590526331314439483569710))
-@mock.patch('falconswagger.models.orm.http.datetime', new=datetime_mock())
+async def _wait_job_finish(client, headers_without_content_type, job_name='export_objects'):
+    sleep(0.05)
+    while True:
+        resp = await client.get(
+            '/engines/1/{}?job_hash=6342e10bd7dca3240c698aa79c98362e'.format(job_name),
+            headers=headers_without_content_type)
+        if (await resp.json())['status'] != 'running':
+            break
+
+    return resp
+
+
+def set_patches(monkeypatch):
+    monkeypatch.setattr('swaggerit.models.orm._jobs_meta.random.getrandbits',
+        mock.MagicMock(return_value=131940827655846590526331314439483569710))
+    monkeypatch.setattr('swaggerit.models.orm._jobs_meta.datetime', datetime_mock())
+
+
 class TestEnginesModelsDataImporter(object):
 
-    def test_importer_post(self, data_importer_client, headers):
-        DataImporter().get_data.return_value = {}
-        resp = data_importer_client.post('/engines/1/import_data', headers=headers)
-        hash_ = json.loads(resp.body)
+    async def test_importer_post(self, init_db, headers, headers_without_content_type, client, monkeypatch):
+        set_patches(monkeypatch)
+        client = await client
+        resp = await client.post('/engines/1/import_data', headers=headers_without_content_type)
 
-        sleep(0.05)
-        while True:
-            resp = data_importer_client.get(
-                '/engines/1/import_data?hash=6342e10bd7dca3240c698aa79c98362e',
-                headers=headers)
-            if json.loads(resp.body)['status'] != 'running':
-                break
+        assert await resp.json() == {'job_hash': '6342e10bd7dca3240c698aa79c98362e'}
+        await _wait_job_finish(client, headers_without_content_type, 'import_data')
 
-        called = bool(DataImporter().get_data.called)
-        DataImporter.get_data.reset_mock()
+    async def test_importer_get_running(self, init_db, headers_without_content_type, client, monkeypatch):
+        set_patches(monkeypatch)
+        client = await client
+        await client.post('/engines/1/import_data', headers=headers_without_content_type)
+        resp = await client.get('/engines/1/import_data?job_hash=6342e10bd7dca3240c698aa79c98362e',
+            headers=headers_without_content_type)
 
-        assert hash_ == {'hash': '6342e10bd7dca3240c698aa79c98362e'}
-        assert called
-
-    def test_importer_get_running(self, data_importer_client, headers):
-        def func(x, y):
-            sleep(1)
-            return {}
-
-        DataImporter().get_data = func
-        data_importer_client.post('/engines/1/import_data', headers=headers)
-
-        resp = data_importer_client.get(
-            '/engines/1/import_data?hash=6342e10bd7dca3240c698aa79c98362e', headers=headers)
-        sleep(0.1)
-        DataImporter().get_data = mock.MagicMock()
-
-        assert json.loads(resp.body) == {'status': 'running'}
-
-        sleep(0.05)
-        while True:
-            resp = data_importer_client.get(
-                '/engines/1/import_data?hash=6342e10bd7dca3240c698aa79c98362e',
-                headers=headers)
-            if json.loads(resp.body)['status'] != 'running':
-                break
+        assert await resp.json() == {'status': 'running'}
+        await _wait_job_finish(client, headers_without_content_type, 'import_data')
 
 
-    def test_importer_get_done(self, data_importer_client, headers):
-        DataImporter().get_data.return_value = 'testing'
-        data_importer_client.post('/engines/1/import_data', headers=headers)
+    async def test_importer_get_done(self, init_db, headers_without_content_type, client, monkeypatch):
+        set_patches(monkeypatch)
+        client = await client
+        await client.post('/engines/1/import_data', headers=headers_without_content_type)
 
-        sleep(0.05)
-        while True:
-            resp = data_importer_client.get(
-                '/engines/1/import_data?hash=6342e10bd7dca3240c698aa79c98362e',
-                headers=headers)
-            if json.loads(resp.body)['status'] != 'running':
-                break
+        resp = await _wait_job_finish(client, headers_without_content_type, 'import_data')
 
-        resp = data_importer_client.get(
-            '/engines/1/import_data?hash=6342e10bd7dca3240c698aa79c98362e', headers=headers)
-        DataImporter().get_data = mock.MagicMock()
-
-        assert json.loads(resp.body) == {'status': 'done', 'result': 'testing', 'elapsed_time': '0:00'}
-
-    def test_importer_get_with_error(self, data_importer_client, headers):
-        DataImporter().get_data.side_effect = Exception('testing')
-        data_importer_client.post('/engines/1/import_data', headers=headers)
-
-        sleep(0.05)
-        while True:
-            resp = data_importer_client.get(
-                '/engines/1/import_data?hash=6342e10bd7dca3240c698aa79c98362e',
-                headers=headers)
-            if json.loads(resp.body)['status'] != 'running':
-                break
-
-        resp = data_importer_client.get(
-            '/engines/1/import_data?hash=6342e10bd7dca3240c698aa79c98362e', headers=headers)
-        DataImporter().get_data = mock.MagicMock()
-
-        assert json.loads(resp.body) == \
-            {'status': 'error', 'result': {'message': 'testing', 'name': 'Exception'}, 'elapsed_time': '0:00'}
-
-
-@pytest.fixture
-def objects_exporter_app(session, redis):
-    table_args = {'mysql_engine':'innodb'}
-    factory = ModelsFactory('myreco', commons_models_attributes={'__table_args__': table_args},
-                            commons_tables_attributes=table_args)
-    models = factory.make_all_models('exporter')
-    user = {
-        'name': 'test',
-        'email': 'test',
-        'password': 'test',
-        'admin': True
-    }
-    models['users'].insert(session, user)
-
-    store = {
-        'name': 'test',
-        'country': 'test',
-        'configuration': {'data_path': '/test'}
-    }
-    models['stores'].insert(session, store)
-
-    engine_core = {
-        'name': 'top_seller',
-        'configuration': {
-            'core_module': {
-                'path': 'myreco.engines.cores.top_seller.core',
-                'class_name': 'TopSellerEngineCore'
-            },
-            'data_importer_module': {
-                'path': 'tests.integration.fixtures_models',
-                'class_name': 'DataImporter'
+        assert await resp.json() == {
+            'status': 'done',
+            'result': {'lines_count': 3},
+            'time_info': {
+                'elapsed': '0:00',
+                'start': '1900-01-01 00:00',
+                'end': '1900-01-01 00:00'
             }
         }
-    }
-    models['engines_cores'].insert(session, engine_core)
 
-    item_type = {
-        'name': 'products',
-        'stores': [{'id': 1}],
-        'schema': {
-            'type': 'object',
-            'id_names': ['sku'],
-            'properties': {'sku': {'type': 'string'}}
+    async def test_importer_get_with_error(self, init_db, headers_without_content_type, client, monkeypatch):
+        set_patches(monkeypatch)
+        monkeypatch.setattr('tests.integration.fixtures.DataImporterTest.get_data',
+                            mock.MagicMock(side_effect=Exception('testing')))
+        client = await client
+        await client.post('/engines/1/import_data', headers=headers_without_content_type)
+
+        resp = await _wait_job_finish(client, headers_without_content_type, 'import_data')
+
+        assert await resp.json() == {
+            'status': 'error',
+            'result': {'message': 'testing', 'name': 'Exception'},
+            'time_info': {
+                'elapsed': '0:00',
+                'start': '1900-01-01 00:00',
+                'end': '1900-01-01 00:00'
+            }
         }
-    }
-    models['items_types'].insert(session, item_type)
-
-    engine = {
-        'name': 'Seven Days Top Seller',
-        'configuration': {'days_interval': 7},
-        'store_id': 1,
-        'core_id': 1,
-        'item_type_id': 1
-    }
-    models['engines'].insert(session, engine)
-
-    api = SwaggerAPI([models['engines'], models['items_types']], session.bind, redis,
-                      title='Myreco API')
-    models['items_types'].associate_all_items(session)
-
-    return api
 
 
-@pytest.fixture
-def objects_exporter_client(objects_exporter_app):
-    return Client(objects_exporter_app)
+async def _post_products(client, headers, headers_without_content_type, products=[{'sku': 'test'}]):
+    resp = await client.post('/products?store_id=1',
+                        data=ujson.dumps(products), headers=headers)
+    resp = await client.post('/products/update_filters?store_id=1',
+                        headers=headers_without_content_type)
+
+    sleep(0.05)
+    while True:
+        resp = await client.get(
+            '/products/update_filters?store_id=1&job_hash=6342e10bd7dca3240c698aa79c98362e',
+            headers=headers_without_content_type)
+        if (await resp.json())['status'] != 'running':
+            break
+
+    return resp
 
 
-@mock.patch('myreco.engines.cores.base.EngineCore._build_csv_readers')
-@mock.patch('falconswagger.models.http.random.getrandbits',
-    new=mock.MagicMock(return_value=131940827655846590526331314439483569710))
-@mock.patch('falconswagger.models.orm.http.datetime', new=datetime_mock())
+def set_readers_builders_patch(monkeypatch, values=None):
+    if values is None:
+        values = ujson.dumps({'value': 1, 'item_key': 'test'}).encode()
+
+    s = asyncio.StreamReader()
+    s.feed_data(values)
+    s.feed_eof()
+    readers_builder = [s]
+    mock_ = CoroMock()
+    mock_.coro.return_value = readers_builder
+    monkeypatch.setattr('myreco.engines.cores.base.EngineCore._build_csv_readers', mock_)
+
+
 class TestEnginesModelsObjectsExporter(object):
 
-    def test_exporter_post(self, readers_builder, objects_exporter_client, headers):
-        products = [{'sku': 'test'}]
-        objects_exporter_client.post('/products?store_id=1',
-                                    body=json.dumps(products), headers=headers)
-        readers_builder.return_value = [[json.dumps({'value': 1, 'item_key': 'test'})]]
+    async def test_exporter_post(self, init_db, headers_without_content_type, headers, client, monkeypatch):
+        set_patches(monkeypatch)
+        set_readers_builders_patch(monkeypatch)
+        
+        client = await client
+        await _post_products(client, headers, headers_without_content_type)
+        resp = await client.post('/engines/1/export_objects', headers=headers_without_content_type)
 
-        resp = objects_exporter_client.post('/engines/1/export_objects', headers=headers)
-        assert json.loads(resp.body) == {'hash': '6342e10bd7dca3240c698aa79c98362e'}
+        assert await resp.json() == {'job_hash': '6342e10bd7dca3240c698aa79c98362e'}
+        await _wait_job_finish(client, headers_without_content_type)
 
-    def test_exporter_get_running(self, readers_builder, objects_exporter_client, headers):
-        products = [{'sku': 'test'}]
-        objects_exporter_client.post('/products?store_id=1',
-                                    body=json.dumps(products), headers=headers)
-        objects_exporter_client.post('/products/update_filters?store_id=1', headers=headers)
+    async def test_exporter_get_running(self, init_db, headers_without_content_type, headers, client, monkeypatch, loop):
+        set_patches(monkeypatch)
 
-        sleep(0.05)
-        while True:
-            resp = objects_exporter_client.get(
-                '/products/update_filters?store_id=1&hash=6342e10bd7dca3240c698aa79c98362e',
-                headers=headers)
-            if json.loads(resp.body)['status'] != 'running':
-                break
+        prods = [ujson.dumps({'value': i, 'item_key': 'test{}'.format(i)}).encode() for i in range(100)]
+        set_readers_builders_patch(monkeypatch, b'\n'.join(prods))
 
-        readers_builder.return_value = \
-            [[{'value': 1, 'sku': 'test{}'.format(i)}] for i in range(1000)]
-        objects_exporter_client.post('/engines/1/export_objects', headers=headers)
+        client = await client
+        products = [{'sku': 'test{}'.format(i)} for i in range(10)]
 
-        resp = objects_exporter_client.get(
-            '/engines/1/export_objects?hash=6342e10bd7dca3240c698aa79c98362e', headers=headers)
-        assert json.loads(resp.body) == {'status': 'running'}
+        await _post_products(client, headers, headers_without_content_type, products)
+        await client.post('/engines/1/export_objects', headers=headers_without_content_type)
 
-    def test_exporter_get_done(self, readers_builder, objects_exporter_client, headers):
-        products = [{'sku': 'test'}]
-        objects_exporter_client.post('/products?store_id=1',
-                                    body=json.dumps(products), headers=headers)
+        resp = await client.get(
+            '/engines/1/export_objects?job_hash=6342e10bd7dca3240c698aa79c98362e', headers=headers_without_content_type)
 
-        readers_builder.return_value = [[json.dumps({'value': 1, 'item_key': 'test'})]]
-        objects_exporter_client.post('/products/update_filters?store_id=1', headers=headers)
+        assert await resp.json() == {'status': 'running'}
+        await _wait_job_finish(client, headers_without_content_type)
 
-        sleep(0.05)
-        while True:
-            resp = objects_exporter_client.get(
-                '/products/update_filters?store_id=1&hash=6342e10bd7dca3240c698aa79c98362e',
-                headers=headers)
-            if json.loads(resp.body)['status'] != 'running':
-                break
+    async def test_exporter_get_done(self, init_db, headers_without_content_type, headers, client, monkeypatch):
+        set_patches(monkeypatch)
+        client = await client
+        await _post_products(client, headers, headers_without_content_type)
 
-        objects_exporter_client.post('/engines/1/export_objects', headers=headers)
+        set_readers_builders_patch(monkeypatch)
 
-        sleep(0.05)
-        while True:
-            resp = objects_exporter_client.get(
-                '/engines/1/export_objects?hash=6342e10bd7dca3240c698aa79c98362e',
-                headers=headers)
-            if json.loads(resp.body)['status'] != 'running':
-                break
+        await client.post('/engines/1/export_objects', headers=headers_without_content_type)
 
-        assert json.loads(resp.body) == {'status': 'done',
-            'result': {'length': 1, 'max_sells': 1, 'min_sells': 1}, 'elapsed_time': '0:00'}
+        resp = await _wait_job_finish(client, headers_without_content_type)
 
-    def test_exporter_get_with_error(
-            self, readers_builder, objects_exporter_client, headers):
-        products = [{'sku': 'test'}]
-        objects_exporter_client.post('/products?store_id=1',
-                                    body=json.dumps(products), headers=headers)
-        objects_exporter_client.post('/products/update_filters?store_id=1', headers=headers)
+        assert await resp.json() == {
+            'status': 'done',
+            'result': {'length': 1, 'max_sells': 1, 'min_sells': 1},
+            'time_info': {
+                'elapsed': '0:00',
+                'start': '1900-01-01 00:00',
+                'end': '1900-01-01 00:00'
+            }
+        }
 
-        readers_builder.return_value = [[]]
-        objects_exporter_client.post('/engines/1/export_objects', headers=headers)
+    async def test_exporter_get_with_error(
+            self, init_db, headers_without_content_type, headers, client, monkeypatch):
+        set_patches(monkeypatch)
+        client = await client
+        await _post_products(client, headers, headers_without_content_type)
 
-        sleep(0.05)
-        while True:
-            resp = objects_exporter_client.get(
-                '/engines/1/export_objects?hash=6342e10bd7dca3240c698aa79c98362e',
-                headers=headers)
-            if json.loads(resp.body)['status'] != 'running':
-                break
+        set_readers_builders_patch(monkeypatch, b'')
+        await client.post('/engines/1/export_objects', headers=headers_without_content_type)
 
-        assert json.loads(resp.body) == {
+        resp = await _wait_job_finish(client, headers_without_content_type)
+
+        assert await resp.json() == {
             'status': 'error',
             'result': {
                 'message': "No data found for engine 'Seven Days Top Seller'",
                 'name': 'EngineError'
             },
-            'elapsed_time': '0:00'
+            'time_info': {
+                'elapsed': '0:00',
+                'start': '1900-01-01 00:00',
+                'end': '1900-01-01 00:00'
+            }
         }
 
 
-@mock.patch('myreco.engines.cores.base.EngineCore._build_csv_readers')
-@mock.patch('falconswagger.models.http.random.getrandbits',
-    new=mock.MagicMock(return_value=131940827655846590526331314439483569710))
-@mock.patch('falconswagger.models.orm.http.datetime', new=datetime_mock())
+def CoroMock():
+    coro = mock.MagicMock(name="CoroutineResult")
+    corofunc = mock.MagicMock(name="CoroutineFunction", side_effect=asyncio.coroutine(coro))
+    corofunc.coro = coro
+    return corofunc
+
+
+def set_data_importer_patch(monkeypatch, mock_=None):
+    if mock_ is None:
+        mock_ = mock.MagicMock()
+
+    monkeypatch.setattr('tests.integration.fixtures.DataImporterTest.get_data', mock_)
+    return mock_
+
+
 class TestEnginesModelsObjectsExporterWithImport(object):
 
-    def test_exporter_post_with_import(self, readers_builder, objects_exporter_client, headers):
-        products = [{'sku': 'test'}]
-        objects_exporter_client.post('/products?store_id=1',
-                                    body=json.dumps(products), headers=headers)
-        objects_exporter_client.post('/products/update_filters?store_id=1', headers=headers)
+    async def test_exporter_post_with_import(self, init_db, headers, headers_without_content_type, client, monkeypatch):
+        set_patches(monkeypatch)
+        client = await client
+        await _post_products(client, headers, headers_without_content_type)
 
-        readers_builder.return_value = [[{'sku': 'test', 'value': 1}]]
-        DataImporter().get_data.return_value = {}
-        resp = objects_exporter_client.post('/engines/1/export_objects?import_data=true', headers=headers)
-        hash_ = json.loads(resp.body)
+        set_readers_builders_patch(monkeypatch)
+        get_data_patch = set_data_importer_patch(monkeypatch)
+        get_data_patch.return_value = {}
 
-        sleep(0.05)
-        while True:
-            resp = objects_exporter_client.get(
-                '/engines/1/export_objects?hash=6342e10bd7dca3240c698aa79c98362e',
-                headers=headers)
-            if json.loads(resp.body)['status'] != 'running':
-                break
+        resp = await client.post('/engines/1/export_objects?import_data=true',
+                                      headers=headers_without_content_type)
+        hash_ = await resp.json()
 
-        called = bool(DataImporter().get_data.called)
-        DataImporter().get_data.reset_mock()
+        await _wait_job_finish(client, headers_without_content_type)
 
-        assert hash_ == {'hash': '6342e10bd7dca3240c698aa79c98362e'}
+        called = bool(DataImporterTest.get_data.called)
+        DataImporterTest.get_data.reset_mock()
+
+        assert hash_ == {'job_hash': '6342e10bd7dca3240c698aa79c98362e'}
         assert called
 
-    def test_exporter_get_running_with_import(self, readers_builder, objects_exporter_client, headers):
+    async def test_exporter_get_running_with_import(self, init_db, headers, headers_without_content_type, client, monkeypatch):
+        set_patches(monkeypatch)
+        client = await client
         def func(x, y, z):
             sleep(1)
             return {}
 
-        products = [{'sku': 'test'}]
-        objects_exporter_client.post('/products?store_id=1',
-                                    body=json.dumps(products), headers=headers)
-        objects_exporter_client.post('/products/update_filters?store_id=1', headers=headers)
+        await _post_products(client, headers, headers_without_content_type)
 
-        readers_builder.return_value = [[{'sku': 'test', 'value': 1}]]
-        DataImporter().get_data = func
-        objects_exporter_client.post('/engines/1/export_objects?import_data=true', headers=headers)
+        set_readers_builders_patch(monkeypatch)
+        set_data_importer_patch(monkeypatch, func)
+        await client.post('/engines/1/export_objects?import_data=true',
+                            headers=headers_without_content_type)
 
-        resp = objects_exporter_client.get(
-            '/engines/1/export_objects?hash=6342e10bd7dca3240c698aa79c98362e', headers=headers)
-        DataImporter().get_data = mock.MagicMock()
+        resp = await client.get(
+            '/engines/1/export_objects?job_hash=6342e10bd7dca3240c698aa79c98362e',
+            headers=headers_without_content_type)
 
-        assert json.loads(resp.body) == {'status': 'running'}
+        assert await resp.json() == {'status': 'running'}
+        await _wait_job_finish(client, headers_without_content_type)
 
-        sleep(0.05)
-        while True:
-            resp = objects_exporter_client.get(
-                '/engines/1/export_objects?hash=6342e10bd7dca3240c698aa79c98362e',
-                headers=headers)
-            if json.loads(resp.body)['status'] != 'running':
-                break
+    async def test_exporter_get_done_with_import(self, init_db, headers, headers_without_content_type, client, monkeypatch):
+        set_patches(monkeypatch)
+        client = await client
+        await _post_products(client, headers, headers_without_content_type)
 
-    def test_exporter_get_done_with_import(self, readers_builder, objects_exporter_client, headers):
-        products = [{'sku': 'test'}]
-        objects_exporter_client.post('/products?store_id=1',
-                                    body=json.dumps(products), headers=headers)
+        set_readers_builders_patch(monkeypatch)
+        await client.post('/engines/1/export_objects?import_data=true',
+                            headers=headers_without_content_type)
 
-        readers_builder.return_value = [[json.dumps({'value': 1, 'item_key': 'test'})]]
-        objects_exporter_client.post('/products/update_filters?store_id=1', headers=headers)
-        objects_exporter_client.post('/engines/1/export_objects?import_data=true', headers=headers)
+        await _wait_job_finish(client, headers_without_content_type)
 
-        sleep(0.05)
-        while True:
-            resp = objects_exporter_client.get(
-                '/engines/1/export_objects?hash=6342e10bd7dca3240c698aa79c98362e',
-                headers=headers)
-            if json.loads(resp.body)['status'] != 'running':
-                break
+        resp = await client.get(
+            '/engines/1/export_objects?job_hash=6342e10bd7dca3240c698aa79c98362e',
+            headers=headers_without_content_type)
 
-        resp = objects_exporter_client.get(
-            '/engines/1/export_objects?hash=6342e10bd7dca3240c698aa79c98362e', headers=headers)
+        assert await resp.json() == {
+            'status': 'done',
+            'result': {
+                'importer': {'lines_count': 3},
+                'exporter': {
+                    'length': 1,
+                    'max_sells': 1,
+                    'min_sells': 1
+                }
+            },
+            'time_info': {
+                'elapsed': '0:00',
+                'start': '1900-01-01 00:00',
+                'end': '1900-01-01 00:00'
+            }
+        }
 
-        assert json.loads(resp.body) == {'status': 'done',
-            'result': {'length': 1, 'max_sells': 1, 'min_sells': 1}, 'elapsed_time': '0:00'}
+    async def test_exporter_get_with_error_in_import_with_import(
+            self, init_db, headers, headers_without_content_type, client, monkeypatch):
+        set_patches(monkeypatch)
+        client = await client
+        await _post_products(client, headers, headers_without_content_type)
 
-    def test_exporter_get_with_error_in_import_with_import(
-            self, readers_builder, objects_exporter_client, headers):
-        DataImporter().get_data.side_effect = Exception('testing')
-        objects_exporter_client.post('/engines/1/export_objects?import_data=true', headers=headers)
+        get_data_patch = set_data_importer_patch(monkeypatch)
+        get_data_patch.side_effect = Exception('testing')
+        await client.post('/engines/1/export_objects?import_data=true', headers=headers_without_content_type)
 
-        sleep(0.05)
-        while True:
-            resp = objects_exporter_client.get(
-                '/engines/1/export_objects?hash=6342e10bd7dca3240c698aa79c98362e',
-                headers=headers)
-            if json.loads(resp.body)['status'] != 'running':
-                break
+        await _wait_job_finish(client, headers_without_content_type)
 
-        resp = objects_exporter_client.get(
-            '/engines/1/export_objects?hash=6342e10bd7dca3240c698aa79c98362e', headers=headers)
-        DataImporter().get_data = mock.MagicMock()
+        resp = await client.get(
+            '/engines/1/export_objects?job_hash=6342e10bd7dca3240c698aa79c98362e', headers=headers_without_content_type)
 
-        assert json.loads(resp.body) == \
-            {'status': 'error', 'result': {'message': 'testing', 'name': 'Exception'},
-             'elapsed_time': '0:00'}
+        assert await resp.json() == {
+            'status': 'error',
+            'result': {'message': 'testing', 'name': 'Exception'},
+            'time_info': {
+                'elapsed': '0:00',
+                'start': '1900-01-01 00:00',
+                'end': '1900-01-01 00:00'
+            }
+        }
 
-    def test_exporter_get_with_error_in_export_with_import(
-            self, readers_builder, objects_exporter_client, headers):
-        products = [{'sku': 'test'}]
-        objects_exporter_client.post('/products?store_id=1',
-                                    body=json.dumps(products), headers=headers)
-        objects_exporter_client.post('/products/update_filters?store_id=1', headers=headers)
+    async def test_exporter_get_with_error_in_export_with_import(
+            self, init_db, headers, headers_without_content_type, client, monkeypatch):
+        set_patches(monkeypatch)
+        client = await client
+        await _post_products(client, headers, headers_without_content_type)
 
-        readers_builder.return_value = [[]]
-        objects_exporter_client.post('/engines/1/export_objects?import_data=true', headers=headers)
+        set_readers_builders_patch(monkeypatch, b'')
+        await client.post('/engines/1/export_objects?import_data=true', headers=headers_without_content_type)
 
-        sleep(0.05)
-        while True:
-            resp = objects_exporter_client.get(
-                '/engines/1/export_objects?hash=6342e10bd7dca3240c698aa79c98362e',
-                headers=headers)
-            if json.loads(resp.body)['status'] != 'running':
-                break
+        await _wait_job_finish(client, headers_without_content_type)
 
-        resp = objects_exporter_client.get(
-            '/engines/1/export_objects?hash=6342e10bd7dca3240c698aa79c98362e', headers=headers)
+        resp = await client.get(
+            '/engines/1/export_objects?job_hash=6342e10bd7dca3240c698aa79c98362e', headers=headers_without_content_type)
 
-        assert json.loads(resp.body) == {
+        assert await resp.json() == {
             'status': 'error',
             'result': {
                 'message': "No data found for engine 'Seven Days Top Seller'",
                 'name': 'EngineError'
             },
-            'elapsed_time': '0:00'
+            'time_info': {
+                'elapsed': '0:00',
+                'start': '1900-01-01 00:00',
+                'end': '1900-01-01 00:00'
+            }
         }
 
 
 class TestEnginesCoresModelPost(object):
 
-    def test_post_without_body(self, client, headers):
-        resp = client.post('/engines_cores/', headers=headers)
-        assert resp.status_code == 400
-        assert json.loads(resp.body) == {'error': 'Request body is missing'}
+    async def test_post_without_body(self, init_db, headers, client):
+        client = await client
+        resp = await client.post('/engines_cores/', headers=headers)
+        assert resp.status == 400
+        assert await resp.json() == {'message': 'Request body is missing'}
 
-    def test_post_with_invalid_body(self, client, headers):
-        resp = client.post('/engines_cores/', headers=headers, body='[{}]')
-        assert resp.status_code == 400
-        assert json.loads(resp.body) ==  {
-            'error': {
-                'input': {},
-                'message': "'configuration' is a required property",
-                'schema': {
-                    'type': 'object',
-                    'additionalProperties': False,
-                    'required': ['configuration'],
-                    'properties': {
-                        'name': {'type': 'string'},
-                        'configuration': {'$ref': '#/definitions/configuration'}
-                    }
+    async def test_post_with_invalid_body(self, init_db, headers, client):
+        client = await client
+        resp = await client.post('/engines_cores/', headers=headers, data='[{}]')
+        assert resp.status == 400
+        assert await resp.json() ==  {
+            'message': "'configuration' is a required property",
+            'schema': {
+                'type': 'object',
+                'additionalProperties': False,
+                'required': ['configuration'],
+                'properties': {
+                    'name': {'type': 'string'},
+                    'configuration': {'$ref': '#/definitions/configuration'}
                 }
             }
         }
 
-    def test_post_with_invalid_grant(self, client):
+    async def test_post_with_invalid_grant(self, init_db, client):
         body = [{
             'name': 'top_seller2',
             'configuration': {
@@ -894,11 +757,12 @@ class TestEnginesCoresModelPost(object):
                 }
             }
         }]
-        resp = client.post('/engines_cores/', headers={'Authorization': 'invalid'},body=json.dumps(body))
-        assert resp.status_code == 401
-        assert json.loads(resp.body) ==  {'error': 'Invalid authorization'}
+        client = await client
+        resp = await client.post('/engines_cores/', headers={'Authorization': 'invalid'},data=ujson.dumps(body))
+        assert resp.status == 401
+        assert await resp.json() ==  {'message': 'Invalid authorization'}
 
-    def test_post(self, client, headers):
+    async def test_post(self, init_db, headers, client):
         body = [{
             'name': 'top_seller2',
             'configuration': {
@@ -907,31 +771,35 @@ class TestEnginesCoresModelPost(object):
                     'class_name': 'TopSellerEngineCore'
                 },
                 'data_importer_module': {
-                    'path': 'tests.integration.fixtures_models',
-                    'class_name': 'DataImporter'
+                    'path': 'tests.integration.fixtures',
+                    'class_name': 'DataImporterTest'
                 }
             }
         }]
-        resp = client.post('/engines_cores/', headers=headers, body=json.dumps(body))
+        client = await client
+        resp = await client.post('/engines_cores/', headers=headers, data=ujson.dumps(body))
         body[0]['id'] = 2
 
-        assert resp.status_code == 201
-        assert json.loads(resp.body) ==  body
+        assert resp.status == 201
+        assert await resp.json() ==  body
 
 
 class TestEnginesCoresModelGet(object):
 
-    def test_get_not_found(self, client, headers):
-        client.delete('/engines_cores/1/', headers=headers)
-        resp = client.get('/engines_cores/', headers=headers)
-        assert resp.status_code == 404
+    async def test_get_not_found(self, init_db, headers_without_content_type, client):
+        client = await client
+        await client.delete('/engines/1/', headers=headers_without_content_type)
+        await client.delete('/engines_cores/1/', headers=headers_without_content_type)
+        resp = await client.get('/engines_cores/', headers=headers_without_content_type)
+        assert resp.status == 404
 
-    def test_get_invalid_with_body(self, client, headers):
-        resp = client.get('/engines_cores/', headers=headers, body='{}')
-        assert resp.status_code == 400
-        assert json.loads(resp.body) == {'error': 'Request body is not acceptable'}
+    async def test_get_invalid_with_body(self, init_db, headers, client):
+        client = await client
+        resp = await client.get('/engines_cores/', headers=headers, data='{}')
+        assert resp.status == 400
+        assert await resp.json() == {'message': 'Request body is not acceptable'}
 
-    def test_get(self, client, headers):
+    async def test_get(self, init_db, headers, headers_without_content_type, client):
         body = [{
             'name': 'top_seller2',
             'configuration': {
@@ -940,46 +808,47 @@ class TestEnginesCoresModelGet(object):
                     'class_name': 'TopSellerEngineCore'
                 },
                 'data_importer_module': {
-                    'path': 'tests.integration.fixtures_models',
-                    'class_name': 'DataImporter'
+                    'path': 'tests.integration.fixtures',
+                    'class_name': 'DataImporterTest'
                 }
             }
         }]
-        client.delete('/engines_cores/1/', headers=headers)
-        client.post('/engines_cores/', headers=headers, body=json.dumps(body))
+        client = await client
+        await client.delete('/engines/1/', headers=headers_without_content_type)
+        await client.delete('/engines_cores/1/', headers=headers_without_content_type)
+        await client.post('/engines_cores/', headers=headers, data=ujson.dumps(body))
         body[0]['id'] = 2
-        resp = client.get('/engines_cores/', headers=headers)
-        assert resp.status_code == 200
-        assert json.loads(resp.body) ==  body
+        resp = await client.get('/engines_cores/', headers=headers_without_content_type)
+        assert resp.status == 200
+        assert await resp.json() ==  body
 
 
 class TestEnginesCoresModelUriTemplatePatch(object):
 
-    def test_patch_without_body(self, client, headers):
-        resp = client.patch('/engines_cores/1/', headers=headers, body='')
-        assert resp.status_code == 400
-        assert json.loads(resp.body) == {'error': 'Request body is missing'}
+    async def test_patch_without_body(self, init_db, headers, client):
+        client = await client
+        resp = await client.patch('/engines_cores/1/', headers=headers, data='')
+        assert resp.status == 400
+        assert await resp.json() == {'message': 'Request body is missing'}
 
-    def test_patch_with_invalid_body(self, client, headers):
-        resp = client.patch('/engines_cores/1/', headers=headers, body='{}')
-        assert resp.status_code == 400
-        assert json.loads(resp.body) ==  {
-            'error': {
-                'input': {},
-                'message': '{} does not have enough properties',
-                'schema': {
-                    'type': 'object',
-                    'additionalProperties': False,
-                    'minProperties': 1,
-                    'properties': {
-                        'name': {'type': 'string'},
-                        'configuration': {'$ref': '#/definitions/configuration'}
-                    }
+    async def test_patch_with_invalid_body(self, init_db, headers, client):
+        client = await client
+        resp = await client.patch('/engines_cores/1/', headers=headers, data='{}')
+        assert resp.status == 400
+        assert await resp.json() ==  {
+            'message': '{} does not have enough properties',
+            'schema': {
+                'type': 'object',
+                'additionalProperties': False,
+                'minProperties': 1,
+                'properties': {
+                    'name': {'type': 'string'},
+                    'configuration': {'$ref': '#/definitions/configuration'}
                 }
             }
         }
 
-    def test_patch_with_invalid_configuration(self, client, headers):
+    async def test_patch_with_invalid_configuration(self, init_db, headers, client):
         body = [{
             'name': 'top_seller2',
             'configuration': {
@@ -988,41 +857,40 @@ class TestEnginesCoresModelUriTemplatePatch(object):
                     'class_name': 'TopSellerEngineCore'
                 },
                 'data_importer_module': {
-                    'path': 'tests.integration.fixtures_models',
-                    'class_name': 'DataImporter'
+                    'path': 'tests.integration.fixtures',
+                    'class_name': 'DataImporterTest'
                 }
             }
         }]
-        client.post('/engines_cores/', headers=headers, body=json.dumps(body))
+        client = await client
+        await client.post('/engines_cores/', headers=headers, data=ujson.dumps(body))
 
         body = {
             'configuration': {}
         }
-        resp = client.patch('/engines_cores/2/', headers=headers, body=json.dumps(body))
-        assert resp.status_code == 400
-        assert json.loads(resp.body) ==  {
-            'error': {
-                'input': {},
-                'message': "'data_importer_module' is a required property",
-                'schema': {
-                    'type': 'object',
-                    'required': ['data_importer_module', 'core_module'],
-                    'properties': {
-                        'data_importer_module': {'$ref': '#/definitions/module'},
-                        'core_module': {'$ref': '#/definitions/module'}
-                    }
+        resp = await client.patch('/engines_cores/2/', headers=headers, data=ujson.dumps(body))
+        assert resp.status == 400
+        assert await resp.json() ==  {
+            'message': "'data_importer_module' is a required property",
+            'schema': {
+                'type': 'object',
+                'required': ['data_importer_module', 'core_module'],
+                'properties': {
+                    'data_importer_module': {'$ref': '#/definitions/module'},
+                    'core_module': {'$ref': '#/definitions/module'}
                 }
             }
         }
 
-    def test_patch_not_found(self, client, headers):
+    async def test_patch_not_found(self, init_db, headers, client):
         body = {
             'name': 'test'
         }
-        resp = client.patch('/engines_cores/2/', headers=headers, body=json.dumps(body))
-        assert resp.status_code == 404
+        client = await client
+        resp = await client.patch('/engines_cores/2/', headers=headers, data=ujson.dumps(body))
+        assert resp.status == 404
 
-    def test_patch(self, client, headers):
+    async def test_patch(self, init_db, headers, client):
         body = [{
             'name': 'top_seller2',
             'configuration': {
@@ -1031,31 +899,34 @@ class TestEnginesCoresModelUriTemplatePatch(object):
                     'class_name': 'TopSellerEngineCore'
                 },
                 'data_importer_module': {
-                    'path': 'tests.integration.fixtures_models',
-                    'class_name': 'DataImporter'
+                    'path': 'tests.integration.fixtures',
+                    'class_name': 'DataImporterTest'
                 }
             }
         }]
-        obj = json.loads(client.post('/engines_cores/', headers=headers, body=json.dumps(body)).body)[0]
+        client = await client
+        resp = await client.post('/engines_cores/', headers=headers, data=ujson.dumps(body))
+        obj = (await resp.json())[0]
 
         body = {
             'name': 'test2'
         }
-        resp = client.patch('/engines_cores/2/', headers=headers, body=json.dumps(body))
+        resp = await client.patch('/engines_cores/2/', headers=headers, data=ujson.dumps(body))
         obj['name'] = 'test2'
 
-        assert resp.status_code == 200
-        assert json.loads(resp.body) ==  obj
+        assert resp.status == 200
+        assert await resp.json() ==  obj
 
 
 class TestEnginesCoresModelUriTemplateDelete(object):
 
-    def test_delete_with_body(self, client, headers):
-        resp = client.delete('/engines_cores/1/', headers=headers, body='{}')
-        assert resp.status_code == 400
-        assert json.loads(resp.body) == {'error': 'Request body is not acceptable'}
+    async def test_delete_with_body(self, init_db, headers, client):
+        client = await client
+        resp = await client.delete('/engines_cores/1/', headers=headers, data='{}')
+        assert resp.status == 400
+        assert await resp.json() == {'message': 'Request body is not acceptable'}
 
-    def test_delete(self, client, headers):
+    async def test_delete(self, init_db, headers, headers_without_content_type, client):
         body = [{
             'name': 'top_seller2',
             'configuration': {
@@ -1064,34 +935,37 @@ class TestEnginesCoresModelUriTemplateDelete(object):
                     'class_name': 'TopSellerEngineCore'
                 },
                 'data_importer_module': {
-                    'path': 'tests.integration.fixtures_models',
-                    'class_name': 'DataImporter'
+                    'path': 'tests.integration.fixtures',
+                    'class_name': 'DataImporterTest'
                 }
             }
         }]
-        client.post('/engines_cores/', headers=headers, body=json.dumps(body))
-        resp = client.get('/engines_cores/2/', headers=headers)
-        assert resp.status_code == 200
+        client = await client
+        await client.post('/engines_cores/', headers=headers, data=ujson.dumps(body))
+        resp = await client.get('/engines_cores/2/', headers=headers_without_content_type)
+        assert resp.status == 200
 
-        resp = client.delete('/engines_cores/2/', headers=headers)
-        assert resp.status_code == 204
+        resp = await client.delete('/engines_cores/2/', headers=headers_without_content_type)
+        assert resp.status == 204
 
-        resp = client.get('/engines_cores/2/', headers=headers)
-        assert resp.status_code == 404
+        resp = await client.get('/engines_cores/2/', headers=headers_without_content_type)
+        assert resp.status == 404
 
 
 class TestEnginesCoresModelUriTemplateGet(object):
 
-    def test_get_with_body(self, client, headers):
-        resp = client.get('/engines_cores/2/', headers=headers, body='{}')
-        assert resp.status_code == 400
-        assert json.loads(resp.body) == {'error': 'Request body is not acceptable'}
+    async def test_get_with_body(self, init_db, headers, client):
+        client = await client
+        resp = await client.get('/engines_cores/2/', headers=headers, data='{}')
+        assert resp.status == 400
+        assert await resp.json() == {'message': 'Request body is not acceptable'}
 
-    def test_get_not_found(self, client, headers):
-        resp = client.get('/engines_cores/2/', headers=headers)
-        assert resp.status_code == 404
+    async def test_get_not_found(self, init_db, headers_without_content_type, client):
+        client = await client
+        resp = await client.get('/engines_cores/2/', headers=headers_without_content_type)
+        assert resp.status == 404
 
-    def test_get(self, client, headers):
+    async def test_get(self, init_db, headers, headers_without_content_type, client):
         body = [{
             'name': 'top_seller2',
             'configuration': {
@@ -1100,14 +974,14 @@ class TestEnginesCoresModelUriTemplateGet(object):
                     'class_name': 'TopSellerEngineCore'
                 },
                 'data_importer_module': {
-                    'path': 'tests.integration.fixtures_models',
-                    'class_name': 'DataImporter'
+                    'path': 'tests.integration.fixtures',
+                    'class_name': 'DataImporterTest'
                 }
             }
         }]
-        client.post('/engines_cores/', headers=headers, body=json.dumps(body))
-
-        resp = client.get('/engines_cores/2/', headers=headers)
+        client = await client
+        await client.post('/engines_cores/', headers=headers, data=ujson.dumps(body))
+        resp = await client.get('/engines_cores/2/', headers=headers_without_content_type)
         body[0]['id'] = 2
-        assert resp.status_code == 200
-        assert json.loads(resp.body) == body[0]
+        assert resp.status == 200
+        assert await resp.json() == body[0]

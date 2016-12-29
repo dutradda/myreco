@@ -1,6 +1,6 @@
 # MIT License
 
-# Copyright (c) 2016 Diogo Dutra
+# Copyright (c) 2016 Diogo Dutra <dutradda@gmail.com>
 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -21,18 +21,19 @@
 # SOFTWARE.
 
 
-from falconswagger.utils import get_model_schema
-from falconswagger.exceptions import ModelBaseError
+from swaggerit.utils import get_model_schema
+from swaggerit.exceptions import SwaggerItModelError
+from swaggerit.response import SwaggerResponse
 from myreco.engines.cores.items_indices_map import ItemsIndicesMap
-from myreco.items_types.models import build_item_key
-from myreco.utils import ModuleClassLoader, get_items_model_from_api
+from myreco.utils import ModuleClassLoader, get_items_model
+from myreco.engines.cores.utils import build_engine_key_prefix
 from types import MethodType, FunctionType
 from jsonschema import ValidationError
 from sqlalchemy.ext.declarative import AbstractConcreteBase, declared_attr
-from falcon import HTTPNotFound
 from copy import deepcopy
 import sqlalchemy as sa
-import json
+import ujson
+import asyncio
 
 
 class EnginesModelBase(AbstractConcreteBase):
@@ -47,7 +48,7 @@ class EnginesModelBase(AbstractConcreteBase):
     @property
     def configuration(self):
         if not hasattr(self, '_configuration'):
-            self._configuration = json.loads(self.configuration_json)
+            self._configuration = ujson.loads(self.configuration_json)
         return self._configuration
 
     @declared_attr
@@ -84,16 +85,16 @@ class EnginesModelBase(AbstractConcreteBase):
     def _set_core_instance(self):
         core_class_ = ModuleClassLoader.load(self.core.configuration['core_module'])
         self_dict = self._build_self_dict()
-        items_model = get_items_model_from_api(type(self).__api__, self_dict)
+        items_model = get_items_model(self_dict)
         self._core_instance = core_class_(self_dict, items_model)
 
     def _build_self_dict(self):
         todict_schema = {'variables': False}
         return self.todict(todict_schema)
 
-    def _setattr(self, attr_name, value, session, input_):
+    async def _setattr(self, attr_name, value, session, input_):
         if attr_name == 'configuration':
-            value = json.dumps(value)
+            value = ujson.dumps(value)
             attr_name = 'configuration_json'
 
         if attr_name == 'core_id':
@@ -104,7 +105,7 @@ class EnginesModelBase(AbstractConcreteBase):
             value = {'id': value}
             attr_name = 'item_type'
 
-        super()._setattr(attr_name, value, session, input_)
+        await super()._setattr(attr_name, value, session, input_)
 
     def _validate(self):
         if self.core is not None:
@@ -127,26 +128,43 @@ class EnginesModelDataImporterBase(EnginesModelBase):
     __schema__ = data_importer_schema
 
     @classmethod
-    def _run_job(cls, req, resp):
-        job_session = req.context['job_session']
-        engine = cls._get_engine(req, job_session)
-        items_indices_map = cls._build_items_indices_map(engine)
-        data_importer = cls._build_data_importer(engine)
-        return data_importer.get_data(items_indices_map, job_session)
+    async def post_import_data_job(cls, req, session):
+        session = cls._copy_session(session)
+        engine = await cls._get_engine(req, session)
+        if engine is None:
+            return SwaggerResponse(404)
+
+        jobs_id = cls._get_jobs_id_importer(engine)
+        response = cls._create_job(cls._run_import_data_job, jobs_id, req, session, engine)
+        return response
 
     @classmethod
-    def _get_engine(cls, req, job_session):
-        id_ = req.context['parameters']['path']['id']
-        engines = cls.get(job_session, {'id': id_}, todict=False)
+    async def _get_engine(cls, req, session):
+        id_ = req.path_params['id']
+        engines = await cls.get(session, {'id': id_}, todict=False)
 
         if not engines:
-            raise HTTPNotFound()
+            return None
 
         return engines[0]
 
     @classmethod
+    def _get_jobs_id_importer(cls, engine):
+        return cls._get_jobs_id(engine) + '_importer'
+
+    @classmethod
+    def _get_jobs_id(cls, engine):
+        return build_engine_key_prefix({'id': engine.id, 'core': {'name': engine.core.name}})
+
+    @classmethod
+    def _run_import_data_job(cls, req, session, engine):
+        items_indices_map = cls._build_items_indices_map(engine)
+        data_importer = cls._build_data_importer(engine)
+        return data_importer.get_data(items_indices_map, session)
+
+    @classmethod
     def _build_items_indices_map(cls, engine):
-        items_model = get_items_model_from_api(cls.__api__, engine._build_self_dict())
+        items_model = get_items_model(engine._build_self_dict())
         return ItemsIndicesMap(items_model)
 
     @classmethod
@@ -154,6 +172,15 @@ class EnginesModelDataImporterBase(EnginesModelBase):
         data_importer_config = engine.core.configuration['data_importer_module']
         data_importer_class = ModuleClassLoader.load(data_importer_config)
         return data_importer_class(engine.todict())
+
+    @classmethod
+    async def get_import_data_job(cls, req, session):
+        engine = await cls._get_engine(req, session)
+        if engine is None:
+            return SwaggerResponse(404)
+
+        jobs_id = cls._get_jobs_id_importer(engine)
+        return await cls._get_job(jobs_id, req, session)
 
 
 objects_exporter_schema = get_model_schema(__file__, 'objects_exporter_schema.json')
@@ -164,18 +191,44 @@ class EnginesModelObjectsExporterBase(EnginesModelDataImporterBase):
     __schema__ = objects_exporter_schema
 
     @classmethod
-    def _run_job(cls, req, resp):
-        job_session = req.context['job_session']
-        import_data = req.context['parameters']['query_string'].get('import_data')
-        engine = cls._get_engine(req, job_session)
+    async def post_export_objects_job(cls, req, session):
+        session = cls._copy_session(session)
+        engine = await cls._get_engine(req, session)
+        jobs_id = cls._get_jobs_id_exporter(engine)
+        return cls._create_job(cls._run_export_objects_job, jobs_id, req, session, engine)
+
+    @classmethod
+    def _get_jobs_id_exporter(cls, engine):
+        return cls._get_jobs_id(engine) + '_exporter'
+
+    @classmethod
+    def _run_export_objects_job(cls, req, session, engine):
+        import_data = req.query.get('import_data')
         items_indices_map = cls._build_items_indices_map(engine)
 
         if import_data:
             data_importer = cls._build_data_importer(engine)
-            data_importer.get_data(items_indices_map, job_session)
-            return engine.core_instance.export_objects(job_session, items_indices_map)
+            importer_result = data_importer.get_data(items_indices_map, session)
+            exporter_result = asyncio.run_coroutine_threadsafe(
+                engine.core_instance.export_objects(session, items_indices_map),
+                session.loop
+            ).result()
+
+            return {
+                'importer': importer_result,
+                'exporter': exporter_result
+            }
         else:
-            return engine.core_instance.export_objects(job_session, items_indices_map)
+            return asyncio.run_coroutine_threadsafe(
+                engine.core_instance.export_objects(session, items_indices_map),
+                session.loop
+            ).result()
+
+    @classmethod
+    async def get_export_objects_job(cls, req, session):
+        engine = await cls._get_engine(req, session)
+        jobs_id = cls._get_jobs_id_exporter(engine)
+        return await cls._get_job(jobs_id, req, session)
 
 
 class EnginesCoresModelBase(AbstractConcreteBase):
@@ -189,15 +242,15 @@ class EnginesCoresModelBase(AbstractConcreteBase):
     @property
     def configuration(self):
         if not hasattr(self, '_configuration'):
-            self._configuration = json.loads(self.configuration_json)
+            self._configuration = ujson.loads(self.configuration_json)
         return self._configuration
 
-    def _setattr(self, attr_name, value, session, input_):
+    async def _setattr(self, attr_name, value, session, input_):
         if attr_name == 'configuration':
-            value = json.dumps(value)
+            value = ujson.dumps(value)
             attr_name = 'configuration_json'
 
-        super()._setattr(attr_name, value, session, input_)
+        await super()._setattr(attr_name, value, session, input_)
 
     def _format_output_json(self, dict_inst, schema):
         if schema.get('configuration') is not False:

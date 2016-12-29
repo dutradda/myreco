@@ -1,6 +1,6 @@
 # MIT License
 
-# Copyright (c) 2016 Diogo Dutra
+# Copyright (c) 2016 Diogo Dutra <dutradda@gmail.com>
 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -21,11 +21,11 @@
 # SOFTWARE.
 
 
-from falconswagger.utils import get_model_schema
+from swaggerit.utils import get_model_schema
 from sqlalchemy.ext.declarative import AbstractConcreteBase
 from jsonschema import Draft4Validator
 import sqlalchemy as sa
-import json
+import ujson
 
 
 class StoresModelBase(AbstractConcreteBase):
@@ -41,20 +41,20 @@ class StoresModelBase(AbstractConcreteBase):
     @property
     def configuration(self):
         if not hasattr(self, '_configuration'):
-            self._configuration = json.loads(self.configuration_json)
+            self._configuration = ujson.loads(self.configuration_json)
         return self._configuration
 
-    def __init__(self, session, input_=None, **kwargs):
-        super().__init__(session, input_=input_, **kwargs)
+    async def init(self, session, input_=None, **kwargs):
+        await super().init(session, input_=input_, **kwargs)
         if self.configuration_json:
             self.__config_validator__.validate(self.configuration)
 
-    def _setattr(self, attr_name, value, session, input_):
+    async def _setattr(self, attr_name, value, session, input_):
         if attr_name == 'configuration':
-            value = json.dumps(value)
+            value = ujson.dumps(value)
             attr_name = 'configuration_json'
 
-        super()._setattr(attr_name, value, session, input_)
+        await super()._setattr(attr_name, value, session, input_)
 
     def _format_output_json(self, dict_inst, schema):
         if schema.get('configuration') is not False:

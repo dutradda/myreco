@@ -1,6 +1,6 @@
 # MIT License
 
-# Copyright (c) 2016 Diogo Dutra
+# Copyright (c) 2016 Diogo Dutra <dutradda@gmail.com>
 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -21,12 +21,12 @@
 # SOFTWARE.
 
 
-from falconswagger.utils import get_model_schema
-from falconswagger.exceptions import ModelBaseError
+from swaggerit.utils import get_model_schema
+from swaggerit.exceptions import SwaggerItModelError
 from jsonschema import ValidationError
 from sqlalchemy.ext.declarative import AbstractConcreteBase, declared_attr
 import sqlalchemy as sa
-import json
+import ujson
 
 
 class SlotsVariablesModelBase(AbstractConcreteBase):
@@ -46,26 +46,26 @@ class SlotsVariablesModelBase(AbstractConcreteBase):
     def override_value(self):
         if not hasattr(self, '_override_value'):
             self._override_value = \
-                json.loads(self.override_value_json) if self.override_value_json is not None else None
+                ujson.loads(self.override_value_json) if self.override_value_json is not None else None
         return self._override_value
 
     @property
     def skip_values(self):
         if not hasattr(self, '_skip_values'):
             self._skip_values = \
-                json.loads(self.skip_values_json) if self.skip_values_json is not None else None
+                ujson.loads(self.skip_values_json) if self.skip_values_json is not None else None
         return self._skip_values
 
-    def _setattr(self, attr_name, value, session, input_):
+    async def _setattr(self, attr_name, value, session, input_):
         if attr_name == 'skip_values':
-            value = json.dumps(value)
+            value = ujson.dumps(value)
             attr_name = 'skip_values_json'
 
         if attr_name == 'override_value':
-            value = json.dumps(value)
+            value = ujson.dumps(value)
             attr_name = 'override_value_json'
 
-        super()._setattr(attr_name, value, session, input_)
+        await super()._setattr(attr_name, value, session, input_)
 
     def _format_output_json(self, dict_inst, schema):
         if schema.get('skip_values') is not False:
@@ -128,19 +128,19 @@ class SlotsModelBase(AbstractConcreteBase):
                                    primaryjoin='slots_fallbacks.c.slot_id == SlotsModel.id',
                                    secondaryjoin='slots_fallbacks.c.fallback_id == SlotsModel.id')
 
-    def __init__(self, session, input_=None, **kwargs):
-        super().__init__(session, input_=input_, **kwargs)
+    async def init(self, session, input_=None, **kwargs):
+        await super().init(session, input_=input_, **kwargs)
         self._validate_fallbacks(input_)
         self._validate_slot_variables(input_)
 
     def _validate_fallbacks(self, input_):
         for fallback in self.fallbacks:
             if fallback.id == self.id:
-                raise ModelBaseError(
+                raise SwaggerItModelError(
                     "a Engine Manager can't fallback itself", input_)
 
             if fallback.engine.item_type_id != self.engine.item_type_id:
-                raise ModelBaseError(
+                raise SwaggerItModelError(
                     "Cannot set a fallback with different items types", input_)
 
     def _validate_slot_variables(self, input_):
@@ -168,7 +168,7 @@ class SlotsModelBase(AbstractConcreteBase):
                 else:
                     if engine_variable.is_inclusive_filter is None \
                             or engine_variable.filter_type is None:
-                        raise ModelBaseError(
+                        raise SwaggerItModelError(
                             "When 'is_filter' is 'true' the properties 'is_inclusive_filter'"
                             " and 'filter_type' must be setted", input_)
 
@@ -182,7 +182,7 @@ class SlotsModelBase(AbstractConcreteBase):
                         raise ValidationError(
                             message, instance=input_, schema=schema)
 
-    def _setattr(self, attr_name, value, session, input_):
+    async def _setattr(self, attr_name, value, session, input_):
         if attr_name == 'engine_id':
             value = {'id': value}
             attr_name = 'engine'
@@ -193,7 +193,7 @@ class SlotsModelBase(AbstractConcreteBase):
                     var = {'id': engine_var.pop('variable_id')}
                     engine_var['variable'] = var
 
-        super()._setattr(attr_name, value, session, input_)
+        await super()._setattr(attr_name, value, session, input_)
 
     def _format_output_json(self, dict_inst, schema):
         if schema.get('fallbacks') is not False:

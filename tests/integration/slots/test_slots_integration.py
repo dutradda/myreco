@@ -1,6 +1,6 @@
 # MIT License
 
-# Copyright (c) 2016 Diogo Dutra
+# Copyright (c) 2016 Diogo Dutra <dutradda@gmail.com>
 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -21,49 +21,44 @@
 # SOFTWARE.
 
 
-from tests.integration.fixtures_models import (
-    SQLAlchemyRedisModelBase, SlotsModel,
-    StoresModel, UsersModel, VariablesModel, ItemsTypesModel,
-    EnginesModel, EnginesCoresModel)
-from falconswagger.swagger_api import SwaggerAPI
-from base64 import b64encode
-from fakeredis import FakeStrictRedis
+from unittest import mock
+from time import sleep
+from datetime import datetime
+from tests.integration.fixtures import DataImporterTest, EngineCoreTest
+from swaggerit.models._base import _all_models
+import asyncio
+import tempfile
 import pytest
-import json
+import ujson
 
 
 @pytest.fixture
-def model_base():
-    return SQLAlchemyRedisModelBase
-
-
-@pytest.fixture
-def app(session):
+def init_db(models, session, api):
     user = {
         'name': 'test',
         'email': 'test',
         'password': 'test',
         'admin': True
     }
-    UsersModel.insert(session, user)
+    session.loop.run_until_complete(models['users'].insert(session, user))
 
     store = {
         'name': 'test',
         'country': 'test',
         'configuration': {'data_path': '/test'}
     }
-    StoresModel.insert(session, store)
+    session.loop.run_until_complete(models['stores'].insert(session, store))
 
     engine_core = {
         'name': 'visual_similarity',
         'configuration': {
             'core_module': {
-                'path': 'tests.integration.fixtures_models',
-                'class_name': 'TestEngine'
+                'path': 'tests.integration.fixtures',
+                'class_name': 'EngineCoreTest'
             }
         }
     }
-    EnginesCoresModel.insert(session, engine_core)
+    session.loop.run_until_complete(models['engines_cores'].insert(session, engine_core))
     engine_core = {
         'name': 'top_seller',
         'configuration': {
@@ -72,12 +67,12 @@ def app(session):
                 'class_name': 'TopSellerEngineCore'
             },
             'data_importer_module': {
-                'path': 'tests.integration.fixtures_models',
-                'class_name': 'DataImporter'
+                'path': 'tests.integration.fixtures',
+                'class_name': 'DataImporterTest'
             }
         }
     }
-    EnginesCoresModel.insert(session, engine_core)
+    session.loop.run_until_complete(models['engines_cores'].insert(session, engine_core))
 
     schema = {
         'type': 'object',
@@ -88,19 +83,18 @@ def app(session):
         }
     }
 
-    ItemsTypesModel.__api__ = None
     item_type = {
         'name': 'products',
         'stores': [{'id': 1}],
         'schema': schema
     }
-    ItemsTypesModel.insert(session, item_type)
+    session.loop.run_until_complete(models['items_types'].insert(session, item_type))
     item_type = {
         'name': 'categories',
         'stores': [{'id': 1}],
         'schema': schema
     }
-    ItemsTypesModel.insert(session, item_type)
+    session.loop.run_until_complete(models['items_types'].insert(session, item_type))
     item_type = {
         'name': 'invalid',
         'stores': [{'id': 1}],
@@ -110,11 +104,11 @@ def app(session):
             'properties': {'item_id': {'type': 'string'}}
         }
     }
-    ItemsTypesModel.insert(session, item_type)
+    session.loop.run_until_complete(models['items_types'].insert(session, item_type))
 
     engine = {
         'name': 'Visual Similarity',
-        'configuration_json': json.dumps({
+        'configuration_json': ujson.dumps({
             'item_id_name': 'item_id',
             'aggregators_ids_name': 'filter_test',
             'data_importer_path': 'test.test'
@@ -123,10 +117,10 @@ def app(session):
         'core_id': 1,
         'item_type_id': 1
     }
-    EnginesModel.insert(session, engine)
+    session.loop.run_until_complete(models['engines'].insert(session, engine))
     engine = {
         'name': 'Categories Visual Similarity',
-        'configuration_json': json.dumps({
+        'configuration_json': ujson.dumps({
             'item_id_name': 'item_id',
             'aggregators_ids_name': 'filter_test',
             'data_importer_path': 'test.test'
@@ -135,10 +129,10 @@ def app(session):
         'core_id': 1,
         'item_type_id': 2
     }
-    EnginesModel.insert(session, engine)
+    session.loop.run_until_complete(models['engines'].insert(session, engine))
     engine = {
         'name': 'Invalid Top Seller',
-        'configuration_json': json.dumps({
+        'configuration_json': ujson.dumps({
             'days_interval': 7,
             'data_importer_path': 'test.test'
         }),
@@ -146,54 +140,52 @@ def app(session):
         'core_id': 2,
         'item_type_id': 3
     }
-    EnginesModel.insert(session, engine)
+    session.loop.run_until_complete(models['engines'].insert(session, engine))
 
-    VariablesModel.insert(session, {'name': 'test', 'store_id': 1})
-    VariablesModel.insert(session, {'name': 'test2', 'store_id': 1})
+    session.loop.run_until_complete(models['variables'].insert(session, {'name': 'test', 'store_id': 1}))
+    session.loop.run_until_complete(models['variables'].insert(session, {'name': 'test2', 'store_id': 1}))
 
-    return SwaggerAPI([SlotsModel], session.bind, FakeStrictRedis(),
-                      title='Myreco API')
+    yield None
 
-
-@pytest.fixture
-def headers():
-    return {
-        'Authorization': b64encode('test:test'.encode()).decode()
-    }
-
+    _all_models.pop('products_1')
+    api.remove_swagger_paths(_all_models.pop('products_collection'))
+    _all_models.pop('categories_1')
+    api.remove_swagger_paths(_all_models.pop('categories_collection'))
+    _all_models.pop('invalid_1')
+    api.remove_swagger_paths(_all_models.pop('invalid_collection'))
 
 
 class TestSlotsModelPost(object):
 
-    def test_post_without_body(self, client, headers):
-        resp = client.post('/slots/', headers=headers)
-        assert resp.status_code == 400
-        assert json.loads(resp.body) == {'error': 'Request body is missing'}
+   async def test_post_without_body(self, init_db, client, headers, headers_without_content_type):
+        client = await client
+        resp = await client.post('/slots/', headers=headers)
+        assert resp.status == 400
+        assert await resp.json() == {'message': 'Request body is missing'}
 
-    def test_post_with_invalid_body(self, client, headers):
-        resp = client.post('/slots/', headers=headers, body='[{}]')
-        assert resp.status_code == 400
-        assert json.loads(resp.body) ==  {
-            'error': {
-                'input': {},
-                'message': "'engine_id' is a required property",
-                'schema': {
-                    'type': 'object',
-                    'additionalProperties': False,
-                    'required': ['engine_id', 'store_id', 'slot_variables', 'max_recos', 'name'],
-                    'properties': {
-                        'max_recos': {'type': 'integer'},
-                        'name': {'type': 'string'},
-                        'store_id': {'type': 'integer'},
-                        'engine_id': {'type': 'integer'},
-                        'fallbacks': {'$ref': '#/definitions/fallbacks'},
-                        'slot_variables': {'$ref': '#/definitions/slot_variables'}
-                    }
+   async def test_post_with_invalid_body(self, init_db, client, headers, headers_without_content_type):
+        client = await client
+        resp = await client.post('/slots/', headers=headers, data='[{}]')
+        assert resp.status == 400
+        assert await resp.json() ==  {
+            'message': "'engine_id' is a required property",
+            'schema': {
+                'type': 'object',
+                'additionalProperties': False,
+                'required': ['engine_id', 'store_id', 'slot_variables', 'max_recos', 'name'],
+                'properties': {
+                    'max_recos': {'type': 'integer'},
+                    'name': {'type': 'string'},
+                    'store_id': {'type': 'integer'},
+                    'engine_id': {'type': 'integer'},
+                    'fallbacks': {'$ref': '#/definitions/fallbacks'},
+                    'slot_variables': {'$ref': '#/definitions/slot_variables'}
                 }
             }
         }
 
-    def test_post_with_invalid_variable_engine(self, client, headers):
+   async def test_post_with_invalid_variable_engine(self, init_db, client, headers, headers_without_content_type):
+        client = await client
         body = [{
             'max_recos': 10,
             'name': 'test',
@@ -206,36 +198,35 @@ class TestSlotsModelPost(object):
                 'inside_engine_name': 'test'
             }]
         }]
-        resp = client.post('/slots/', headers=headers, body=json.dumps(body))
-        assert resp.status_code == 400
-        assert json.loads(resp.body) ==  {
-            'error': {
-                'message': "Invalid engine variable with 'inside_engine_name' value 'test'",
-                'input': [{
-                    'max_recos': 10,
-                    'name': 'test',
-                    'engine_id': 1,
-                    'store_id': 1,
-                    'slot_variables': [{
-                        '_operation': 'insert',
-                        'inside_engine_name': 'test',
-                        'variable_name': 'test',
-                        'variable_store_id': 1
-                    }]
-                }],
-                'schema': {
-                    'available_variables': [{
-                        'name': 'filter_test',
-                        'schema': {"type": "string"}
-                    },{
-                        'name': 'item_id',
-                        'schema': {"type": "integer"}
-                    }]
-                }
+        resp = await client.post('/slots/', headers=headers, data=ujson.dumps(body))
+        assert resp.status == 400
+        assert await resp.json() ==  {
+            'message': "Invalid engine variable with 'inside_engine_name' value 'test'",
+            'instance': [{
+                'max_recos': 10,
+                'name': 'test',
+                'engine_id': 1,
+                'store_id': 1,
+                'slot_variables': [{
+                    '_operation': 'insert',
+                    'inside_engine_name': 'test',
+                    'variable_name': 'test',
+                    'variable_store_id': 1
+                }]
+            }],
+            'schema': {
+                'available_variables': [{
+                    'name': 'filter_test',
+                    'schema': {"type": "string"}
+                },{
+                    'name': 'item_id',
+                    'schema': {"type": "integer"}
+                }]
             }
         }
 
-    def test_post_with_invalid_filter(self, client, headers):
+   async def test_post_with_invalid_filter(self, init_db, client, headers, headers_without_content_type):
+        client = await client
         body = [{
             'max_recos': 10,
             'name': 'test',
@@ -251,39 +242,38 @@ class TestSlotsModelPost(object):
                 'is_inclusive_filter': True
             }]
         }]
-        resp = client.post('/slots/', headers=headers, body=json.dumps(body))
-        assert resp.status_code == 400
-        assert json.loads(resp.body) ==  {
-            'error': {
-                'message': "Invalid filter with 'inside_engine_name' value 'test'",
-                'input': [{
-                    'max_recos': 10,
-                    'name': 'test',
-                    'engine_id': 1,
-                    'store_id': 1,
-                    'slot_variables': [{
-                        '_operation': 'insert',
-                        'inside_engine_name': 'test',
-                        'is_filter': True,
-                        'is_inclusive_filter': True,
-                        'filter_type': 'By Property',
-                        'variable_name': 'test',
-                        'variable_store_id': 1
-                    }]
-                }],
-                'schema': {
-                    'available_filters': [{
-                        'name': 'filter_test',
-                        'schema': {"type": "string"}
-                    },{
-                        'name': 'item_id',
-                        'schema': {"type": "integer"}
-                    }]
-                }
+        resp = await client.post('/slots/', headers=headers, data=ujson.dumps(body))
+        assert resp.status == 400
+        assert await resp.json() ==  {
+            'message': "Invalid filter with 'inside_engine_name' value 'test'",
+            'instance': [{
+                'max_recos': 10,
+                'name': 'test',
+                'engine_id': 1,
+                'store_id': 1,
+                'slot_variables': [{
+                    '_operation': 'insert',
+                    'inside_engine_name': 'test',
+                    'is_filter': True,
+                    'is_inclusive_filter': True,
+                    'filter_type': 'By Property',
+                    'variable_name': 'test',
+                    'variable_store_id': 1
+                }]
+            }],
+            'schema': {
+                'available_filters': [{
+                    'name': 'filter_test',
+                    'schema': {"type": "string"}
+                },{
+                    'name': 'item_id',
+                    'schema': {"type": "integer"}
+                }]
             }
         }
 
-    def test_post_with_invalid_filter_missing_properties(self, client, headers):
+   async def test_post_with_invalid_filter_missing_properties(self, init_db, client, headers, headers_without_content_type):
+        client = await client
         body = [{
             'max_recos': 10,
             'name': 'test',
@@ -298,30 +288,29 @@ class TestSlotsModelPost(object):
                 'filter_type': 'By Property'
             }]
         }]
-        resp = client.post('/slots/', headers=headers, body=json.dumps(body))
-        assert resp.status_code == 400
-        assert json.loads(resp.body) ==  {
-            'error': {
-                'message': "When 'is_filter' is 'true' the properties "\
-                "'is_inclusive_filter' and 'filter_type' must be setted",
-                'input': [{
-                    'max_recos': 10,
-                    'name': 'test',
-                    'engine_id': 1,
-                    'store_id': 1,
-                    'slot_variables': [{
-                        '_operation': 'insert',
-                        'filter_type': 'By Property',
-                        'inside_engine_name': 'filter_test',
-                        'is_filter': True,
-                        'variable_name': 'test',
-                        'variable_store_id': 1
-                    }]
+        resp = await client.post('/slots/', headers=headers, data=ujson.dumps(body))
+        assert resp.status == 400
+        assert await resp.json() ==  {
+            'message': "When 'is_filter' is 'true' the properties "\
+            "'is_inclusive_filter' and 'filter_type' must be setted",
+            'instance': [{
+                'max_recos': 10,
+                'name': 'test',
+                'engine_id': 1,
+                'store_id': 1,
+                'slot_variables': [{
+                    '_operation': 'insert',
+                    'filter_type': 'By Property',
+                    'inside_engine_name': 'filter_test',
+                    'is_filter': True,
+                    'variable_name': 'test',
+                    'variable_store_id': 1
                 }]
-            }
+            }]
         }
 
-    def test_post_with_insert_engine_variable_engine_var(self, client, headers):
+   async def test_post_with_insert_engine_variable_engine_var(self, init_db, client, headers, headers_without_content_type):
+        client = await client
         body = [{
             'max_recos': 10,
             'name': 'test',
@@ -334,10 +323,10 @@ class TestSlotsModelPost(object):
                 'inside_engine_name': 'filter_test'
             }]
         }]
-        resp = client.post('/slots/', headers=headers, body=json.dumps(body))
+        resp = await client.post('/slots/', headers=headers, data=ujson.dumps(body))
 
-        assert resp.status_code == 201
-        assert json.loads(resp.body) == [{
+        assert resp.status == 201
+        assert await resp.json() == [{
             'max_recos': 10,
             'name': 'test',
             'fallbacks': [],
@@ -395,8 +384,8 @@ class TestSlotsModelPost(object):
                     'name': 'visual_similarity',
                     'configuration': {
                         'core_module': {
-                            'path': 'tests.integration.fixtures_models',
-                            'class_name': 'TestEngine'
+                            'path': 'tests.integration.fixtures',
+                            'class_name': 'EngineCoreTest'
                         }
                     }
                 },
@@ -423,7 +412,8 @@ class TestSlotsModelPost(object):
             'engine_id': 1
         }]
 
-    def test_post_with_insert_engine_variable_engine_filter(self, client, headers):
+   async def test_post_with_insert_engine_variable_engine_filter(self, init_db, client, headers, headers_without_content_type):
+        client = await client
         body = [{
             'max_recos': 10,
             'name': 'test',
@@ -439,10 +429,10 @@ class TestSlotsModelPost(object):
                 'inside_engine_name': 'filter_test'
             }]
         }]
-        resp = client.post('/slots/', headers=headers, body=json.dumps(body))
+        resp = await client.post('/slots/', headers=headers, data=ujson.dumps(body))
 
-        assert resp.status_code == 201
-        assert json.loads(resp.body) == [{
+        assert resp.status == 201
+        assert await resp.json() == [{
             'fallbacks': [],
             'id': 1,
             'max_recos': 10,
@@ -500,8 +490,8 @@ class TestSlotsModelPost(object):
                     'name': 'visual_similarity',
                     'configuration': {
                         'core_module': {
-                            'path': 'tests.integration.fixtures_models',
-                            'class_name': 'TestEngine'
+                            'path': 'tests.integration.fixtures',
+                            'class_name': 'EngineCoreTest'
                         }
                     }
                 },
@@ -528,7 +518,8 @@ class TestSlotsModelPost(object):
             'engine_id': 1
         }]
 
-    def test_post_with_fallback(self, client, headers):
+   async def test_post_with_fallback(self, init_db, client, headers, headers_without_content_type):
+        client = await client
         body = [{
             'max_recos': 10,
             'name': 'test',
@@ -541,7 +532,7 @@ class TestSlotsModelPost(object):
                 'inside_engine_name': 'item_id'
             }]
         }]
-        client.post('/slots/', headers=headers, body=json.dumps(body))
+        await client.post('/slots/', headers=headers, data=ujson.dumps(body))
 
         body = [{
             'max_recos': 10,
@@ -556,10 +547,10 @@ class TestSlotsModelPost(object):
             }],
             'fallbacks': [{'id': 1}]
         }]
-        resp = client.post('/slots/', headers=headers, body=json.dumps(body))
+        resp = await client.post('/slots/', headers=headers, data=ujson.dumps(body))
 
-        assert resp.status_code == 201
-        assert json.loads(resp.body) == [{
+        assert resp.status == 201
+        assert await resp.json() == [{
             'fallbacks': [{
                 'max_recos': 10,
                 'name': 'test',
@@ -617,8 +608,8 @@ class TestSlotsModelPost(object):
                         'name': 'visual_similarity',
                         'configuration': {
                             'core_module': {
-                                'path': 'tests.integration.fixtures_models',
-                                'class_name': 'TestEngine'
+                                'path': 'tests.integration.fixtures',
+                                'class_name': 'EngineCoreTest'
                             }
                         }
                     },
@@ -700,8 +691,8 @@ class TestSlotsModelPost(object):
                     'name': 'visual_similarity',
                     'configuration': {
                         'core_module': {
-                            'path': 'tests.integration.fixtures_models',
-                            'class_name': 'TestEngine'
+                            'path': 'tests.integration.fixtures',
+                            'class_name': 'EngineCoreTest'
                         }
                     }
                 },
@@ -728,7 +719,8 @@ class TestSlotsModelPost(object):
             'engine_id': 1
         }]
 
-    def test_post_with_invalid_grant(self, client):
+   async def test_post_with_invalid_grant(self, client):
+        client = await client
         body = [{
             'max_recos': 10,
             'name': 'test',
@@ -741,23 +733,26 @@ class TestSlotsModelPost(object):
                 'inside_engine_name': 'item_id'
             }]
         }]
-        resp = client.post('/slots/', headers={'Authorization': 'invalid'}, body=json.dumps(body))
-        assert resp.status_code == 401
-        assert json.loads(resp.body) ==  {'error': 'Invalid authorization'}
+        resp = await client.post('/slots/', headers={'Authorization': 'invalid'}, data=ujson.dumps(body))
+        assert resp.status == 401
+        assert await resp.json() ==  {'message': 'Invalid authorization'}
 
 
 class TestSlotsModelGet(object):
 
-    def test_get_not_found(self, client, headers):
-        resp = client.get('/slots/?store_id=1', headers=headers)
-        assert resp.status_code == 404
+   async def test_get_not_found(self, init_db, client, headers, headers_without_content_type):
+        client = await client
+        resp = await client.get('/slots/?store_id=1', headers=headers_without_content_type)
+        assert resp.status == 404
 
-    def test_get_invalid_with_body(self, client, headers):
-        resp = client.get('/slots/?store_id=1', headers=headers, body='{}')
-        assert resp.status_code == 400
-        assert json.loads(resp.body) == {'error': 'Request body is not acceptable'}
+   async def test_get_invalid_with_body(self, init_db, client, headers, headers_without_content_type):
+        client = await client
+        resp = await client.get('/slots/?store_id=1', headers=headers, data='{}')
+        assert resp.status == 400
+        assert await resp.json() == {'message': 'Request body is not acceptable'}
 
-    def test_get(self, client, headers):
+   async def test_get(self, init_db, client, headers, headers_without_content_type):
+        client = await client
         body = [{
             'max_recos': 10,
             'name': 'test',
@@ -770,11 +765,11 @@ class TestSlotsModelGet(object):
                 'inside_engine_name': 'filter_test'
             }]
         }]
-        client.post('/slots/', headers=headers, body=json.dumps(body))
+        await client.post('/slots/', headers=headers, data=ujson.dumps(body))
 
-        resp = client.get('/slots/?store_id=1', headers=headers)
-        assert resp.status_code == 200
-        assert json.loads(resp.body) ==  [{
+        resp = await client.get('/slots/?store_id=1', headers=headers_without_content_type)
+        assert resp.status == 200
+        assert await resp.json() ==  [{
             'fallbacks': [],
             'id': 1,
             'max_recos': 10,
@@ -832,8 +827,8 @@ class TestSlotsModelGet(object):
                     'name': 'visual_similarity',
                     'configuration': {
                         'core_module': {
-                            'path': 'tests.integration.fixtures_models',
-                            'class_name': 'TestEngine'
+                            'path': 'tests.integration.fixtures',
+                            'class_name': 'EngineCoreTest'
                         }
                     }
                 },
@@ -863,48 +858,47 @@ class TestSlotsModelGet(object):
 
 class TestSlotsModelUriTemplatePatch(object):
 
-    def test_patch_without_body(self, client, headers):
-        resp = client.patch('/slots/1/', headers=headers, body='')
-        assert resp.status_code == 400
-        assert json.loads(resp.body) == {'error': 'Request body is missing'}
+   async def test_patch_without_body(self, init_db, client, headers, headers_without_content_type):
+        client = await client
+        resp = await client.patch('/slots/1/', headers=headers, data='')
+        assert resp.status == 400
+        assert await resp.json() == {'message': 'Request body is missing'}
 
-    def test_patch_with_invalid_body(self, client, headers):
-        resp = client.patch('/slots/1/', headers=headers, body='{}')
-        assert resp.status_code == 400
-        assert json.loads(resp.body) ==  {
-            'error': {
-                'input': {},
-                'schema': {
-                    'additionalProperties': False,
-                    'minProperties': 1,
-                    'properties': {
-                        'max_recos': {
-                            'type': 'integer'
-                        },
-                        'name': {
-                            'type': 'string'
-                        },
-                        'engine_id': {
-                            'type': 'integer'
-                        },
-                        'store_id': {
-                            'type': 'integer'
-                        },
-                        'fallbacks': {
-                            '$ref': '#/definitions/fallbacks'
-                        },
-                        'slot_variables': {
-                            '$ref': '#/definitions/slot_variables'
-                        }
+   async def test_patch_with_invalid_body(self, init_db, client, headers, headers_without_content_type):
+        client = await client
+        resp = await client.patch('/slots/1/', headers=headers, data='{}')
+        assert resp.status == 400
+        assert await resp.json() ==  {
+            'schema': {
+                'additionalProperties': False,
+                'minProperties': 1,
+                'properties': {
+                    'max_recos': {
+                        'type': 'integer'
                     },
-                    'type': 'object'
+                    'name': {
+                        'type': 'string'
+                    },
+                    'engine_id': {
+                        'type': 'integer'
+                    },
+                    'store_id': {
+                        'type': 'integer'
+                    },
+                    'fallbacks': {
+                        '$ref': '#/definitions/fallbacks'
+                    },
+                    'slot_variables': {
+                        '$ref': '#/definitions/slot_variables'
+                    }
                 },
-                'message': '{} does not have enough properties'
-            }
+                'type': 'object'
+            },
+            'message': '{} does not have enough properties'
         }
 
-
-    def test_patch_with_invalid_engine_variable(self, client, headers):
+   async def test_patch_with_invalid_engine_variable(self, init_db, client, headers, headers_without_content_type):
+        client = await client
         body = [{
             'max_recos': 10,
             'name': 'test',
@@ -917,7 +911,7 @@ class TestSlotsModelUriTemplatePatch(object):
                 'inside_engine_name': 'filter_test'
             }]
         }]
-        resp = client.post('/slots/', headers=headers, body=json.dumps(body))
+        resp = await client.post('/slots/', headers=headers, data=ujson.dumps(body))
 
         body = {
             'slot_variables': [{
@@ -926,32 +920,30 @@ class TestSlotsModelUriTemplatePatch(object):
                 'inside_engine_name': 'invalid'
             }]
         }
-        resp = client.patch('/slots/1/', headers=headers, body=json.dumps(body))
-        assert resp.status_code == 400
-        assert json.loads(resp.body) ==  {
-            'error': {
-                'message': "Invalid engine variable with 'inside_engine_name' value 'invalid'",
-                'input': {
+        resp = await client.patch('/slots/1/', headers=headers, data=ujson.dumps(body))
+        assert resp.status == 400
+        assert await resp.json() ==  {
+            'message': "Invalid engine variable with 'inside_engine_name' value 'invalid'",
+            'instance': [{
+                'slot_variables': [{
+                    '_operation': 'update',
                     'id': 1,
-                    'slot_variables': [{
-                        '_operation': 'update',
-                        'id': 1,
-                        'inside_engine_name': 'invalid'
-                    }],
-                },
-                'schema': {
-                    'available_variables': [{
-                        'name': 'filter_test',
-                        'schema': {"type": "string"}
-                    },{
-                        'name': 'item_id',
-                        'schema': {"type": "integer"}
-                    }]
-                }
+                    'inside_engine_name': 'invalid'
+                }],
+            }],
+            'schema': {
+                'available_variables': [{
+                    'name': 'filter_test',
+                    'schema': {"type": "string"}
+                },{
+                    'name': 'item_id',
+                    'schema': {"type": "integer"}
+                }]
             }
         }
 
-    def test_patch_with_invalid_fallback_id(self, client, headers):
+   async def test_patch_with_invalid_fallback_id(self, init_db, client, headers, headers_without_content_type):
+        client = await client
         body = [{
             'max_recos': 10,
             'name': 'test',
@@ -964,21 +956,20 @@ class TestSlotsModelUriTemplatePatch(object):
                 'inside_engine_name': 'filter_test'
             }]
         }]
-        resp = client.post('/slots/', headers=headers, body=json.dumps(body))
+        resp = await client.post('/slots/', headers=headers, data=ujson.dumps(body))
 
         body = {
             'fallbacks': [{'id': 1}]
         }
-        resp = client.patch('/slots/1/', headers=headers, body=json.dumps(body))
-        assert resp.status_code == 400
-        assert json.loads(resp.body) == {
-            'error': {
-                'input': {'fallbacks': [{'id': 1}], 'id': 1},
-                'message': "a Engine Manager can't fallback itself"
-            }
+        resp = await client.patch('/slots/1/', headers=headers, data=ujson.dumps(body))
+        assert resp.status == 400
+        assert await resp.json() == {
+            'instance': [{'fallbacks': [{'id': 1}]}],
+            'message': "a Engine Manager can't fallback itself"
         }
 
-    def test_patch_with_invalid_fallback_item_type(self, client, headers):
+   async def test_patch_with_invalid_fallback_item_type(self, init_db, client, headers, headers_without_content_type):
+        client = await client
         body = [{
             'max_recos': 10,
             'name': 'test',
@@ -1002,29 +993,29 @@ class TestSlotsModelUriTemplatePatch(object):
                 'inside_engine_name': 'item_id'
             }]
         }]
-        resp = client.post('/slots/', headers=headers, body=json.dumps(body))
+        resp = await client.post('/slots/', headers=headers, data=ujson.dumps(body))
 
         body = {
             'fallbacks': [{'id': 2}]
         }
-        resp = client.patch('/slots/1/', headers=headers, body=json.dumps(body))
-        assert resp.status_code == 400
-        assert json.loads(resp.body) == {
-            'error': {
-                'input': {'fallbacks': [{'id': 2}], 'id': 1},
-                'message': "Cannot set a fallback with different items types"
-            }
+        resp = await client.patch('/slots/1/', headers=headers, data=ujson.dumps(body))
+        assert resp.status == 400
+        assert await resp.json() == {
+            'instance': [{'fallbacks': [{'id': 2}]}],
+            'message': "Cannot set a fallback with different items types"
         }
 
-    def test_patch_not_found(self, client, headers):
+   async def test_patch_not_found(self, init_db, client, headers, headers_without_content_type):
+        client = await client
         body = {
             'name': 'test',
             'store_id': 1
         }
-        resp = client.patch('/engines/1/', headers=headers, body=json.dumps(body))
-        assert resp.status_code == 404
+        resp = await client.patch('/slots/1/', headers=headers, data=ujson.dumps(body))
+        assert resp.status == 404
 
-    def test_patch(self, client, headers):
+   async def test_patch_valid(self, init_db, client, headers, headers_without_content_type):
+        client = await client
         body = [{
             'max_recos': 10,
             'name': 'test',
@@ -1037,7 +1028,8 @@ class TestSlotsModelUriTemplatePatch(object):
                 'inside_engine_name': 'item_id'
             }]
         }]
-        obj = json.loads(client.post('/slots/', headers=headers, body=json.dumps(body)).body)[0]
+        resp = await client.post('/slots/', headers=headers, data=ujson.dumps(body))
+        obj = (await resp.json())[0]
 
         body = {
             'slot_variables': [{
@@ -1046,10 +1038,10 @@ class TestSlotsModelUriTemplatePatch(object):
                 'inside_engine_name': 'filter_test'
             }]
         }
-        resp = client.patch('/slots/1/', headers=headers, body=json.dumps(body))
+        resp = await client.patch('/slots/1/', headers=headers, data=ujson.dumps(body))
 
-        assert resp.status_code == 200
-        assert json.loads(resp.body) ==  {
+        assert resp.status == 200
+        assert await resp.json() ==  {
             'fallbacks': [],
             'id': 1,
             'max_recos': 10,
@@ -1107,8 +1099,8 @@ class TestSlotsModelUriTemplatePatch(object):
                     'name': 'visual_similarity',
                     'configuration': {
                         'core_module': {
-                            'path': 'tests.integration.fixtures_models',
-                            'class_name': 'TestEngine'
+                            'path': 'tests.integration.fixtures',
+                            'class_name': 'EngineCoreTest'
                         }
                     }
                 },
@@ -1138,12 +1130,14 @@ class TestSlotsModelUriTemplatePatch(object):
 
 class TestSlotsModelUriTemplateDelete(object):
 
-    def test_delete_with_body(self, client, headers):
-        resp = client.delete('/slots/1/', headers=headers, body='{}')
-        assert resp.status_code == 400
-        assert json.loads(resp.body) == {'error': 'Request body is not acceptable'}
+   async def test_delete_with_body(self, init_db, client, headers, headers_without_content_type):
+        client = await client
+        resp = await client.delete('/slots/1/', headers=headers, data='{}')
+        assert resp.status == 400
+        assert await resp.json() == {'message': 'Request body is not acceptable'}
 
-    def test_delete(self, client, headers):
+   async def test_delete(self, init_db, client, headers, headers_without_content_type):
+        client = await client
         body = [{
             'max_recos': 10,
             'name': 'test',
@@ -1156,29 +1150,32 @@ class TestSlotsModelUriTemplateDelete(object):
                 'inside_engine_name': 'filter_test'
             }]
         }]
-        client.post('/slots/', headers=headers, body=json.dumps(body))
-        resp = client.get('/slots/1/', headers=headers)
-        assert resp.status_code == 200
+        await client.post('/slots/', headers=headers, data=ujson.dumps(body))
+        resp = await client.get('/slots/1/', headers=headers_without_content_type)
+        assert resp.status == 200
 
-        resp = client.delete('/slots/1/', headers=headers)
-        assert resp.status_code == 204
+        resp = await client.delete('/slots/1/', headers=headers_without_content_type)
+        assert resp.status == 204
 
-        resp = client.get('/slots/1/', headers=headers)
-        assert resp.status_code == 404
+        resp = await client.get('/slots/1/', headers=headers_without_content_type)
+        assert resp.status == 404
 
 
 class TestSlotsModelUriTemplateGet(object):
 
-    def test_get_with_body(self, client, headers):
-        resp = client.get('/slots/1/', headers=headers, body='{}')
-        assert resp.status_code == 400
-        assert json.loads(resp.body) == {'error': 'Request body is not acceptable'}
+   async def test_get_with_body(self, init_db, client, headers, headers_without_content_type):
+        client = await client
+        resp = await client.get('/slots/1/', headers=headers, data='{}')
+        assert resp.status == 400
+        assert await resp.json() == {'message': 'Request body is not acceptable'}
 
-    def test_get_not_found(self, client, headers):
-        resp = client.get('/slots/1/', headers=headers)
-        assert resp.status_code == 404
+   async def test_get_not_found(self, init_db, client, headers, headers_without_content_type):
+        client = await client
+        resp = await client.get('/slots/1/', headers=headers_without_content_type)
+        assert resp.status == 404
 
-    def test_get(self, client, headers):
+   async def test_get(self, init_db, client, headers, headers_without_content_type):
+        client = await client
         body = [{
             'max_recos': 10,
             'name': 'test',
@@ -1191,12 +1188,12 @@ class TestSlotsModelUriTemplateGet(object):
                 'inside_engine_name': 'filter_test'
             }]
         }]
-        client.post('/slots/', headers=headers, body=json.dumps(body))
+        await client.post('/slots/', headers=headers, data=ujson.dumps(body))
 
-        resp = client.get('/slots/1/', headers=headers)
+        resp = await client.get('/slots/1/', headers=headers_without_content_type)
 
-        assert resp.status_code == 200
-        assert json.loads(resp.body) == {
+        assert resp.status == 200
+        assert await resp.json() == {
             'fallbacks': [],
             'id': 1,
             'max_recos': 10,
@@ -1254,8 +1251,8 @@ class TestSlotsModelUriTemplateGet(object):
                     'name': 'visual_similarity',
                     'configuration': {
                         'core_module': {
-                            'path': 'tests.integration.fixtures_models',
-                            'class_name': 'TestEngine'
+                            'path': 'tests.integration.fixtures',
+                            'class_name': 'EngineCoreTest'
                         }
                     }
                 },

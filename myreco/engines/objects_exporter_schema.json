@@ -12,12 +12,12 @@
             "required": true
         }],
         "post": {
-            "operationId": "post_job",
+            "operationId": "post_export_objects_job",
             "responses": {"201": {"description": "Executing"}}
         },
         "get": {
             "parameters": [{
-                "name": "hash",
+                "name": "job_hash",
                 "in": "query",
                 "type": "string",
                 "required": true
@@ -27,7 +27,7 @@
                 "type": "boolean",
                 "default": false
             }],
-            "operationId": "get_job",
+            "operationId": "get_export_objects_job",
             "responses": {"200": {"description": "Got"}}
         }
     }

@@ -1,7 +1,6 @@
-
 # MIT License
 
-# Copyright (c) 2016 Diogo Dutra
+# Copyright (c) 2016 Diogo Dutra <dutradda@gmail.com>
 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -22,63 +21,51 @@
 # SOFTWARE.
 
 
-from tests.integration.fixtures_models import (
-    SQLAlchemyRedisModelBase, SlotsModel, PlacementsModel,
-    UsersModel, StoresModel, VariablesModel, ItemsTypesModel,
-    EnginesModel, EnginesCoresModel, DataImporter, TestEngine)
-from pytest_falcon.plugin import Client
-from myreco.factory import ModelsFactory
-from falconswagger.swagger_api import SwaggerAPI
-from base64 import b64encode
-from unittest import mock
+from tests.integration.fixtures import DataImporterTest, EngineCoreTest
+from swaggerit.models._base import _all_models
 from tempfile import TemporaryDirectory
 from time import sleep
+from unittest import mock
 import pytest
-import json
-import numpy as np
-import os.path
+import ujson
 import random
-
-
-@pytest.fixture
-def model_base():
-    return SQLAlchemyRedisModelBase
+import asyncio
 
 
 @pytest.fixture
 def temp_dir():
-    return TemporaryDirectory()
+    dir_ = TemporaryDirectory()
+    yield dir_
+    dir_.cleanup()
+
 
 @pytest.fixture
-def app(redis, session, temp_dir):
-    UsersModel.__api__ = None
+def init_db(models, session, api, temp_dir):
     user = {
         'name': 'test',
         'email': 'test',
         'password': 'test',
         'admin': True
     }
-    UsersModel.insert(session, user)
+    session.loop.run_until_complete(models['users'].insert(session, user))
 
-    StoresModel.__api__ = None
     store = {
         'name': 'test',
         'country': 'test',
         'configuration': {'data_path': temp_dir.name}
     }
-    StoresModel.insert(session, store)
+    session.loop.run_until_complete(models['stores'].insert(session, store))
 
-    EnginesCoresModel.__api__ = None
     engine_core = {
         'name': 'visual_similarity',
         'configuration': {
             'core_module': {
-                'path': 'tests.integration.fixtures_models',
-                'class_name': 'TestEngine'
+                'path': 'tests.integration.fixtures',
+                'class_name': 'EngineCoreTest'
             }
         }
     }
-    EnginesCoresModel.insert(session, engine_core)
+    session.loop.run_until_complete(models['engines_cores'].insert(session, engine_core))
     engine_core = {
         'name': 'top_seller',
         'configuration': {
@@ -87,12 +74,12 @@ def app(redis, session, temp_dir):
                 'class_name': 'TopSellerEngineCore'
             },
             'data_importer_module': {
-                'path': 'tests.integration.fixtures_models',
-                'class_name': 'TestDataImporter'
+                'path': 'tests.integration.fixtures',
+                'class_name': 'DataImporterTest'
             }
         }
     }
-    EnginesCoresModel.insert(session, engine_core)
+    session.loop.run_until_complete(models['engines_cores'].insert(session, engine_core))
 
     schema = {
         'type': 'object',
@@ -103,19 +90,18 @@ def app(redis, session, temp_dir):
         }
     }
 
-    ItemsTypesModel.__api__ = None
     item_type = {
         'name': 'products',
         'stores': [{'id': 1}],
         'schema': schema
     }
-    ItemsTypesModel.insert(session, item_type)
+    session.loop.run_until_complete(models['items_types'].insert(session, item_type))
     item_type = {
         'name': 'categories',
         'stores': [{'id': 1}],
         'schema': schema
     }
-    ItemsTypesModel.insert(session, item_type)
+    session.loop.run_until_complete(models['items_types'].insert(session, item_type))
     item_type = {
         'name': 'invalid',
         'stores': [{'id': 1}],
@@ -125,7 +111,7 @@ def app(redis, session, temp_dir):
             'properties': {'item_id': {'type': 'string'}}
         }
     }
-    ItemsTypesModel.insert(session, item_type)
+    session.loop.run_until_complete(models['items_types'].insert(session, item_type))
     item_type = {
         'name': 'products_new',
         'stores': [{'id': 1}],
@@ -152,12 +138,11 @@ def app(redis, session, temp_dir):
             }
         }
     }
-    ItemsTypesModel.insert(session, item_type)
+    session.loop.run_until_complete(models['items_types'].insert(session, item_type))
 
-    EnginesModel.__api__ = None
     engine = {
         'name': 'Visual Similarity',
-        'configuration_json': json.dumps({
+        'configuration_json': ujson.dumps({
             'item_id_name': 'item_id',
             'aggregators_ids_name': 'filter_test',
             'data_importer_path': 'test.test'
@@ -166,10 +151,10 @@ def app(redis, session, temp_dir):
         'core_id': 1,
         'item_type_id': 1
     }
-    EnginesModel.insert(session, engine)
+    session.loop.run_until_complete(models['engines'].insert(session, engine))
     engine = {
         'name': 'Categories Visual Similarity',
-        'configuration_json': json.dumps({
+        'configuration_json': ujson.dumps({
             'item_id_name': 'item_id',
             'aggregators_ids_name': 'filter_test'
         }),
@@ -177,27 +162,27 @@ def app(redis, session, temp_dir):
         'core_id': 1,
         'item_type_id': 2
     }
-    EnginesModel.insert(session, engine)
+    session.loop.run_until_complete(models['engines'].insert(session, engine))
     engine = {
         'name': 'Invalid Top Seller',
-        'configuration_json': json.dumps({
+        'configuration_json': ujson.dumps({
             'days_interval': 7
         }),
         'store_id': 1,
         'core_id': 2,
         'item_type_id': 3
     }
-    EnginesModel.insert(session, engine)
+    session.loop.run_until_complete(models['engines'].insert(session, engine))
     engine = {
         'name': 'Top Seller',
-        'configuration_json': json.dumps({
+        'configuration_json': ujson.dumps({
             'days_interval': 7
         }),
         'store_id': 1,
         'core_id': 2,
         'item_type_id': 4
     }
-    EnginesModel.insert(session, engine)
+    session.loop.run_until_complete(models['engines'].insert(session, engine))
     engine = {
         'name': 'With Fallback',
         'store_id': 1,
@@ -209,36 +194,34 @@ def app(redis, session, temp_dir):
             'data_importer_path': 'test.test'
         }
     }
-    EnginesModel.insert(session, engine)
+    session.loop.run_until_complete(models['engines'].insert(session, engine))
 
-    VariablesModel.__api__ = None
-    VariablesModel.insert(session, {'name': 'test', 'store_id': 1})
-    VariablesModel.insert(session, {'name': 'test2', 'store_id': 1})
-    VariablesModel.insert(session, {'name': 'test3', 'store_id': 1})
-    VariablesModel.insert(session, {'name': 'filter_string_inclusive', 'store_id': 1})
-    VariablesModel.insert(session, {'name': 'filter_integer_inclusive', 'store_id': 1})
-    VariablesModel.insert(session, {'name': 'filter_boolean_inclusive', 'store_id': 1})
-    VariablesModel.insert(session, {'name': 'filter_array_inclusive', 'store_id': 1})
-    VariablesModel.insert(session, {'name': 'filter_object_inclusive', 'store_id': 1})
-    VariablesModel.insert(session, {'name': 'filter_string_exclusive', 'store_id': 1})
-    VariablesModel.insert(session, {'name': 'filter_integer_exclusive', 'store_id': 1})
-    VariablesModel.insert(session, {'name': 'filter_boolean_exclusive', 'store_id': 1})
-    VariablesModel.insert(session, {'name': 'filter_array_exclusive', 'store_id': 1})
-    VariablesModel.insert(session, {'name': 'filter_object_exclusive', 'store_id': 1})
-    VariablesModel.insert(session, {'name': 'filter_string_inclusive_of', 'store_id': 1})
-    VariablesModel.insert(session, {'name': 'filter_integer_inclusive_of', 'store_id': 1})
-    VariablesModel.insert(session, {'name': 'filter_boolean_inclusive_of', 'store_id': 1})
-    VariablesModel.insert(session, {'name': 'filter_array_inclusive_of', 'store_id': 1})
-    VariablesModel.insert(session, {'name': 'filter_object_inclusive_of', 'store_id': 1})
-    VariablesModel.insert(session, {'name': 'filter_string_exclusive_of', 'store_id': 1})
-    VariablesModel.insert(session, {'name': 'filter_integer_exclusive_of', 'store_id': 1})
-    VariablesModel.insert(session, {'name': 'filter_boolean_exclusive_of', 'store_id': 1})
-    VariablesModel.insert(session, {'name': 'filter_array_exclusive_of', 'store_id': 1})
-    VariablesModel.insert(session, {'name': 'filter_object_exclusive_of', 'store_id': 1})
-    VariablesModel.insert(session, {'name': 'index_inclusive_of', 'store_id': 1})
-    VariablesModel.insert(session, {'name': 'index_exclusive_of', 'store_id': 1})
+    session.loop.run_until_complete(models['variables'].insert(session, {'name': 'test', 'store_id': 1}))
+    session.loop.run_until_complete(models['variables'].insert(session, {'name': 'test2', 'store_id': 1}))
+    session.loop.run_until_complete(models['variables'].insert(session, {'name': 'test3', 'store_id': 1}))
+    session.loop.run_until_complete(models['variables'].insert(session, {'name': 'filter_string_inclusive', 'store_id': 1}))
+    session.loop.run_until_complete(models['variables'].insert(session, {'name': 'filter_integer_inclusive', 'store_id': 1}))
+    session.loop.run_until_complete(models['variables'].insert(session, {'name': 'filter_boolean_inclusive', 'store_id': 1}))
+    session.loop.run_until_complete(models['variables'].insert(session, {'name': 'filter_array_inclusive', 'store_id': 1}))
+    session.loop.run_until_complete(models['variables'].insert(session, {'name': 'filter_object_inclusive', 'store_id': 1}))
+    session.loop.run_until_complete(models['variables'].insert(session, {'name': 'filter_string_exclusive', 'store_id': 1}))
+    session.loop.run_until_complete(models['variables'].insert(session, {'name': 'filter_integer_exclusive', 'store_id': 1}))
+    session.loop.run_until_complete(models['variables'].insert(session, {'name': 'filter_boolean_exclusive', 'store_id': 1}))
+    session.loop.run_until_complete(models['variables'].insert(session, {'name': 'filter_array_exclusive', 'store_id': 1}))
+    session.loop.run_until_complete(models['variables'].insert(session, {'name': 'filter_object_exclusive', 'store_id': 1}))
+    session.loop.run_until_complete(models['variables'].insert(session, {'name': 'filter_string_inclusive_of', 'store_id': 1}))
+    session.loop.run_until_complete(models['variables'].insert(session, {'name': 'filter_integer_inclusive_of', 'store_id': 1}))
+    session.loop.run_until_complete(models['variables'].insert(session, {'name': 'filter_boolean_inclusive_of', 'store_id': 1}))
+    session.loop.run_until_complete(models['variables'].insert(session, {'name': 'filter_array_inclusive_of', 'store_id': 1}))
+    session.loop.run_until_complete(models['variables'].insert(session, {'name': 'filter_object_inclusive_of', 'store_id': 1}))
+    session.loop.run_until_complete(models['variables'].insert(session, {'name': 'filter_string_exclusive_of', 'store_id': 1}))
+    session.loop.run_until_complete(models['variables'].insert(session, {'name': 'filter_integer_exclusive_of', 'store_id': 1}))
+    session.loop.run_until_complete(models['variables'].insert(session, {'name': 'filter_boolean_exclusive_of', 'store_id': 1}))
+    session.loop.run_until_complete(models['variables'].insert(session, {'name': 'filter_array_exclusive_of', 'store_id': 1}))
+    session.loop.run_until_complete(models['variables'].insert(session, {'name': 'filter_object_exclusive_of', 'store_id': 1}))
+    session.loop.run_until_complete(models['variables'].insert(session, {'name': 'index_inclusive_of', 'store_id': 1}))
+    session.loop.run_until_complete(models['variables'].insert(session, {'name': 'index_exclusive_of', 'store_id': 1}))
 
-    SlotsModel.__api__ = None
     slot = {
         'max_recos': 10,
         'name': 'test',
@@ -267,7 +250,7 @@ def app(redis, session, temp_dir):
             'inside_engine_name': 'item_id'
         }]
     }
-    SlotsModel.insert(session, slot)
+    session.loop.run_until_complete(models['slots'].insert(session, slot))
     slot = {
         'max_recos': 10,
         'name': 'test2',
@@ -451,7 +434,7 @@ def app(redis, session, temp_dir):
             'inside_engine_name': 'sku'
         }]
     }
-    SlotsModel.insert(session, slot)
+    session.loop.run_until_complete(models['slots'].insert(session, slot))
     slot = {
         'max_recos': 10,
         'name': 'test',
@@ -459,53 +442,51 @@ def app(redis, session, temp_dir):
         'engine_id': 5,
         'fallbacks': [{'id': 2}]
     }
-    SlotsModel.insert(session, slot)
+    session.loop.run_until_complete(models['slots'].insert(session, slot))
 
-    PlacementsModel.__api__ = None
-    api = SwaggerAPI([PlacementsModel, ItemsTypesModel], session.bind, session.redis_bind,
-                     title='Myreco API')
-    ItemsTypesModel.associate_all_items(session)
-    return api
+    yield None
 
-
-@pytest.fixture
-def headers():
-    return {
-        'Authorization': b64encode('test:test'.encode()).decode()
-    }
+    _all_models.pop('products_1')
+    api.remove_swagger_paths(_all_models.pop('products_collection'))
+    _all_models.pop('categories_1')
+    api.remove_swagger_paths(_all_models.pop('categories_collection'))
+    _all_models.pop('invalid_1')
+    api.remove_swagger_paths(_all_models.pop('invalid_collection'))
+    _all_models.pop('products_new_1')
+    api.remove_swagger_paths(_all_models.pop('products_new_collection'))
 
 
 class TestPlacementsModelPost(object):
 
-    def test_post_without_body(self, client, headers):
-        resp = client.post('/placements/', headers=headers)
-        assert resp.status_code == 400
-        assert json.loads(resp.body) == {'error': 'Request body is missing'}
+    async def test_post_without_body(self, init_db, client, headers):
+        client = await client
+        resp = await client.post('/placements/', headers=headers)
+        assert resp.status == 400
+        assert (await resp.json()) == {'message': 'Request body is missing'}
 
-    def test_post_with_invalid_body(self, client, headers):
-        resp = client.post('/placements/', headers=headers, body='[{}]')
-        assert resp.status_code == 400
-        assert json.loads(resp.body) ==  {
-            'error': {
-                'input': {},
-                'message': "'name' is a required property",
-                'schema': {
-                    'type': 'object',
-                    'additionalProperties': False,
-                    'required': ['name', 'variations', 'store_id'],
-                    'properties': {
-                        'ab_testing': {'type': 'boolean'},
-                        'show_details': {'type': 'boolean'},
-                        'distribute_recos': {'type': 'boolean'},
-                        'name': {'type': 'string'},
-                        'store_id': {'type': 'integer'},
-                        'variations': {'$ref': '#/definitions/variations'}
-                    }
+    async def test_post_with_invalid_body(self, init_db, client, headers):
+        client = await client
+        resp = await client.post('/placements/', headers=headers, data='[{}]')
+        assert resp.status == 400
+        assert (await resp.json()) ==  {
+            'message': "'name' is a required property",
+            'schema': {
+                'type': 'object',
+                'additionalProperties': False,
+                'required': ['name', 'variations', 'store_id'],
+                'properties': {
+                    'ab_testing': {'type': 'boolean'},
+                    'show_details': {'type': 'boolean'},
+                    'distribute_recos': {'type': 'boolean'},
+                    'name': {'type': 'string'},
+                    'store_id': {'type': 'integer'},
+                    'variations': {'$ref': '#/definitions/variations'}
                 }
             }
         }
 
-    def test_post(self, client, headers, temp_dir):
+    async def test_post_valid(self, init_db, client, headers, temp_dir):
+        client = await client
         body = [{
             'store_id': 1,
             'name': 'Placement Test',
@@ -514,9 +495,9 @@ class TestPlacementsModelPost(object):
                 'slots': [{'id': 1}]
             }]
         }]
-        resp = client.post('/placements/', headers=headers, body=json.dumps(body))
-        assert resp.status_code == 201
-        assert json.loads(resp.body) ==  [{
+        resp = await client.post('/placements/', headers=headers, data=ujson.dumps(body))
+        assert resp.status == 201
+        assert (await resp.json()) ==  [{
             'ab_testing': False,
             'show_details': True,
             'distribute_recos': False,
@@ -574,8 +555,8 @@ class TestPlacementsModelPost(object):
                             'name': 'visual_similarity',
                             'configuration': {
                                 'core_module': {
-                                    'path': 'tests.integration.fixtures_models',
-                                    'class_name': 'TestEngine'
+                                    'path': 'tests.integration.fixtures',
+                                    'class_name': 'EngineCoreTest'
                                 }
                             }
                         },
@@ -646,7 +627,8 @@ class TestPlacementsModelPost(object):
             }]
         }]
 
-    def test_post_with_invalid_grant(self, client):
+    async def test_post_with_invalid_grant(self, init_db, client):
+        client = await client
         body = [{
             'store_id': 1,
             'name': 'Placement Test',
@@ -655,24 +637,27 @@ class TestPlacementsModelPost(object):
                 'slots': [{'id': 1}]
             }]
         }]
-        resp = client.post('/placements/', headers={'Authorization': 'invalid'}, body=json.dumps(body))
-        assert resp.status_code == 401
-        assert json.loads(resp.body) ==  {'error': 'Invalid authorization'}
+        resp = await client.post('/placements/', headers={'Authorization': 'invalid'}, data=ujson.dumps(body))
+        assert resp.status == 401
+        assert (await resp.json()) ==  {'message': 'Invalid authorization'}
 
 
 
 class TestPlacementsModelGet(object):
 
-    def test_get_not_found(self, client, headers):
-        resp = client.get('/placements/?store_id=1', headers=headers)
-        assert resp.status_code == 404
+    async def test_get_not_found(self, init_db, client, headers_without_content_type):
+        client = await client
+        resp = await client.get('/placements/?store_id=1', headers=headers_without_content_type)
+        assert resp.status == 404
 
-    def test_get_invalid_with_body(self, client, headers):
-        resp = client.get('/placements/?store_id=1', headers=headers, body='{}')
-        assert resp.status_code == 400
-        assert json.loads(resp.body) == {'error': 'Request body is not acceptable'}
+    async def test_get_invalid_with_body(self, init_db, client, headers):
+        client = await client
+        resp = await client.get('/placements/?store_id=1', headers=headers, data='{}')
+        assert resp.status == 400
+        assert (await resp.json()) == {'message': 'Request body is not acceptable'}
 
-    def test_get(self, client, headers, temp_dir):
+    async def test_get(self, init_db, client, headers, temp_dir, headers_without_content_type):
+        client = await client
         body = [{
             'store_id': 1,
             'name': 'Placement Test',
@@ -681,11 +666,11 @@ class TestPlacementsModelGet(object):
                 'slots': [{'id': 1}]
             }]
         }]
-        client.post('/placements/', headers=headers, body=json.dumps(body))
+        await client.post('/placements/', headers=headers, data=ujson.dumps(body))
 
-        resp = client.get('/placements/?store_id=1', headers=headers)
-        assert resp.status_code == 200
-        assert json.loads(resp.body) ==  [{
+        resp = await client.get('/placements/?store_id=1', headers=headers_without_content_type)
+        assert resp.status == 200
+        assert (await resp.json()) ==  [{
             'ab_testing': False,
             'show_details': True,
             'distribute_recos': False,
@@ -743,8 +728,8 @@ class TestPlacementsModelGet(object):
                             'name': 'visual_similarity',
                             'configuration': {
                                 'core_module': {
-                                    'path': 'tests.integration.fixtures_models',
-                                    'class_name': 'TestEngine'
+                                    'path': 'tests.integration.fixtures',
+                                    'class_name': 'EngineCoreTest'
                                 }
                             }
                         },
@@ -818,42 +803,35 @@ class TestPlacementsModelGet(object):
 
 class TestPlacementsModelUriTemplatePatch(object):
 
-    def test_patch_without_body(self, client, headers):
-        resp = client.patch('/placements/1/', headers=headers, body='')
-        assert resp.status_code == 400
-        assert json.loads(resp.body) == {'error': 'Request body is missing'}
+    async def test_patch_without_body(self, init_db, client, headers):
+        client = await client
+        resp = await client.patch('/placements/1/', headers=headers, data='')
+        assert resp.status == 400
+        assert (await resp.json()) == {'message': 'Request body is missing'}
 
-    def test_patch_with_invalid_body(self, client, headers):
-        resp = client.patch('/placements/1/', headers=headers, body='{}')
-        assert resp.status_code == 400
-        assert json.loads(resp.body) == {
-            'error': {
-                'input': {},
-                'message': '{} does not have enough properties',
-                'schema': {
-                    'additionalProperties': False,
-                    'minProperties': 1,
-                    'properties': {
-                        'ab_testing': {'type': 'boolean'},
-                        'show_details': {'type': 'boolean'},
-                        'distribute_recos': {'type': 'boolean'},
-                        'name': {'type': 'string'},
-                        'store_id': {'type': 'integer'},
-                        'variations': {'$ref': '#/definitions/variations'}
-                    },
-                    'type': 'object'
-                }
+    async def test_patch_with_invalid_body(self, init_db, client, headers):
+        client = await client
+        resp = await client.patch('/placements/1/', headers=headers, data='{}')
+        assert resp.status == 400
+        assert (await resp.json()) == {
+            'message': '{} does not have enough properties',
+            'schema': {
+                'additionalProperties': False,
+                'minProperties': 1,
+                'properties': {
+                    'ab_testing': {'type': 'boolean'},
+                    'show_details': {'type': 'boolean'},
+                    'distribute_recos': {'type': 'boolean'},
+                    'name': {'type': 'string'},
+                    'store_id': {'type': 'integer'},
+                    'variations': {'$ref': '#/definitions/variations'}
+                },
+                'type': 'object'
             }
         }
 
-    def test_patch_not_found(self, client, headers):
-        body = {
-            'name': 'test'
-        }
-        resp = client.patch('/engines/1/', headers=headers, body=json.dumps(body))
-        assert resp.status_code == 404
-
-    def test_patch_valid(self, client, headers):
+    async def test_patch_valid(self, init_db, client, headers):
+        client = await client
         body = [{
             'store_id': 1,
             'name': 'Placement Test',
@@ -862,7 +840,8 @@ class TestPlacementsModelUriTemplatePatch(object):
                 'slots': [{'id': 1}]
             }]
         }]
-        obj = json.loads(client.post('/placements/', headers=headers, body=json.dumps(body)).body)[0]
+        resp = await client.post('/placements/', headers=headers, data=ujson.dumps(body))
+        obj = (await resp.json())[0]
 
         body = {
             'variations': [{
@@ -871,11 +850,11 @@ class TestPlacementsModelUriTemplatePatch(object):
                 'slots': [{'id': 1, '_operation': 'remove'}]
             }]
         }
-        resp = client.patch('/placements/{}/'.format(obj['small_hash']),
-            headers=headers, body=json.dumps(body))
+        resp = await client.patch('/placements/{}/'.format(obj['small_hash']),
+            headers=headers, data=ujson.dumps(body))
 
-        assert resp.status_code == 200
-        assert json.loads(resp.body) ==  {
+        assert resp.status == 200
+        assert (await resp.json()) ==  {
             'ab_testing': False,
             'show_details': True,
             'distribute_recos': False,
@@ -894,12 +873,14 @@ class TestPlacementsModelUriTemplatePatch(object):
 
 class TestPlacementsModelUriTemplateDelete(object):
 
-    def test_delete_with_body(self, client, headers):
-        resp = client.delete('/placements/1/', headers=headers, body='{}')
-        assert resp.status_code == 400
-        assert json.loads(resp.body) == {'error': 'Request body is not acceptable'}
+    async def test_delete_with_body(self, init_db, client, headers):
+        client = await client
+        resp = await client.delete('/placements/1/', headers=headers, data='{}')
+        assert resp.status == 400
+        assert (await resp.json()) == {'message': 'Request body is not acceptable'}
 
-    def test_delete_valid(self, client, headers):
+    async def test_delete_valid(self, init_db, client, headers, headers_without_content_type):
+        client = await client
         body = [{
             'store_id': 1,
             'name': 'Placement Test',
@@ -908,29 +889,34 @@ class TestPlacementsModelUriTemplateDelete(object):
                 'slots': [{'id': 1}]
             }]
         }]
-        obj = json.loads(client.post('/placements/', headers=headers, body=json.dumps(body)).body)[0]
-        resp = client.get('/placements/{}/'.format(obj['small_hash']), headers=headers)
-        assert resp.status_code == 200
+        resp = await client.post('/placements/', headers=headers, data=ujson.dumps(body))
+        obj = (await resp.json())[0]
 
-        resp = client.delete('/placements/{}/'.format(obj['small_hash']), headers=headers)
-        assert resp.status_code == 204
+        resp = await client.get('/placements/{}/'.format(obj['small_hash']), headers=headers_without_content_type)
+        assert resp.status == 200
 
-        resp = client.get('/placements/{}/'.format(obj['small_hash']), headers=headers)
-        assert resp.status_code == 404
+        resp = await client.delete('/placements/{}/'.format(obj['small_hash']), headers=headers_without_content_type)
+        assert resp.status == 204
+
+        resp = await client.get('/placements/{}/'.format(obj['small_hash']), headers=headers_without_content_type)
+        assert resp.status == 404
 
 
 class TestPlacementsModelUriTemplateGet(object):
 
-    def test_get_with_body(self, client, headers):
-        resp = client.get('/placements/1/', headers=headers, body='{}')
-        assert resp.status_code == 400
-        assert json.loads(resp.body) == {'error': 'Request body is not acceptable'}
+    async def test_get_with_body(self, init_db, client, headers):
+        client = await client
+        resp = await client.get('/placements/1/', headers=headers, data='{}')
+        assert resp.status == 400
+        assert (await resp.json()) == {'message': 'Request body is not acceptable'}
 
-    def test_get_not_found(self, client, headers):
-        resp = client.get('/placements/1/', headers=headers)
-        assert resp.status_code == 404
+    async def test_get_not_found(self, init_db, client, headers_without_content_type):
+        client = await client
+        resp = await client.get('/placements/1/', headers=headers_without_content_type)
+        assert resp.status == 404
 
-    def test_get_valid(self, client, headers, temp_dir):
+    async def test_get_valid(self, init_db, client, headers, temp_dir, headers_without_content_type):
+        client = await client
         body = [{
             'store_id': 1,
             'name': 'Placement Test',
@@ -939,12 +925,13 @@ class TestPlacementsModelUriTemplateGet(object):
                 'slots': [{'id': 1}]
             }]
         }]
-        obj = json.loads(client.post('/placements/', headers=headers, body=json.dumps(body)).body)[0]
+        resp = await client.post('/placements/', headers=headers, data=ujson.dumps(body))
+        obj = (await resp.json())[0]
 
-        resp = client.get('/placements/{}/'.format(obj['small_hash']), headers=headers)
+        resp = await client.get('/placements/{}/'.format(obj['small_hash']), headers=headers_without_content_type)
 
-        assert resp.status_code == 200
-        assert json.loads(resp.body) == {
+        assert resp.status == 200
+        assert (await resp.json()) == {
             'ab_testing': False,
             'show_details': True,
             'distribute_recos': False,
@@ -1002,8 +989,8 @@ class TestPlacementsModelUriTemplateGet(object):
                             'name': 'visual_similarity',
                             'configuration': {
                                 'core_module': {
-                                    'path': 'tests.integration.fixtures_models',
-                                    'class_name': 'TestEngine'
+                                    'path': 'tests.integration.fixtures',
+                                    'class_name': 'EngineCoreTest'
                                 }
                             }
                         },
@@ -1076,28 +1063,21 @@ class TestPlacementsModelUriTemplateGet(object):
 
 
 @pytest.fixture
-def filters_updater_app(session):
-    table_args = {'mysql_engine':'innodb'}
-    factory = ModelsFactory('myreco', commons_models_attributes={'__table_args__': table_args},
-                            commons_tables_attributes=table_args)
-    models = factory.make_all_models('exporter')
-    api = SwaggerAPI([models['items_types'], models['engines']], session.bind, session.redis_bind,
-                      title='Myreco API')
-    models['items_types'].associate_all_items(session)
-
-    return api
+def random_patch(monkeypatch):
+    monkeypatch.setattr('swaggerit.models.orm._jobs_meta.random.getrandbits',
+        mock.MagicMock(return_value=131940827655846590526331314439483569710))
 
 
-@pytest.fixture
-def filters_updater_client(filters_updater_app):
-    return Client(filters_updater_app)
+def CoroMock():
+    coro = mock.MagicMock(name="CoroutineResult")
+    corofunc = mock.MagicMock(name="CoroutineFunction", side_effect=asyncio.coroutine(coro))
+    corofunc.coro = coro
+    return corofunc
 
 
-@mock.patch('falconswagger.models.http.random.getrandbits',
-    new=mock.MagicMock(return_value=131940827655846590526331314439483569710))
 class TestPlacementsGetRecomendations(object):
 
-    def test_get_recommendations_not_found(self, client, headers):
+    async def test_get_recommendations_not_found(self, init_db, client, headers, headers_without_content_type):
         body = [{
             'store_id': 1,
             'name': 'Placement Test',
@@ -1106,17 +1086,25 @@ class TestPlacementsGetRecomendations(object):
                 'slots': [{'id': 2}]
             }]
         }]
-        obj = json.loads(client.post('/placements/', headers=headers, body=json.dumps(body)).body)[0]
-        resp = client.get('/placements/{}/recommendations'.format(obj['small_hash']), headers=headers)
-        assert resp.status_code == 404
+        client = await client
+        resp = await client.post('/placements/', headers=headers, data=ujson.dumps(body))
+        obj = (await resp.json())[0]
 
-    def test_get_recommendations_placement_not_found(self, client, headers):
-        resp = client.get('/placements/123/recommendations', headers=headers)
-        assert resp.status_code == 404
+        resp = await client.get('/placements/{}/recommendations'.format(obj['small_hash']), headers=headers_without_content_type)
+        assert resp.status == 404
 
-    @mock.patch('myreco.placements.models.ModuleClassLoader')
-    def test_get_recommendations_with_variable_valid(self, class_loader, client, headers):
-        class_loader.load()().get_recommendations.return_value = [{'id': 1}, {'id': 2}, {'id': 3}]
+    async def test_get_recommendations_placement_not_found(self, init_db, client, headers_without_content_type):
+        client = await client
+        resp = await client.get('/placements/123/recommendations', headers=headers_without_content_type)
+        assert resp.status == 404
+
+    async def test_get_recommendations_with_variable_valid(self, init_db, client, headers, monkeypatch, headers_without_content_type):
+        client = await client
+        class_loader = mock.MagicMock()
+        monkeypatch.setattr('myreco.placements.models.ModuleClassLoader', class_loader)
+
+        class_loader.load()().get_recommendations = CoroMock()
+        class_loader.load()().get_recommendations.coro.return_value = [{'id': 1}, {'id': 2}, {'id': 3}]
         body = [{
             'store_id': 1,
             'name': 'Placement Test',
@@ -1125,14 +1113,17 @@ class TestPlacementsGetRecomendations(object):
                 'slots': [{'id': 1}]
             }]
         }]
-        obj = json.loads(client.post('/placements/', headers=headers, body=json.dumps(body)).body)[0]
-        resp = client.get('/placements/{}/recommendations?test2=1'.format(obj['small_hash']), headers=headers)
-        assert resp.status_code == 200
+        resp = await client.post('/placements/', headers=headers, data=ujson.dumps(body))
+        obj = (await resp.json())[0]
+
+        resp = await client.get('/placements/{}/recommendations?test2=1'.format(obj['small_hash']), headers=headers_without_content_type)
+        assert resp.status == 200
         assert class_loader.load()().get_recommendations.call_count == 1
         assert class_loader.load()().get_recommendations.call_args_list[0][1] == {'item_id': 1}
 
-    def test_get_recommendations_valid(self, client, app, headers, filters_updater_client):
-        items_model = app.models['products'].__models__[1]
+    async def test_get_recommendations_valid(self, init_db, client, headers, monkeypatch, headers_without_content_type):
+        random_patch(monkeypatch)
+        client = await client
         products = [{
             'item_id': 1,
             'sku': 'test1'
@@ -1143,24 +1134,24 @@ class TestPlacementsGetRecomendations(object):
             'item_id': 3,
             'sku': 'test3'
         }]
-        client.post('/products_new/?store_id=1', headers=headers, body=json.dumps(products))
+        await client.post('/products_new/?store_id=1', headers=headers, data=ujson.dumps(products))
 
-        filters_updater_client.post('/products_new/update_filters?store_id=1', headers=headers)
+        await client.post('/products_new/update_filters?store_id=1', headers=headers_without_content_type)
         sleep(0.05)
         while True:
-            resp = filters_updater_client.get(
-                '/products_new/update_filters?store_id=1&hash=6342e10bd7dca3240c698aa79c98362e',
-                headers=headers)
-            if json.loads(resp.body)['status'] != 'running':
+            resp = await client.get(
+                '/products_new/update_filters?store_id=1&job_hash=6342e10bd7dca3240c698aa79c98362e',
+                headers=headers_without_content_type)
+            if (await resp.json())['status'] != 'running':
                 break
 
-        filters_updater_client.post('/engines/4/export_objects?import_data=true', headers=headers)
+        await client.post('/engines/4/export_objects?import_data=true', headers=headers_without_content_type)
         sleep(0.05)
         while True:
-            resp = filters_updater_client.get(
-                '/engines/1/export_objects?hash=6342e10bd7dca3240c698aa79c98362e',
-                headers=headers)
-            if json.loads(resp.body)['status'] != 'running':
+            resp = await client.get(
+                '/engines/4/export_objects?job_hash=6342e10bd7dca3240c698aa79c98362e',
+                headers=headers_without_content_type)
+            if (await resp.json())['status'] != 'running':
                 break
 
         body = [{
@@ -1171,14 +1162,17 @@ class TestPlacementsGetRecomendations(object):
                 'slots': [{'id': 2}]
             }]
         }]
-        obj = json.loads(client.post('/placements/', headers=headers, body=json.dumps(body)).body)[0]
-        resp = client.get('/placements/{}/recommendations'.format(obj['small_hash']), headers=headers)
-        assert resp.status_code == 200
-        assert json.loads(resp.body)['recommendations'] == [{'sku': 'test1', 'item_id': 1, 'type': 'products_new'},
+        resp = await client.post('/placements/', headers=headers, data=ujson.dumps(body))
+        obj = (await resp.json())[0]
+
+        resp = await client.get('/placements/{}/recommendations'.format(obj['small_hash']), headers=headers_without_content_type)
+        assert resp.status == 200
+        assert (await resp.json())['recommendations'] == [{'sku': 'test1', 'item_id': 1, 'type': 'products_new'},
             {'sku': 'test3', 'item_id': 3, 'type': 'products_new'}, {'sku': 'test2', 'item_id': 2, 'type': 'products_new'}]
 
-    def test_get_recommendations_with_fallback(self, client, app, headers, filters_updater_client):
-        items_model = app.models['products'].__models__[1]
+    async def test_get_recommendations_with_fallback(self, init_db, client, headers, monkeypatch, headers_without_content_type):
+        random_patch(monkeypatch)
+        client = await client
         products = [{
             'item_id': 1,
             'sku': 'test1'
@@ -1189,24 +1183,24 @@ class TestPlacementsGetRecomendations(object):
             'item_id': 3,
             'sku': 'test3'
         }]
-        client.post('/products_new/?store_id=1', headers=headers, body=json.dumps(products))
+        await client.post('/products_new/?store_id=1', headers=headers, data=ujson.dumps(products))
 
-        filters_updater_client.post('/products_new/update_filters?store_id=1', headers=headers)
+        await client.post('/products_new/update_filters?store_id=1', headers=headers_without_content_type)
         sleep(0.05)
         while True:
-            resp = filters_updater_client.get(
-                '/products_new/update_filters?store_id=1&hash=6342e10bd7dca3240c698aa79c98362e',
-                headers=headers)
-            if json.loads(resp.body)['status'] != 'running':
+            resp = await client.get(
+                '/products_new/update_filters?store_id=1&job_hash=6342e10bd7dca3240c698aa79c98362e',
+                headers=headers_without_content_type)
+            if (await resp.json())['status'] != 'running':
                 break
 
-        filters_updater_client.post('/engines/4/export_objects?import_data=true', headers=headers)
+        await client.post('/engines/4/export_objects?import_data=true', headers=headers_without_content_type)
         sleep(0.05)
         while True:
-            resp = filters_updater_client.get(
-                '/engines/1/export_objects?hash=6342e10bd7dca3240c698aa79c98362e',
-                headers=headers)
-            if json.loads(resp.body)['status'] != 'running':
+            resp = await client.get(
+                '/engines/4/export_objects?job_hash=6342e10bd7dca3240c698aa79c98362e',
+                headers=headers_without_content_type)
+            if (await resp.json())['status'] != 'running':
                 break
 
         body = [{
@@ -1217,18 +1211,20 @@ class TestPlacementsGetRecomendations(object):
                 'slots': [{'id': 3}]
             }]
         }]
-        obj = json.loads(client.post('/placements/', headers=headers, body=json.dumps(body)).body)[0]
+        resp = await client.post('/placements/', headers=headers, data=ujson.dumps(body))
+        obj = (await resp.json())[0]
 
-        TestEngine.get_recommendations.return_value = []
-        resp = client.get('/placements/{}/recommendations'.format(obj['small_hash']), headers=headers)
-        TestEngine.get_recommendations.reset_mock()
+        EngineCoreTest.get_recommendations.coro.return_value = []
+        resp = await client.get('/placements/{}/recommendations'.format(obj['small_hash']), headers=headers_without_content_type)
+        EngineCoreTest.get_recommendations.coro.reset_mock()
 
-        assert resp.status_code == 200
-        assert json.loads(resp.body)['recommendations'] == [{'sku': 'test1', 'item_id': 1, 'type': 'products_new'},
+        assert resp.status == 200
+        assert (await resp.json())['recommendations'] == [{'sku': 'test1', 'item_id': 1, 'type': 'products_new'},
             {'sku': 'test3', 'item_id': 3, 'type': 'products_new'}, {'sku': 'test2', 'item_id': 2, 'type': 'products_new'}]
 
-    def test_get_recommendations_by_slots(self, client, app, headers, filters_updater_client):
-        items_model = app.models['products'].__models__[1]
+    async def test_get_recommendations_by_slots(self, init_db, client, headers, monkeypatch, headers_without_content_type):
+        random_patch(monkeypatch)
+        client = await client
         products = [{
             'item_id': 1,
             'sku': 'test1'
@@ -1239,24 +1235,24 @@ class TestPlacementsGetRecomendations(object):
             'item_id': 3,
             'sku': 'test3'
         }]
-        client.post('/products_new/?store_id=1', headers=headers, body=json.dumps(products))
+        await client.post('/products_new/?store_id=1', headers=headers, data=ujson.dumps(products))
 
-        filters_updater_client.post('/products_new/update_filters?store_id=1', headers=headers)
+        await client.post('/products_new/update_filters?store_id=1', headers=headers_without_content_type)
         sleep(0.05)
         while True:
-            resp = filters_updater_client.get(
-                '/products_new/update_filters?store_id=1&hash=6342e10bd7dca3240c698aa79c98362e',
-                headers=headers)
-            if json.loads(resp.body)['status'] != 'running':
+            resp = await client.get(
+                '/products_new/update_filters?store_id=1&job_hash=6342e10bd7dca3240c698aa79c98362e',
+                headers=headers_without_content_type)
+            if (await resp.json())['status'] != 'running':
                 break
 
-        filters_updater_client.post('/engines/4/export_objects?import_data=true', headers=headers)
+        await client.post('/engines/4/export_objects?import_data=true', headers=headers_without_content_type)
         sleep(0.05)
         while True:
-            resp = filters_updater_client.get(
-                '/engines/1/export_objects?hash=6342e10bd7dca3240c698aa79c98362e',
-                headers=headers)
-            if json.loads(resp.body)['status'] != 'running':
+            resp = await client.get(
+                '/engines/4/export_objects?job_hash=6342e10bd7dca3240c698aa79c98362e',
+                headers=headers_without_content_type)
+            if (await resp.json())['status'] != 'running':
                 break
 
         body = [{
@@ -1267,10 +1263,12 @@ class TestPlacementsGetRecomendations(object):
                 'slots': [{'id': 2}]
             }]
         }]
-        obj = json.loads(client.post('/placements/', headers=headers, body=json.dumps(body)).body)[0]
-        resp = client.get('/placements/{}/slots'.format(obj['small_hash']), headers=headers)
-        assert resp.status_code == 200
-        assert json.loads(resp.body) == {
+        resp = await client.post('/placements/', headers=headers, data=ujson.dumps(body))
+        obj = (await resp.json())[0]
+
+        resp = await client.get('/placements/{}/slots'.format(obj['small_hash']), headers=headers_without_content_type)
+        assert resp.status == 200
+        assert (await resp.json()) == {
             "name": "Placement Test",
             "slots": [
                 {
@@ -1298,8 +1296,9 @@ class TestPlacementsGetRecomendations(object):
             "small_hash": "941e0"
         }
 
-    def test_get_recommendations_without_show_details(self, client, app, headers, filters_updater_client):
-        items_model = app.models['products'].__models__[1]
+    async def test_get_recommendations_without_show_details(self, init_db, client, headers, monkeypatch, headers_without_content_type):
+        random_patch(monkeypatch)
+        client = await client
         products = [{
             'item_id': 1,
             'sku': 'test1',
@@ -1313,25 +1312,25 @@ class TestPlacementsGetRecomendations(object):
             'sku': 'test3',
             'filter_string': 'test'
         }]
-        client.post('/products_new/?store_id=1', headers=headers, body=json.dumps(products))
+        await client.post('/products_new/?store_id=1', headers=headers, data=ujson.dumps(products))
 
-        filters_updater_client.post('/products_new/update_filters?store_id=1', headers=headers)
+        await client.post('/products_new/update_filters?store_id=1', headers=headers_without_content_type)
 
         sleep(0.05)
         while True:
-            resp = filters_updater_client.get(
-                '/products_new/update_filters?store_id=1&hash=6342e10bd7dca3240c698aa79c98362e',
-                headers=headers)
-            if json.loads(resp.body)['status'] != 'running':
+            resp = await client.get(
+                '/products_new/update_filters?store_id=1&job_hash=6342e10bd7dca3240c698aa79c98362e',
+                headers=headers_without_content_type)
+            if (await resp.json())['status'] != 'running':
                 break
 
-        filters_updater_client.post('/engines/4/export_objects?import_data=true', headers=headers)
+        await client.post('/engines/4/export_objects?import_data=true', headers=headers_without_content_type)
         sleep(0.05)
         while True:
-            resp = filters_updater_client.get(
-                '/engines/1/export_objects?hash=6342e10bd7dca3240c698aa79c98362e',
-                headers=headers)
-            if json.loads(resp.body)['status'] != 'running':
+            resp = await client.get(
+                '/engines/4/export_objects?job_hash=6342e10bd7dca3240c698aa79c98362e',
+                headers=headers_without_content_type)
+            if (await resp.json())['status'] != 'running':
                 break
 
         body = [{
@@ -1343,18 +1342,20 @@ class TestPlacementsGetRecomendations(object):
                 'slots': [{'id': 2}]
             }]
         }]
-        obj = json.loads(client.post('/placements/', headers=headers, body=json.dumps(body)).body)[0]
-        resp = client.get('/placements/{}/recommendations'.format(obj['small_hash']), headers=headers)
-        assert resp.status_code == 200
-        assert json.loads(resp.body)['recommendations'] == [
+        resp = await client.post('/placements/', headers=headers, data=ujson.dumps(body))
+        obj = (await resp.json())[0]
+
+        resp = await client.get('/placements/{}/recommendations'.format(obj['small_hash']), headers=headers_without_content_type)
+        assert resp.status == 200
+        assert (await resp.json())['recommendations'] == [
             {'sku': 'test1', 'item_id': 1, 'type': 'products_new'},
             {'sku': 'test3', 'item_id': 3, 'type': 'products_new'},
             {'sku': 'test2', 'item_id': 2, 'type': 'products_new'}
         ]
 
-    def test_get_recommendations_distributed(self, client, app, headers, filters_updater_client):
-        random.seed(0)
-        items_model = app.models['products'].__models__[1]
+    async def test_get_recommendations_distributed(self, init_db, client, headers, monkeypatch, headers_without_content_type):
+        random_patch(monkeypatch)
+        client = await client
         products = [{
             'item_id': 1,
             'sku': 'test1'
@@ -1365,24 +1366,24 @@ class TestPlacementsGetRecomendations(object):
             'item_id': 3,
             'sku': 'test3'
         }]
-        client.post('/products_new/?store_id=1', headers=headers, body=json.dumps(products))
+        await client.post('/products_new/?store_id=1', headers=headers, data=ujson.dumps(products))
 
-        filters_updater_client.post('/products_new/update_filters?store_id=1', headers=headers)
+        resp = await client.post('/products_new/update_filters?store_id=1', headers=headers_without_content_type)
         sleep(0.05)
         while True:
-            resp = filters_updater_client.get(
-                '/products_new/update_filters?store_id=1&hash=6342e10bd7dca3240c698aa79c98362e',
-                headers=headers)
-            if json.loads(resp.body)['status'] != 'running':
+            resp = await client.get(
+                '/products_new/update_filters?store_id=1&job_hash=6342e10bd7dca3240c698aa79c98362e',
+                headers=headers_without_content_type)
+            if (await resp.json())['status'] != 'running':
                 break
 
-        filters_updater_client.post('/engines/4/export_objects?import_data=true', headers=headers)
+        await client.post('/engines/4/export_objects?import_data=true', headers=headers_without_content_type)
         sleep(0.05)
         while True:
-            resp = filters_updater_client.get(
-                '/engines/1/export_objects?hash=6342e10bd7dca3240c698aa79c98362e',
-                headers=headers)
-            if json.loads(resp.body)['status'] != 'running':
+            resp = await client.get(
+                '/engines/4/export_objects?job_hash=6342e10bd7dca3240c698aa79c98362e',
+                headers=headers_without_content_type)
+            if (await resp.json())['status'] != 'running':
                 break
 
         body = [{
@@ -1394,14 +1395,16 @@ class TestPlacementsGetRecomendations(object):
                 'slots': [{'id': 1}, {'id': 2}]
             }]
         }]
-        obj = json.loads(client.post('/placements/', headers=headers, body=json.dumps(body)).body)[0]
+        resp = await client.post('/placements/', headers=headers, data=ujson.dumps(body))
+        obj = (await resp.json())[0]
 
-        TestEngine.get_recommendations.return_value = [{'test': 1}, {'test': 2}]
-        resp = client.get('/placements/{}/recommendations'.format(obj['small_hash']), headers=headers)
-        TestEngine.get_recommendations.reset_mock()
+        random.seed(0)
+        EngineCoreTest.get_recommendations.coro.return_value = [{'test': 1}, {'test': 2}]
+        resp = await client.get('/placements/{}/recommendations'.format(obj['small_hash']), headers=headers_without_content_type)
+        EngineCoreTest.get_recommendations.coro.reset_mock()
 
-        assert resp.status_code == 200
-        assert json.loads(resp.body)['recommendations'] == [
+        assert resp.status == 200
+        assert (await resp.json())['recommendations'] == [
             {'sku': 'test1', 'item_id': 1, 'type': 'products_new'},
             {'sku': 'test3', 'item_id': 3, 'type': 'products_new'},
             {'test': 1, 'type': 'products'},
@@ -1410,12 +1413,11 @@ class TestPlacementsGetRecomendations(object):
         ]
 
 
-@mock.patch('falconswagger.models.http.random.getrandbits',
-    new=mock.MagicMock(return_value=131940827655846590526331314439483569710))
 class TestPlacementsGetRecomendationsFilters(object):
 
-    def test_get_recommendations_by_string_inclusive(self, client, app, headers, filters_updater_client, redis):
-        items_model = app.models['products'].__models__[1]
+    async def test_get_recommendations_by_string_inclusive(self, init_db, client, headers, monkeypatch, headers_without_content_type):
+        random_patch(monkeypatch)
+        client = await client
         products = [{
             'item_id': 1,
             'sku': 'test1',
@@ -1428,24 +1430,24 @@ class TestPlacementsGetRecomendationsFilters(object):
             'item_id': 3,
             'sku': 'test3'
         }]
-        client.post('/products_new/?store_id=1', headers=headers, body=json.dumps(products))
+        await client.post('/products_new/?store_id=1', headers=headers, data=ujson.dumps(products))
 
-        filters_updater_client.post('/products_new/update_filters?store_id=1', headers=headers)
+        await client.post('/products_new/update_filters?store_id=1', headers=headers_without_content_type)
         sleep(0.05)
         while True:
-            resp = filters_updater_client.get(
-                '/products_new/update_filters?store_id=1&hash=6342e10bd7dca3240c698aa79c98362e',
-                headers=headers)
-            if json.loads(resp.body)['status'] != 'running':
+            resp = await client.get(
+                '/products_new/update_filters?store_id=1&job_hash=6342e10bd7dca3240c698aa79c98362e',
+                headers=headers_without_content_type)
+            if (await resp.json())['status'] != 'running':
                 break
 
-        filters_updater_client.post('/engines/4/export_objects?import_data=true', headers=headers)
+        await client.post('/engines/4/export_objects?import_data=true', headers=headers_without_content_type)
         sleep(0.05)
         while True:
-            resp = filters_updater_client.get(
-                '/engines/1/export_objects?hash=6342e10bd7dca3240c698aa79c98362e',
-                headers=headers)
-            if json.loads(resp.body)['status'] != 'running':
+            resp = await client.get(
+                '/engines/4/export_objects?job_hash=6342e10bd7dca3240c698aa79c98362e',
+                headers=headers_without_content_type)
+            if (await resp.json())['status'] != 'running':
                 break
 
         body = [{
@@ -1456,15 +1458,18 @@ class TestPlacementsGetRecomendationsFilters(object):
                 'slots': [{'id': 2}]
             }]
         }]
-        obj = json.loads(client.post('/placements/', headers=headers, body=json.dumps(body)).body)[0]
-        resp = client.get('/placements/{}/recommendations?filter_string_inclusive=test'.format(obj['small_hash']), headers=headers)
-        assert resp.status_code == 200
-        assert json.loads(resp.body)['recommendations'] == [
+        resp = await client.post('/placements/', headers=headers, data=ujson.dumps(body))
+        obj = (await resp.json())[0]
+
+        resp = await client.get('/placements/{}/recommendations?filter_string_inclusive=test'.format(obj['small_hash']), headers=headers_without_content_type)
+        assert resp.status == 200
+        assert (await resp.json())['recommendations'] == [
             {'sku': 'test1', 'item_id': 1, 'filter_string': 'test', 'type': 'products_new'},
             {'sku': 'test2', 'item_id': 2, 'filter_string': 'test', 'type': 'products_new'}]
 
-    def test_get_recommendations_by_string_exclusive(self, client, app, headers, filters_updater_client):
-        items_model = app.models['products'].__models__[1]
+    async def test_get_recommendations_by_string_exclusive(self, init_db, client, headers, monkeypatch, headers_without_content_type):
+        random_patch(monkeypatch)
+        client = await client
         products = [{
             'item_id': 1,
             'sku': 'test1',
@@ -1477,24 +1482,24 @@ class TestPlacementsGetRecomendationsFilters(object):
             'item_id': 3,
             'sku': 'test3'
         }]
-        client.post('/products_new/?store_id=1', headers=headers, body=json.dumps(products))
+        await client.post('/products_new/?store_id=1', headers=headers, data=ujson.dumps(products))
 
-        filters_updater_client.post('/products_new/update_filters?store_id=1', headers=headers)
+        await client.post('/products_new/update_filters?store_id=1', headers=headers_without_content_type)
         sleep(0.05)
         while True:
-            resp = filters_updater_client.get(
-                '/products_new/update_filters?store_id=1&hash=6342e10bd7dca3240c698aa79c98362e',
-                headers=headers)
-            if json.loads(resp.body)['status'] != 'running':
+            resp = await client.get(
+                '/products_new/update_filters?store_id=1&job_hash=6342e10bd7dca3240c698aa79c98362e',
+                headers=headers_without_content_type)
+            if (await resp.json())['status'] != 'running':
                 break
 
-        filters_updater_client.post('/engines/4/export_objects?import_data=true', headers=headers)
+        await client.post('/engines/4/export_objects?import_data=true', headers=headers_without_content_type)
         sleep(0.05)
         while True:
-            resp = filters_updater_client.get(
-                '/engines/1/export_objects?hash=6342e10bd7dca3240c698aa79c98362e',
-                headers=headers)
-            if json.loads(resp.body)['status'] != 'running':
+            resp = await client.get(
+                '/engines/4/export_objects?job_hash=6342e10bd7dca3240c698aa79c98362e',
+                headers=headers_without_content_type)
+            if (await resp.json())['status'] != 'running':
                 break
 
         body = [{
@@ -1505,13 +1510,16 @@ class TestPlacementsGetRecomendationsFilters(object):
                 'slots': [{'id': 2}]
             }]
         }]
-        obj = json.loads(client.post('/placements/', headers=headers, body=json.dumps(body)).body)[0]
-        resp = client.get('/placements/{}/recommendations?filter_string_exclusive=test'.format(obj['small_hash']), headers=headers)
-        assert resp.status_code == 200
-        assert json.loads(resp.body)['recommendations'] == [{'sku': 'test3', 'item_id': 3, 'type': 'products_new'}]
+        resp = await client.post('/placements/', headers=headers, data=ujson.dumps(body))
+        obj = (await resp.json())[0]
 
-    def test_get_recommendations_by_integer_inclusive(self, client, app, headers, filters_updater_client):
-        items_model = app.models['products'].__models__[1]
+        resp = await client.get('/placements/{}/recommendations?filter_string_exclusive=test'.format(obj['small_hash']), headers=headers_without_content_type)
+        assert resp.status == 200
+        assert (await resp.json())['recommendations'] == [{'sku': 'test3', 'item_id': 3, 'type': 'products_new'}]
+
+    async def test_get_recommendations_by_integer_inclusive(self, init_db, client, headers, monkeypatch, headers_without_content_type):
+        random_patch(monkeypatch)
+        client = await client
         products = [{
             'item_id': 1,
             'sku': 'test1',
@@ -1524,24 +1532,24 @@ class TestPlacementsGetRecomendationsFilters(object):
             'item_id': 3,
             'sku': 'test3'
         }]
-        client.post('/products_new/?store_id=1', headers=headers, body=json.dumps(products))
+        await client.post('/products_new/?store_id=1', headers=headers, data=ujson.dumps(products))
 
-        filters_updater_client.post('/products_new/update_filters?store_id=1', headers=headers)
+        await client.post('/products_new/update_filters?store_id=1', headers=headers_without_content_type)
         sleep(0.05)
         while True:
-            resp = filters_updater_client.get(
-                '/products_new/update_filters?store_id=1&hash=6342e10bd7dca3240c698aa79c98362e',
-                headers=headers)
-            if json.loads(resp.body)['status'] != 'running':
+            resp = await client.get(
+                '/products_new/update_filters?store_id=1&job_hash=6342e10bd7dca3240c698aa79c98362e',
+                headers=headers_without_content_type)
+            if (await resp.json())['status'] != 'running':
                 break
 
-        filters_updater_client.post('/engines/4/export_objects?import_data=true', headers=headers)
+        await client.post('/engines/4/export_objects?import_data=true', headers=headers_without_content_type)
         sleep(0.05)
         while True:
-            resp = filters_updater_client.get(
-                '/engines/1/export_objects?hash=6342e10bd7dca3240c698aa79c98362e',
-                headers=headers)
-            if json.loads(resp.body)['status'] != 'running':
+            resp = await client.get(
+                '/engines/4/export_objects?job_hash=6342e10bd7dca3240c698aa79c98362e',
+                headers=headers_without_content_type)
+            if (await resp.json())['status'] != 'running':
                 break
 
         body = [{
@@ -1552,15 +1560,18 @@ class TestPlacementsGetRecomendationsFilters(object):
                 'slots': [{'id': 2}]
             }]
         }]
-        obj = json.loads(client.post('/placements/', headers=headers, body=json.dumps(body)).body)[0]
-        resp = client.get('/placements/{}/recommendations?filter_integer_inclusive=1'.format(obj['small_hash']), headers=headers)
-        assert resp.status_code == 200
-        assert json.loads(resp.body)['recommendations'] == [
+        resp = await client.post('/placements/', headers=headers, data=ujson.dumps(body))
+        obj = (await resp.json())[0]
+
+        resp = await client.get('/placements/{}/recommendations?filter_integer_inclusive=1'.format(obj['small_hash']), headers=headers_without_content_type)
+        assert resp.status == 200
+        assert (await resp.json())['recommendations'] == [
             {'sku': 'test1', 'item_id': 1, 'filter_integer': 1, 'type': 'products_new'},
             {'sku': 'test2', 'item_id': 2, 'filter_integer': 1, 'type': 'products_new'}]
 
-    def test_get_recommendations_by_integer_exclusive(self, client, app, headers, filters_updater_client):
-        items_model = app.models['products'].__models__[1]
+    async def test_get_recommendations_by_integer_exclusive(self, init_db, client, headers, monkeypatch, headers_without_content_type):
+        random_patch(monkeypatch)
+        client = await client
         products = [{
             'item_id': 1,
             'sku': 'test1',
@@ -1573,24 +1584,24 @@ class TestPlacementsGetRecomendationsFilters(object):
             'item_id': 3,
             'sku': 'test3'
         }]
-        client.post('/products_new/?store_id=1', headers=headers, body=json.dumps(products))
+        await client.post('/products_new/?store_id=1', headers=headers, data=ujson.dumps(products))
 
-        filters_updater_client.post('/products_new/update_filters?store_id=1', headers=headers)
+        await client.post('/products_new/update_filters?store_id=1', headers=headers_without_content_type)
         sleep(0.05)
         while True:
-            resp = filters_updater_client.get(
-                '/products_new/update_filters?store_id=1&hash=6342e10bd7dca3240c698aa79c98362e',
-                headers=headers)
-            if json.loads(resp.body)['status'] != 'running':
+            resp = await client.get(
+                '/products_new/update_filters?store_id=1&job_hash=6342e10bd7dca3240c698aa79c98362e',
+                headers=headers_without_content_type)
+            if (await resp.json())['status'] != 'running':
                 break
 
-        filters_updater_client.post('/engines/4/export_objects?import_data=true', headers=headers)
+        await client.post('/engines/4/export_objects?import_data=true', headers=headers_without_content_type)
         sleep(0.05)
         while True:
-            resp = filters_updater_client.get(
-                '/engines/1/export_objects?hash=6342e10bd7dca3240c698aa79c98362e',
-                headers=headers)
-            if json.loads(resp.body)['status'] != 'running':
+            resp = await client.get(
+                '/engines/4/export_objects?job_hash=6342e10bd7dca3240c698aa79c98362e',
+                headers=headers_without_content_type)
+            if (await resp.json())['status'] != 'running':
                 break
 
         body = [{
@@ -1601,13 +1612,16 @@ class TestPlacementsGetRecomendationsFilters(object):
                 'slots': [{'id': 2}]
             }]
         }]
-        obj = json.loads(client.post('/placements/', headers=headers, body=json.dumps(body)).body)[0]
-        resp = client.get('/placements/{}/recommendations?filter_integer_exclusive=1'.format(obj['small_hash']), headers=headers)
-        assert resp.status_code == 200
-        assert json.loads(resp.body)['recommendations'] == [{'sku': 'test3', 'item_id': 3, 'type': 'products_new'}]
+        resp = await client.post('/placements/', headers=headers, data=ujson.dumps(body))
+        obj = (await resp.json())[0]
 
-    def test_get_recommendations_by_boolean_inclusive(self, client, app, headers, filters_updater_client):
-        items_model = app.models['products'].__models__[1]
+        resp = await client.get('/placements/{}/recommendations?filter_integer_exclusive=1'.format(obj['small_hash']), headers=headers_without_content_type)
+        assert resp.status == 200
+        assert (await resp.json())['recommendations'] == [{'sku': 'test3', 'item_id': 3, 'type': 'products_new'}]
+
+    async def test_get_recommendations_by_boolean_inclusive(self, init_db, client, headers, monkeypatch, headers_without_content_type):
+        random_patch(monkeypatch)
+        client = await client
         products = [{
             'item_id': 1,
             'sku': 'test1',
@@ -1620,24 +1634,24 @@ class TestPlacementsGetRecomendationsFilters(object):
             'item_id': 3,
             'sku': 'test3'
         }]
-        client.post('/products_new/?store_id=1', headers=headers, body=json.dumps(products))
+        await client.post('/products_new/?store_id=1', headers=headers, data=ujson.dumps(products))
 
-        filters_updater_client.post('/products_new/update_filters?store_id=1', headers=headers)
+        await client.post('/products_new/update_filters?store_id=1', headers=headers_without_content_type)
         sleep(0.05)
         while True:
-            resp = filters_updater_client.get(
-                '/products_new/update_filters?store_id=1&hash=6342e10bd7dca3240c698aa79c98362e',
-                headers=headers)
-            if json.loads(resp.body)['status'] != 'running':
+            resp = await client.get(
+                '/products_new/update_filters?store_id=1&job_hash=6342e10bd7dca3240c698aa79c98362e',
+                headers=headers_without_content_type)
+            if (await resp.json())['status'] != 'running':
                 break
 
-        filters_updater_client.post('/engines/4/export_objects?import_data=true', headers=headers)
+        await client.post('/engines/4/export_objects?import_data=true', headers=headers_without_content_type)
         sleep(0.05)
         while True:
-            resp = filters_updater_client.get(
-                '/engines/1/export_objects?hash=6342e10bd7dca3240c698aa79c98362e',
-                headers=headers)
-            if json.loads(resp.body)['status'] != 'running':
+            resp = await client.get(
+                '/engines/4/export_objects?job_hash=6342e10bd7dca3240c698aa79c98362e',
+                headers=headers_without_content_type)
+            if (await resp.json())['status'] != 'running':
                 break
 
         body = [{
@@ -1648,14 +1662,17 @@ class TestPlacementsGetRecomendationsFilters(object):
                 'slots': [{'id': 2}]
             }]
         }]
-        obj = json.loads(client.post('/placements/', headers=headers, body=json.dumps(body)).body)[0]
-        resp = client.get('/placements/{}/recommendations?filter_boolean_inclusive=true'.format(obj['small_hash']), headers=headers)
-        assert resp.status_code == 200
-        assert json.loads(resp.body)['recommendations'] == [{'sku': 'test1', 'item_id': 1, 'filter_boolean': True, 'type': 'products_new'},
+        resp = await client.post('/placements/', headers=headers, data=ujson.dumps(body))
+        obj = (await resp.json())[0]
+
+        resp = await client.get('/placements/{}/recommendations?filter_boolean_inclusive=true'.format(obj['small_hash']), headers=headers_without_content_type)
+        assert resp.status == 200
+        assert (await resp.json())['recommendations'] == [{'sku': 'test1', 'item_id': 1, 'filter_boolean': True, 'type': 'products_new'},
             {'sku': 'test2', 'item_id': 2, 'filter_boolean': True, 'type': 'products_new'}]
 
-    def test_get_recommendations_by_boolean_exclusive(self, client, app, headers, filters_updater_client):
-        items_model = app.models['products'].__models__[1]
+    async def test_get_recommendations_by_boolean_exclusive(self, init_db, client, headers, monkeypatch, headers_without_content_type):
+        random_patch(monkeypatch)
+        client = await client
         products = [{
             'item_id': 1,
             'sku': 'test1',
@@ -1668,24 +1685,24 @@ class TestPlacementsGetRecomendationsFilters(object):
             'item_id': 3,
             'sku': 'test3'
         }]
-        client.post('/products_new/?store_id=1', headers=headers, body=json.dumps(products))
+        await client.post('/products_new/?store_id=1', headers=headers, data=ujson.dumps(products))
 
-        filters_updater_client.post('/products_new/update_filters?store_id=1', headers=headers)
+        await client.post('/products_new/update_filters?store_id=1', headers=headers_without_content_type)
         sleep(0.05)
         while True:
-            resp = filters_updater_client.get(
-                '/products_new/update_filters?store_id=1&hash=6342e10bd7dca3240c698aa79c98362e',
-                headers=headers)
-            if json.loads(resp.body)['status'] != 'running':
+            resp = await client.get(
+                '/products_new/update_filters?store_id=1&job_hash=6342e10bd7dca3240c698aa79c98362e',
+                headers=headers_without_content_type)
+            if (await resp.json())['status'] != 'running':
                 break
 
-        filters_updater_client.post('/engines/4/export_objects?import_data=true', headers=headers)
+        await client.post('/engines/4/export_objects?import_data=true', headers=headers_without_content_type)
         sleep(0.05)
         while True:
-            resp = filters_updater_client.get(
-                '/engines/1/export_objects?hash=6342e10bd7dca3240c698aa79c98362e',
-                headers=headers)
-            if json.loads(resp.body)['status'] != 'running':
+            resp = await client.get(
+                '/engines/4/export_objects?job_hash=6342e10bd7dca3240c698aa79c98362e',
+                headers=headers_without_content_type)
+            if (await resp.json())['status'] != 'running':
                 break
 
         body = [{
@@ -1696,13 +1713,16 @@ class TestPlacementsGetRecomendationsFilters(object):
                 'slots': [{'id': 2}]
             }]
         }]
-        obj = json.loads(client.post('/placements/', headers=headers, body=json.dumps(body)).body)[0]
-        resp = client.get('/placements/{}/recommendations?filter_boolean_exclusive=true'.format(obj['small_hash']), headers=headers)
-        assert resp.status_code == 200
-        assert json.loads(resp.body)['recommendations'] == [{'sku': 'test3', 'item_id': 3, 'type': 'products_new'}]
+        resp = await client.post('/placements/', headers=headers, data=ujson.dumps(body))
+        obj = (await resp.json())[0]
 
-    def test_get_recommendations_by_array_inclusive(self, client, app, headers, filters_updater_client):
-        items_model = app.models['products'].__models__[1]
+        resp = await client.get('/placements/{}/recommendations?filter_boolean_exclusive=true'.format(obj['small_hash']), headers=headers_without_content_type)
+        assert resp.status == 200
+        assert (await resp.json())['recommendations'] == [{'sku': 'test3', 'item_id': 3, 'type': 'products_new'}]
+
+    async def test_get_recommendations_by_array_inclusive(self, init_db, client, headers, monkeypatch, headers_without_content_type):
+        random_patch(monkeypatch)
+        client = await client
         products = [{
             'item_id': 1,
             'sku': 'test1',
@@ -1715,24 +1735,24 @@ class TestPlacementsGetRecomendationsFilters(object):
             'item_id': 3,
             'sku': 'test3'
         }]
-        client.post('/products_new/?store_id=1', headers=headers, body=json.dumps(products))
+        await client.post('/products_new/?store_id=1', headers=headers, data=ujson.dumps(products))
 
-        filters_updater_client.post('/products_new/update_filters?store_id=1', headers=headers)
+        await client.post('/products_new/update_filters?store_id=1', headers=headers_without_content_type)
         sleep(0.05)
         while True:
-            resp = filters_updater_client.get(
-                '/products_new/update_filters?store_id=1&hash=6342e10bd7dca3240c698aa79c98362e',
-                headers=headers)
-            if json.loads(resp.body)['status'] != 'running':
+            resp = await client.get(
+                '/products_new/update_filters?store_id=1&job_hash=6342e10bd7dca3240c698aa79c98362e',
+                headers=headers_without_content_type)
+            if (await resp.json())['status'] != 'running':
                 break
 
-        filters_updater_client.post('/engines/4/export_objects?import_data=true', headers=headers)
+        await client.post('/engines/4/export_objects?import_data=true', headers=headers_without_content_type)
         sleep(0.05)
         while True:
-            resp = filters_updater_client.get(
-                '/engines/1/export_objects?hash=6342e10bd7dca3240c698aa79c98362e',
-                headers=headers)
-            if json.loads(resp.body)['status'] != 'running':
+            resp = await client.get(
+                '/engines/4/export_objects?job_hash=6342e10bd7dca3240c698aa79c98362e',
+                headers=headers_without_content_type)
+            if (await resp.json())['status'] != 'running':
                 break
 
         body = [{
@@ -1743,14 +1763,17 @@ class TestPlacementsGetRecomendationsFilters(object):
                 'slots': [{'id': 2}]
             }]
         }]
-        obj = json.loads(client.post('/placements/', headers=headers, body=json.dumps(body)).body)[0]
-        resp = client.get('/placements/{}/recommendations?filter_array_inclusive=t2,t3'.format(obj['small_hash']), headers=headers)
-        assert resp.status_code == 200
-        assert json.loads(resp.body)['recommendations'] == [
+        resp = await client.post('/placements/', headers=headers, data=ujson.dumps(body))
+        obj = (await resp.json())[0]
+
+        resp = await client.get('/placements/{}/recommendations?filter_array_inclusive=t2,t3'.format(obj['small_hash']), headers=headers_without_content_type)
+        assert resp.status == 200
+        assert (await resp.json())['recommendations'] == [
             {'sku': 'test2', 'item_id': 2, 'filter_array': ['t2', 't3'], 'type': 'products_new'}]
 
-    def test_get_recommendations_by_array_exclusive(self, client, app, headers, filters_updater_client):
-        items_model = app.models['products'].__models__[1]
+    async def test_get_recommendations_by_array_exclusive(self, init_db, client, headers, monkeypatch, headers_without_content_type):
+        random_patch(monkeypatch)
+        client = await client
         products = [{
             'item_id': 1,
             'sku': 'test1',
@@ -1763,24 +1786,24 @@ class TestPlacementsGetRecomendationsFilters(object):
             'item_id': 3,
             'sku': 'test3'
         }]
-        client.post('/products_new/?store_id=1', headers=headers, body=json.dumps(products))
+        await client.post('/products_new/?store_id=1', headers=headers, data=ujson.dumps(products))
 
-        filters_updater_client.post('/products_new/update_filters?store_id=1', headers=headers)
+        await client.post('/products_new/update_filters?store_id=1', headers=headers_without_content_type)
         sleep(0.05)
         while True:
-            resp = filters_updater_client.get(
-                '/products_new/update_filters?store_id=1&hash=6342e10bd7dca3240c698aa79c98362e',
-                headers=headers)
-            if json.loads(resp.body)['status'] != 'running':
+            resp = await client.get(
+                '/products_new/update_filters?store_id=1&job_hash=6342e10bd7dca3240c698aa79c98362e',
+                headers=headers_without_content_type)
+            if (await resp.json())['status'] != 'running':
                 break
 
-        filters_updater_client.post('/engines/4/export_objects?import_data=true', headers=headers)
+        await client.post('/engines/4/export_objects?import_data=true', headers=headers_without_content_type)
         sleep(0.05)
         while True:
-            resp = filters_updater_client.get(
-                '/engines/1/export_objects?hash=6342e10bd7dca3240c698aa79c98362e',
-                headers=headers)
-            if json.loads(resp.body)['status'] != 'running':
+            resp = await client.get(
+                '/engines/4/export_objects?job_hash=6342e10bd7dca3240c698aa79c98362e',
+                headers=headers_without_content_type)
+            if (await resp.json())['status'] != 'running':
                 break
 
         body = [{
@@ -1791,13 +1814,16 @@ class TestPlacementsGetRecomendationsFilters(object):
                 'slots': [{'id': 2}]
             }]
         }]
-        obj = json.loads(client.post('/placements/', headers=headers, body=json.dumps(body)).body)[0]
-        resp = client.get('/placements/{}/recommendations?filter_array_exclusive=t2'.format(obj['small_hash']), headers=headers)
-        assert resp.status_code == 200
-        assert json.loads(resp.body)['recommendations'] == [{'sku': 'test3', 'item_id': 3, 'type': 'products_new'}]
+        resp = await client.post('/placements/', headers=headers, data=ujson.dumps(body))
+        obj = (await resp.json())[0]
 
-    def test_get_recommendations_by_object_inclusive(self, client, app, headers, filters_updater_client):
-        items_model = app.models['products'].__models__[1]
+        resp = await client.get('/placements/{}/recommendations?filter_array_exclusive=t2'.format(obj['small_hash']), headers=headers_without_content_type)
+        assert resp.status == 200
+        assert (await resp.json())['recommendations'] == [{'sku': 'test3', 'item_id': 3, 'type': 'products_new'}]
+
+    async def test_get_recommendations_by_object_inclusive(self, init_db, client, headers, monkeypatch, headers_without_content_type):
+        random_patch(monkeypatch)
+        client = await client
         products = [{
             'item_id': 1,
             'sku': 'test1',
@@ -1810,24 +1836,24 @@ class TestPlacementsGetRecomendationsFilters(object):
             'item_id': 3,
             'sku': 'test3'
         }]
-        client.post('/products_new/?store_id=1', headers=headers, body=json.dumps(products))
+        await client.post('/products_new/?store_id=1', headers=headers, data=ujson.dumps(products))
 
-        filters_updater_client.post('/products_new/update_filters?store_id=1', headers=headers)
+        await client.post('/products_new/update_filters?store_id=1', headers=headers_without_content_type)
         sleep(0.05)
         while True:
-            resp = filters_updater_client.get(
-                '/products_new/update_filters?store_id=1&hash=6342e10bd7dca3240c698aa79c98362e',
-                headers=headers)
-            if json.loads(resp.body)['status'] != 'running':
+            resp = await client.get(
+                '/products_new/update_filters?store_id=1&job_hash=6342e10bd7dca3240c698aa79c98362e',
+                headers=headers_without_content_type)
+            if (await resp.json())['status'] != 'running':
                 break
 
-        filters_updater_client.post('/engines/4/export_objects?import_data=true', headers=headers)
+        await client.post('/engines/4/export_objects?import_data=true', headers=headers_without_content_type)
         sleep(0.05)
         while True:
-            resp = filters_updater_client.get(
-                '/engines/1/export_objects?hash=6342e10bd7dca3240c698aa79c98362e',
-                headers=headers)
-            if json.loads(resp.body)['status'] != 'running':
+            resp = await client.get(
+                '/engines/4/export_objects?job_hash=6342e10bd7dca3240c698aa79c98362e',
+                headers=headers_without_content_type)
+            if (await resp.json())['status'] != 'running':
                 break
 
         body = [{
@@ -1838,15 +1864,18 @@ class TestPlacementsGetRecomendationsFilters(object):
                 'slots': [{'id': 2}]
             }]
         }]
-        obj = json.loads(client.post('/placements/', headers=headers, body=json.dumps(body)).body)[0]
-        resp = client.get('/placements/{}/recommendations?filter_object_inclusive=id:1'.format(obj['small_hash']), headers=headers)
+        resp = await client.post('/placements/', headers=headers, data=ujson.dumps(body))
+        obj = (await resp.json())[0]
 
-        assert resp.status_code == 200
-        assert json.loads(resp.body)['recommendations'] == [
+        resp = await client.get('/placements/{}/recommendations?filter_object_inclusive=id:1'.format(obj['small_hash']), headers=headers_without_content_type)
+
+        assert resp.status == 200
+        assert (await resp.json())['recommendations'] == [
             {'sku': 'test1', 'item_id': 1, 'filter_object': {'id': 1}, 'type': 'products_new'}]
 
-    def test_get_recommendations_by_object_exclusive(self, client, app, headers, filters_updater_client):
-        items_model = app.models['products'].__models__[1]
+    async def test_get_recommendations_by_object_exclusive(self, init_db, client, headers, monkeypatch, headers_without_content_type):
+        random_patch(monkeypatch)
+        client = await client
         products = [{
             'item_id': 1,
             'sku': 'test1',
@@ -1859,24 +1888,24 @@ class TestPlacementsGetRecomendationsFilters(object):
             'item_id': 3,
             'sku': 'test3'
         }]
-        client.post('/products_new/?store_id=1', headers=headers, body=json.dumps(products))
+        await client.post('/products_new/?store_id=1', headers=headers, data=ujson.dumps(products))
 
-        filters_updater_client.post('/products_new/update_filters?store_id=1', headers=headers)
+        await client.post('/products_new/update_filters?store_id=1', headers=headers_without_content_type)
         sleep(0.05)
         while True:
-            resp = filters_updater_client.get(
-                '/products_new/update_filters?store_id=1&hash=6342e10bd7dca3240c698aa79c98362e',
-                headers=headers)
-            if json.loads(resp.body)['status'] != 'running':
+            resp = await client.get(
+                '/products_new/update_filters?store_id=1&job_hash=6342e10bd7dca3240c698aa79c98362e',
+                headers=headers_without_content_type)
+            if (await resp.json())['status'] != 'running':
                 break
 
-        filters_updater_client.post('/engines/4/export_objects?import_data=true', headers=headers)
+        await client.post('/engines/4/export_objects?import_data=true', headers=headers_without_content_type)
         sleep(0.05)
         while True:
-            resp = filters_updater_client.get(
-                '/engines/1/export_objects?hash=6342e10bd7dca3240c698aa79c98362e',
-                headers=headers)
-            if json.loads(resp.body)['status'] != 'running':
+            resp = await client.get(
+                '/engines/4/export_objects?job_hash=6342e10bd7dca3240c698aa79c98362e',
+                headers=headers_without_content_type)
+            if (await resp.json())['status'] != 'running':
                 break
 
         body = [{
@@ -1887,20 +1916,21 @@ class TestPlacementsGetRecomendationsFilters(object):
                 'slots': [{'id': 2}]
             }]
         }]
-        obj = json.loads(client.post('/placements/', headers=headers, body=json.dumps(body)).body)[0]
-        resp = client.get('/placements/{}/recommendations?filter_object_exclusive=id:1'.format(obj['small_hash']), headers=headers)
-        assert resp.status_code == 200
-        assert json.loads(resp.body)['recommendations'] == [
+        resp = await client.post('/placements/', headers=headers, data=ujson.dumps(body))
+        obj = (await resp.json())[0]
+
+        resp = await client.get('/placements/{}/recommendations?filter_object_exclusive=id:1'.format(obj['small_hash']), headers=headers_without_content_type)
+        assert resp.status == 200
+        assert (await resp.json())['recommendations'] == [
             {'sku': 'test3', 'item_id': 3, 'type': 'products_new'},
             {'sku': 'test2', 'item_id': 2, 'filter_object': {'id': 2}, 'type': 'products_new'}]
 
 
-@mock.patch('falconswagger.models.http.random.getrandbits',
-    new=mock.MagicMock(return_value=131940827655846590526331314439483569710))
 class TestPlacementsGetRecomendationsFiltersOf(object):
 
-    def test_get_recommendations_of_string_inclusive(self, client, app, headers, filters_updater_client, redis):
-        items_model = app.models['products'].__models__[1]
+    async def test_get_recommendations_of_string_inclusive(self, init_db, client, headers, monkeypatch, headers_without_content_type):
+        random_patch(monkeypatch)
+        client = await client
         products = [{
             'item_id': 1,
             'sku': 'test1',
@@ -1913,24 +1943,24 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
             'item_id': 3,
             'sku': 'test3'
         }]
-        client.post('/products_new/?store_id=1', headers=headers, body=json.dumps(products))
+        await client.post('/products_new/?store_id=1', headers=headers, data=ujson.dumps(products))
 
-        filters_updater_client.post('/products_new/update_filters?store_id=1', headers=headers)
+        await client.post('/products_new/update_filters?store_id=1', headers=headers_without_content_type)
         sleep(0.05)
         while True:
-            resp = filters_updater_client.get(
-                '/products_new/update_filters?store_id=1&hash=6342e10bd7dca3240c698aa79c98362e',
-                headers=headers)
-            if json.loads(resp.body)['status'] != 'running':
+            resp = await client.get(
+                '/products_new/update_filters?store_id=1&job_hash=6342e10bd7dca3240c698aa79c98362e',
+                headers=headers_without_content_type)
+            if (await resp.json())['status'] != 'running':
                 break
 
-        filters_updater_client.post('/engines/4/export_objects?import_data=true', headers=headers)
+        await client.post('/engines/4/export_objects?import_data=true', headers=headers_without_content_type)
         sleep(0.05)
         while True:
-            resp = filters_updater_client.get(
-                '/engines/1/export_objects?hash=6342e10bd7dca3240c698aa79c98362e',
-                headers=headers)
-            if json.loads(resp.body)['status'] != 'running':
+            resp = await client.get(
+                '/engines/4/export_objects?job_hash=6342e10bd7dca3240c698aa79c98362e',
+                headers=headers_without_content_type)
+            if (await resp.json())['status'] != 'running':
                 break
 
         body = [{
@@ -1941,14 +1971,17 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
                 'slots': [{'id': 2}]
             }]
         }]
-        obj = json.loads(client.post('/placements/', headers=headers, body=json.dumps(body)).body)[0]
-        resp = client.get('/placements/{}/recommendations?filter_string_inclusive_of=item_id:1|sku:test1'.format(obj['small_hash']), headers=headers)
-        assert resp.status_code == 200
-        assert json.loads(resp.body)['recommendations'] == [
+        resp = await client.post('/placements/', headers=headers, data=ujson.dumps(body))
+        obj = (await resp.json())[0]
+
+        resp = await client.get('/placements/{}/recommendations?filter_string_inclusive_of=item_id:1|sku:test1'.format(obj['small_hash']), headers=headers_without_content_type)
+        assert resp.status == 200
+        assert (await resp.json())['recommendations'] == [
             {'sku': 'test1', 'item_id': 1, 'filter_string': 'test1', 'type': 'products_new'}]
 
-    def test_get_recommendations_of_string_exclusive(self, client, app, headers, filters_updater_client, redis):
-        items_model = app.models['products'].__models__[1]
+    async def test_get_recommendations_of_string_exclusive(self, init_db, client, headers, monkeypatch, headers_without_content_type):
+        random_patch(monkeypatch)
+        client = await client
         products = [{
             'item_id': 1,
             'sku': 'test1',
@@ -1961,24 +1994,24 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
             'item_id': 3,
             'sku': 'test3'
         }]
-        client.post('/products_new/?store_id=1', headers=headers, body=json.dumps(products))
+        await client.post('/products_new/?store_id=1', headers=headers, data=ujson.dumps(products))
 
-        filters_updater_client.post('/products_new/update_filters?store_id=1', headers=headers)
+        await client.post('/products_new/update_filters?store_id=1', headers=headers_without_content_type)
         sleep(0.05)
         while True:
-            resp = filters_updater_client.get(
-                '/products_new/update_filters?store_id=1&hash=6342e10bd7dca3240c698aa79c98362e',
-                headers=headers)
-            if json.loads(resp.body)['status'] != 'running':
+            resp = await client.get(
+                '/products_new/update_filters?store_id=1&job_hash=6342e10bd7dca3240c698aa79c98362e',
+                headers=headers_without_content_type)
+            if (await resp.json())['status'] != 'running':
                 break
 
-        filters_updater_client.post('/engines/4/export_objects?import_data=true', headers=headers)
+        await client.post('/engines/4/export_objects?import_data=true', headers=headers_without_content_type)
         sleep(0.05)
         while True:
-            resp = filters_updater_client.get(
-                '/engines/1/export_objects?hash=6342e10bd7dca3240c698aa79c98362e',
-                headers=headers)
-            if json.loads(resp.body)['status'] != 'running':
+            resp = await client.get(
+                '/engines/4/export_objects?job_hash=6342e10bd7dca3240c698aa79c98362e',
+                headers=headers_without_content_type)
+            if (await resp.json())['status'] != 'running':
                 break
 
         body = [{
@@ -1989,15 +2022,18 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
                 'slots': [{'id': 2}]
             }]
         }]
-        obj = json.loads(client.post('/placements/', headers=headers, body=json.dumps(body)).body)[0]
-        resp = client.get('/placements/{}/recommendations?filter_string_exclusive_of=item_id:1|sku:test1'.format(obj['small_hash']), headers=headers)
-        assert resp.status_code == 200
-        assert json.loads(resp.body)['recommendations'] == [
+        resp = await client.post('/placements/', headers=headers, data=ujson.dumps(body))
+        obj = (await resp.json())[0]
+
+        resp = await client.get('/placements/{}/recommendations?filter_string_exclusive_of=item_id:1|sku:test1'.format(obj['small_hash']), headers=headers_without_content_type)
+        assert resp.status == 200
+        assert (await resp.json())['recommendations'] == [
             {'sku': 'test3', 'item_id': 3, 'type': 'products_new'},
             {'sku': 'test2', 'item_id': 2, 'filter_string': 'test2', 'type': 'products_new'}]
 
-    def test_get_recommendations_of_integer_inclusive(self, client, app, headers, filters_updater_client, redis):
-        items_model = app.models['products'].__models__[1]
+    async def test_get_recommendations_of_integer_inclusive(self, init_db, client, headers, monkeypatch, headers_without_content_type):
+        random_patch(monkeypatch)
+        client = await client
         products = [{
             'item_id': 1,
             'sku': 'test1',
@@ -2010,24 +2046,24 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
             'item_id': 3,
             'sku': 'test3'
         }]
-        client.post('/products_new/?store_id=1', headers=headers, body=json.dumps(products))
+        await client.post('/products_new/?store_id=1', headers=headers, data=ujson.dumps(products))
 
-        filters_updater_client.post('/products_new/update_filters?store_id=1', headers=headers)
+        await client.post('/products_new/update_filters?store_id=1', headers=headers_without_content_type)
         sleep(0.05)
         while True:
-            resp = filters_updater_client.get(
-                '/products_new/update_filters?store_id=1&hash=6342e10bd7dca3240c698aa79c98362e',
-                headers=headers)
-            if json.loads(resp.body)['status'] != 'running':
+            resp = await client.get(
+                '/products_new/update_filters?store_id=1&job_hash=6342e10bd7dca3240c698aa79c98362e',
+                headers=headers_without_content_type)
+            if (await resp.json())['status'] != 'running':
                 break
 
-        filters_updater_client.post('/engines/4/export_objects?import_data=true', headers=headers)
+        await client.post('/engines/4/export_objects?import_data=true', headers=headers_without_content_type)
         sleep(0.05)
         while True:
-            resp = filters_updater_client.get(
-                '/engines/1/export_objects?hash=6342e10bd7dca3240c698aa79c98362e',
-                headers=headers)
-            if json.loads(resp.body)['status'] != 'running':
+            resp = await client.get(
+                '/engines/4/export_objects?job_hash=6342e10bd7dca3240c698aa79c98362e',
+                headers=headers_without_content_type)
+            if (await resp.json())['status'] != 'running':
                 break
 
         body = [{
@@ -2038,14 +2074,17 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
                 'slots': [{'id': 2}]
             }]
         }]
-        obj = json.loads(client.post('/placements/', headers=headers, body=json.dumps(body)).body)[0]
-        resp = client.get('/placements/{}/recommendations?filter_integer_inclusive_of=item_id:1|sku:test1'.format(obj['small_hash']), headers=headers)
-        assert resp.status_code == 200
-        assert json.loads(resp.body)['recommendations'] == [
+        resp = await client.post('/placements/', headers=headers, data=ujson.dumps(body))
+        obj = (await resp.json())[0]
+
+        resp = await client.get('/placements/{}/recommendations?filter_integer_inclusive_of=item_id:1|sku:test1'.format(obj['small_hash']), headers=headers_without_content_type)
+        assert resp.status == 200
+        assert (await resp.json())['recommendations'] == [
             {'sku': 'test1', 'item_id': 1, 'filter_integer': 1, 'type': 'products_new'}]
 
-    def test_get_recommendations_of_integer_exclusive(self, client, app, headers, filters_updater_client, redis):
-        items_model = app.models['products'].__models__[1]
+    async def test_get_recommendations_of_integer_exclusive(self, init_db, client, headers, monkeypatch, headers_without_content_type):
+        random_patch(monkeypatch)
+        client = await client
         products = [{
             'item_id': 1,
             'sku': 'test1',
@@ -2058,24 +2097,24 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
             'item_id': 3,
             'sku': 'test3'
         }]
-        client.post('/products_new/?store_id=1', headers=headers, body=json.dumps(products))
+        await client.post('/products_new/?store_id=1', headers=headers, data=ujson.dumps(products))
 
-        filters_updater_client.post('/products_new/update_filters?store_id=1', headers=headers)
+        await client.post('/products_new/update_filters?store_id=1', headers=headers_without_content_type)
         sleep(0.05)
         while True:
-            resp = filters_updater_client.get(
-                '/products_new/update_filters?store_id=1&hash=6342e10bd7dca3240c698aa79c98362e',
-                headers=headers)
-            if json.loads(resp.body)['status'] != 'running':
+            resp = await client.get(
+                '/products_new/update_filters?store_id=1&job_hash=6342e10bd7dca3240c698aa79c98362e',
+                headers=headers_without_content_type)
+            if (await resp.json())['status'] != 'running':
                 break
 
-        filters_updater_client.post('/engines/4/export_objects?import_data=true', headers=headers)
+        await client.post('/engines/4/export_objects?import_data=true', headers=headers_without_content_type)
         sleep(0.05)
         while True:
-            resp = filters_updater_client.get(
-                '/engines/1/export_objects?hash=6342e10bd7dca3240c698aa79c98362e',
-                headers=headers)
-            if json.loads(resp.body)['status'] != 'running':
+            resp = await client.get(
+                '/engines/4/export_objects?job_hash=6342e10bd7dca3240c698aa79c98362e',
+                headers=headers_without_content_type)
+            if (await resp.json())['status'] != 'running':
                 break
 
         body = [{
@@ -2086,15 +2125,18 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
                 'slots': [{'id': 2}]
             }]
         }]
-        obj = json.loads(client.post('/placements/', headers=headers, body=json.dumps(body)).body)[0]
-        resp = client.get('/placements/{}/recommendations?filter_integer_exclusive_of=item_id:1|sku:test1'.format(obj['small_hash']), headers=headers)
-        assert resp.status_code == 200
-        assert json.loads(resp.body)['recommendations'] == [
+        resp = await client.post('/placements/', headers=headers, data=ujson.dumps(body))
+        obj = (await resp.json())[0]
+
+        resp = await client.get('/placements/{}/recommendations?filter_integer_exclusive_of=item_id:1|sku:test1'.format(obj['small_hash']), headers=headers_without_content_type)
+        assert resp.status == 200
+        assert (await resp.json())['recommendations'] == [
             {'sku': 'test3', 'item_id': 3, 'type': 'products_new'},
             {'sku': 'test2', 'item_id': 2, 'filter_integer': 2, 'type': 'products_new'}]
 
-    def test_get_recommendations_of_boolean_inclusive(self, client, app, headers, filters_updater_client, redis):
-        items_model = app.models['products'].__models__[1]
+    async def test_get_recommendations_of_boolean_inclusive(self, init_db, client, headers, monkeypatch, headers_without_content_type):
+        random_patch(monkeypatch)
+        client = await client
         products = [{
             'item_id': 1,
             'sku': 'test1',
@@ -2107,24 +2149,24 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
             'item_id': 3,
             'sku': 'test3'
         }]
-        client.post('/products_new/?store_id=1', headers=headers, body=json.dumps(products))
+        await client.post('/products_new/?store_id=1', headers=headers, data=ujson.dumps(products))
 
-        filters_updater_client.post('/products_new/update_filters?store_id=1', headers=headers)
+        await client.post('/products_new/update_filters?store_id=1', headers=headers_without_content_type)
         sleep(0.05)
         while True:
-            resp = filters_updater_client.get(
-                '/products_new/update_filters?store_id=1&hash=6342e10bd7dca3240c698aa79c98362e',
-                headers=headers)
-            if json.loads(resp.body)['status'] != 'running':
+            resp = await client.get(
+                '/products_new/update_filters?store_id=1&job_hash=6342e10bd7dca3240c698aa79c98362e',
+                headers=headers_without_content_type)
+            if (await resp.json())['status'] != 'running':
                 break
 
-        filters_updater_client.post('/engines/4/export_objects?import_data=true', headers=headers)
+        await client.post('/engines/4/export_objects?import_data=true', headers=headers_without_content_type)
         sleep(0.05)
         while True:
-            resp = filters_updater_client.get(
-                '/engines/1/export_objects?hash=6342e10bd7dca3240c698aa79c98362e',
-                headers=headers)
-            if json.loads(resp.body)['status'] != 'running':
+            resp = await client.get(
+                '/engines/4/export_objects?job_hash=6342e10bd7dca3240c698aa79c98362e',
+                headers=headers_without_content_type)
+            if (await resp.json())['status'] != 'running':
                 break
 
         body = [{
@@ -2135,15 +2177,18 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
                 'slots': [{'id': 2}]
             }]
         }]
-        obj = json.loads(client.post('/placements/', headers=headers, body=json.dumps(body)).body)[0]
-        resp = client.get('/placements/{}/recommendations?filter_boolean_inclusive_of=item_id:1|sku:test1'.format(obj['small_hash']), headers=headers)
-        assert resp.status_code == 200
-        assert json.loads(resp.body)['recommendations'] == [
+        resp = await client.post('/placements/', headers=headers, data=ujson.dumps(body))
+        obj = (await resp.json())[0]
+
+        resp = await client.get('/placements/{}/recommendations?filter_boolean_inclusive_of=item_id:1|sku:test1'.format(obj['small_hash']), headers=headers_without_content_type)
+        assert resp.status == 200
+        assert (await resp.json())['recommendations'] == [
             {'sku': 'test1', 'item_id': 1, 'filter_boolean': True, 'type': 'products_new'},
             {'sku': 'test2', 'item_id': 2, 'filter_boolean': True, 'type': 'products_new'}]
 
-    def test_get_recommendations_of_boolean_inclusive_with_false(self, client, app, headers, filters_updater_client, redis):
-        items_model = app.models['products'].__models__[1]
+    async def test_get_recommendations_of_boolean_inclusive_with_false(self, init_db, client, headers, monkeypatch, headers_without_content_type):
+        random_patch(monkeypatch)
+        client = await client
         products = [{
             'item_id': 1,
             'sku': 'test1',
@@ -2157,24 +2202,24 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
             'sku': 'test3',
             'filter_boolean': False
         }]
-        client.post('/products_new/?store_id=1', headers=headers, body=json.dumps(products))
+        await client.post('/products_new/?store_id=1', headers=headers, data=ujson.dumps(products))
 
-        filters_updater_client.post('/products_new/update_filters?store_id=1', headers=headers)
+        await client.post('/products_new/update_filters?store_id=1', headers=headers_without_content_type)
         sleep(0.05)
         while True:
-            resp = filters_updater_client.get(
-                '/products_new/update_filters?store_id=1&hash=6342e10bd7dca3240c698aa79c98362e',
-                headers=headers)
-            if json.loads(resp.body)['status'] != 'running':
+            resp = await client.get(
+                '/products_new/update_filters?store_id=1&job_hash=6342e10bd7dca3240c698aa79c98362e',
+                headers=headers_without_content_type)
+            if (await resp.json())['status'] != 'running':
                 break
 
-        filters_updater_client.post('/engines/4/export_objects?import_data=true', headers=headers)
+        await client.post('/engines/4/export_objects?import_data=true', headers=headers_without_content_type)
         sleep(0.05)
         while True:
-            resp = filters_updater_client.get(
-                '/engines/1/export_objects?hash=6342e10bd7dca3240c698aa79c98362e',
-                headers=headers)
-            if json.loads(resp.body)['status'] != 'running':
+            resp = await client.get(
+                '/engines/4/export_objects?job_hash=6342e10bd7dca3240c698aa79c98362e',
+                headers=headers_without_content_type)
+            if (await resp.json())['status'] != 'running':
                 break
 
         body = [{
@@ -2185,15 +2230,18 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
                 'slots': [{'id': 2}]
             }]
         }]
-        obj = json.loads(client.post('/placements/', headers=headers, body=json.dumps(body)).body)[0]
-        resp = client.get('/placements/{}/recommendations?filter_boolean_inclusive_of=item_id:3|sku:test3'.format(obj['small_hash']), headers=headers)
-        assert resp.status_code == 200
-        assert json.loads(resp.body)['recommendations'] == [
+        resp = await client.post('/placements/', headers=headers, data=ujson.dumps(body))
+        obj = (await resp.json())[0]
+
+        resp = await client.get('/placements/{}/recommendations?filter_boolean_inclusive_of=item_id:3|sku:test3'.format(obj['small_hash']), headers=headers_without_content_type)
+        assert resp.status == 200
+        assert (await resp.json())['recommendations'] == [
             {'sku': 'test1', 'item_id': 1, 'filter_boolean': True, 'type': 'products_new'},
             {'sku': 'test2', 'item_id': 2, 'filter_boolean': True, 'type': 'products_new'}]
 
-    def test_get_recommendations_of_boolean_exclusive(self, client, app, headers, filters_updater_client, redis):
-        items_model = app.models['products'].__models__[1]
+    async def test_get_recommendations_of_boolean_exclusive(self, init_db, client, headers, monkeypatch, headers_without_content_type):
+        random_patch(monkeypatch)
+        client = await client
         products = [{
             'item_id': 1,
             'sku': 'test1',
@@ -2206,24 +2254,24 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
             'item_id': 3,
             'sku': 'test3'
         }]
-        client.post('/products_new/?store_id=1', headers=headers, body=json.dumps(products))
+        await client.post('/products_new/?store_id=1', headers=headers, data=ujson.dumps(products))
 
-        filters_updater_client.post('/products_new/update_filters?store_id=1', headers=headers)
+        await client.post('/products_new/update_filters?store_id=1', headers=headers_without_content_type)
         sleep(0.05)
         while True:
-            resp = filters_updater_client.get(
-                '/products_new/update_filters?store_id=1&hash=6342e10bd7dca3240c698aa79c98362e',
-                headers=headers)
-            if json.loads(resp.body)['status'] != 'running':
+            resp = await client.get(
+                '/products_new/update_filters?store_id=1&job_hash=6342e10bd7dca3240c698aa79c98362e',
+                headers=headers_without_content_type)
+            if (await resp.json())['status'] != 'running':
                 break
 
-        filters_updater_client.post('/engines/4/export_objects?import_data=true', headers=headers)
+        await client.post('/engines/4/export_objects?import_data=true', headers=headers_without_content_type)
         sleep(0.05)
         while True:
-            resp = filters_updater_client.get(
-                '/engines/1/export_objects?hash=6342e10bd7dca3240c698aa79c98362e',
-                headers=headers)
-            if json.loads(resp.body)['status'] != 'running':
+            resp = await client.get(
+                '/engines/4/export_objects?job_hash=6342e10bd7dca3240c698aa79c98362e',
+                headers=headers_without_content_type)
+            if (await resp.json())['status'] != 'running':
                 break
 
         body = [{
@@ -2234,14 +2282,17 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
                 'slots': [{'id': 2}]
             }]
         }]
-        obj = json.loads(client.post('/placements/', headers=headers, body=json.dumps(body)).body)[0]
-        resp = client.get('/placements/{}/recommendations?filter_boolean_exclusive_of=item_id:1|sku:test1'.format(obj['small_hash']), headers=headers)
-        assert resp.status_code == 200
-        assert json.loads(resp.body)['recommendations'] == [
+        resp = await client.post('/placements/', headers=headers, data=ujson.dumps(body))
+        obj = (await resp.json())[0]
+
+        resp = await client.get('/placements/{}/recommendations?filter_boolean_exclusive_of=item_id:1|sku:test1'.format(obj['small_hash']), headers=headers_without_content_type)
+        assert resp.status == 200
+        assert (await resp.json())['recommendations'] == [
             {'sku': 'test3', 'item_id': 3, 'type': 'products_new'}]
 
-    def test_get_recommendations_of_array_inclusive(self, client, app, headers, filters_updater_client, redis):
-        items_model = app.models['products'].__models__[1]
+    async def test_get_recommendations_of_array_inclusive(self, init_db, client, headers, monkeypatch, headers_without_content_type):
+        random_patch(monkeypatch)
+        client = await client
         products = [{
             'item_id': 1,
             'sku': 'test1',
@@ -2254,24 +2305,24 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
             'item_id': 3,
             'sku': 'test3'
         }]
-        client.post('/products_new/?store_id=1', headers=headers, body=json.dumps(products))
+        await client.post('/products_new/?store_id=1', headers=headers, data=ujson.dumps(products))
 
-        filters_updater_client.post('/products_new/update_filters?store_id=1', headers=headers)
+        await client.post('/products_new/update_filters?store_id=1', headers=headers_without_content_type)
         sleep(0.05)
         while True:
-            resp = filters_updater_client.get(
-                '/products_new/update_filters?store_id=1&hash=6342e10bd7dca3240c698aa79c98362e',
-                headers=headers)
-            if json.loads(resp.body)['status'] != 'running':
+            resp = await client.get(
+                '/products_new/update_filters?store_id=1&job_hash=6342e10bd7dca3240c698aa79c98362e',
+                headers=headers_without_content_type)
+            if (await resp.json())['status'] != 'running':
                 break
 
-        filters_updater_client.post('/engines/4/export_objects?import_data=true', headers=headers)
+        await client.post('/engines/4/export_objects?import_data=true', headers=headers_without_content_type)
         sleep(0.05)
         while True:
-            resp = filters_updater_client.get(
-                '/engines/1/export_objects?hash=6342e10bd7dca3240c698aa79c98362e',
-                headers=headers)
-            if json.loads(resp.body)['status'] != 'running':
+            resp = await client.get(
+                '/engines/4/export_objects?job_hash=6342e10bd7dca3240c698aa79c98362e',
+                headers=headers_without_content_type)
+            if (await resp.json())['status'] != 'running':
                 break
 
         body = [{
@@ -2282,14 +2333,17 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
                 'slots': [{'id': 2}]
             }]
         }]
-        obj = json.loads(client.post('/placements/', headers=headers, body=json.dumps(body)).body)[0]
-        resp = client.get('/placements/{}/recommendations?filter_array_inclusive_of=item_id:1|sku:test1'.format(obj['small_hash']), headers=headers)
-        assert resp.status_code == 200
-        assert json.loads(resp.body)['recommendations'] == [
+        resp = await client.post('/placements/', headers=headers, data=ujson.dumps(body))
+        obj = (await resp.json())[0]
+
+        resp = await client.get('/placements/{}/recommendations?filter_array_inclusive_of=item_id:1|sku:test1'.format(obj['small_hash']), headers=headers_without_content_type)
+        assert resp.status == 200
+        assert (await resp.json())['recommendations'] == [
             {'sku': 'test1', 'item_id': 1, 'filter_array': ['t1', 't2'], 'type': 'products_new'}]
 
-    def test_get_recommendations_of_array_exclusive(self, client, app, headers, filters_updater_client, redis):
-        items_model = app.models['products'].__models__[1]
+    async def test_get_recommendations_of_array_exclusive(self, init_db, client, headers, monkeypatch, headers_without_content_type):
+        random_patch(monkeypatch)
+        client = await client
         products = [{
             'item_id': 1,
             'sku': 'test1',
@@ -2302,24 +2356,24 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
             'item_id': 3,
             'sku': 'test3'
         }]
-        client.post('/products_new/?store_id=1', headers=headers, body=json.dumps(products))
+        await client.post('/products_new/?store_id=1', headers=headers, data=ujson.dumps(products))
 
-        filters_updater_client.post('/products_new/update_filters?store_id=1', headers=headers)
+        await client.post('/products_new/update_filters?store_id=1', headers=headers_without_content_type)
         sleep(0.05)
         while True:
-            resp = filters_updater_client.get(
-                '/products_new/update_filters?store_id=1&hash=6342e10bd7dca3240c698aa79c98362e',
-                headers=headers)
-            if json.loads(resp.body)['status'] != 'running':
+            resp = await client.get(
+                '/products_new/update_filters?store_id=1&job_hash=6342e10bd7dca3240c698aa79c98362e',
+                headers=headers_without_content_type)
+            if (await resp.json())['status'] != 'running':
                 break
 
-        filters_updater_client.post('/engines/4/export_objects?import_data=true', headers=headers)
+        await client.post('/engines/4/export_objects?import_data=true', headers=headers_without_content_type)
         sleep(0.05)
         while True:
-            resp = filters_updater_client.get(
-                '/engines/1/export_objects?hash=6342e10bd7dca3240c698aa79c98362e',
-                headers=headers)
-            if json.loads(resp.body)['status'] != 'running':
+            resp = await client.get(
+                '/engines/4/export_objects?job_hash=6342e10bd7dca3240c698aa79c98362e',
+                headers=headers_without_content_type)
+            if (await resp.json())['status'] != 'running':
                 break
 
         body = [{
@@ -2330,15 +2384,18 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
                 'slots': [{'id': 2}]
             }]
         }]
-        obj = json.loads(client.post('/placements/', headers=headers, body=json.dumps(body)).body)[0]
-        resp = client.get('/placements/{}/recommendations?filter_array_exclusive_of=item_id:1|sku:test1'.format(obj['small_hash']), headers=headers)
-        assert resp.status_code == 200
-        assert json.loads(resp.body)['recommendations'] == [
+        resp = await client.post('/placements/', headers=headers, data=ujson.dumps(body))
+        obj = (await resp.json())[0]
+
+        resp = await client.get('/placements/{}/recommendations?filter_array_exclusive_of=item_id:1|sku:test1'.format(obj['small_hash']), headers=headers_without_content_type)
+        assert resp.status == 200
+        assert (await resp.json())['recommendations'] == [
             {'sku': 'test3', 'item_id': 3, 'type': 'products_new'},
             {'sku': 'test2', 'item_id': 2, 'filter_array': ['t2', 't3'], 'type': 'products_new'}]
 
-    def test_get_recommendations_of_object_inclusive(self, client, app, headers, filters_updater_client, redis):
-        items_model = app.models['products'].__models__[1]
+    async def test_get_recommendations_of_object_inclusive(self, init_db, client, headers, monkeypatch, headers_without_content_type):
+        random_patch(monkeypatch)
+        client = await client
         products = [{
             'item_id': 1,
             'sku': 'test1',
@@ -2351,24 +2408,24 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
             'item_id': 3,
             'sku': 'test3'
         }]
-        client.post('/products_new/?store_id=1', headers=headers, body=json.dumps(products))
+        await client.post('/products_new/?store_id=1', headers=headers, data=ujson.dumps(products))
 
-        filters_updater_client.post('/products_new/update_filters?store_id=1', headers=headers)
+        await client.post('/products_new/update_filters?store_id=1', headers=headers_without_content_type)
         sleep(0.05)
         while True:
-            resp = filters_updater_client.get(
-                '/products_new/update_filters?store_id=1&hash=6342e10bd7dca3240c698aa79c98362e',
-                headers=headers)
-            if json.loads(resp.body)['status'] != 'running':
+            resp = await client.get(
+                '/products_new/update_filters?store_id=1&job_hash=6342e10bd7dca3240c698aa79c98362e',
+                headers=headers_without_content_type)
+            if (await resp.json())['status'] != 'running':
                 break
 
-        filters_updater_client.post('/engines/4/export_objects?import_data=true', headers=headers)
+        await client.post('/engines/4/export_objects?import_data=true', headers=headers_without_content_type)
         sleep(0.05)
         while True:
-            resp = filters_updater_client.get(
-                '/engines/1/export_objects?hash=6342e10bd7dca3240c698aa79c98362e',
-                headers=headers)
-            if json.loads(resp.body)['status'] != 'running':
+            resp = await client.get(
+                '/engines/4/export_objects?job_hash=6342e10bd7dca3240c698aa79c98362e',
+                headers=headers_without_content_type)
+            if (await resp.json())['status'] != 'running':
                 break
 
         body = [{
@@ -2379,13 +2436,16 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
                 'slots': [{'id': 2}]
             }]
         }]
-        obj = json.loads(client.post('/placements/', headers=headers, body=json.dumps(body)).body)[0]
-        resp = client.get('/placements/{}/recommendations?filter_object_inclusive_of=item_id:1|sku:test1'.format(obj['small_hash']), headers=headers)
-        assert resp.status_code == 200
-        assert json.loads(resp.body)['recommendations'] == [{'sku': 'test1', 'item_id': 1, 'filter_object': {'id': 1}, 'type': 'products_new'}]
+        resp = await client.post('/placements/', headers=headers, data=ujson.dumps(body))
+        obj = (await resp.json())[0]
 
-    def test_get_recommendations_of_object_exclusive(self, client, app, headers, filters_updater_client, redis):
-        items_model = app.models['products'].__models__[1]
+        resp = await client.get('/placements/{}/recommendations?filter_object_inclusive_of=item_id:1|sku:test1'.format(obj['small_hash']), headers=headers_without_content_type)
+        assert resp.status == 200
+        assert (await resp.json())['recommendations'] == [{'sku': 'test1', 'item_id': 1, 'filter_object': {'id': 1}, 'type': 'products_new'}]
+
+    async def test_get_recommendations_of_object_exclusive(self, init_db, client, headers, monkeypatch, headers_without_content_type):
+        random_patch(monkeypatch)
+        client = await client
         products = [{
             'item_id': 1,
             'sku': 'test1',
@@ -2398,24 +2458,24 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
             'item_id': 3,
             'sku': 'test3'
         }]
-        client.post('/products_new/?store_id=1', headers=headers, body=json.dumps(products))
+        await client.post('/products_new/?store_id=1', headers=headers, data=ujson.dumps(products))
 
-        filters_updater_client.post('/products_new/update_filters?store_id=1', headers=headers)
+        await client.post('/products_new/update_filters?store_id=1', headers=headers_without_content_type)
         sleep(0.05)
         while True:
-            resp = filters_updater_client.get(
-                '/products_new/update_filters?store_id=1&hash=6342e10bd7dca3240c698aa79c98362e',
-                headers=headers)
-            if json.loads(resp.body)['status'] != 'running':
+            resp = await client.get(
+                '/products_new/update_filters?store_id=1&job_hash=6342e10bd7dca3240c698aa79c98362e',
+                headers=headers_without_content_type)
+            if (await resp.json())['status'] != 'running':
                 break
 
-        filters_updater_client.post('/engines/4/export_objects?import_data=true', headers=headers)
+        await client.post('/engines/4/export_objects?import_data=true', headers=headers_without_content_type)
         sleep(0.05)
         while True:
-            resp = filters_updater_client.get(
-                '/engines/1/export_objects?hash=6342e10bd7dca3240c698aa79c98362e',
-                headers=headers)
-            if json.loads(resp.body)['status'] != 'running':
+            resp = await client.get(
+                '/engines/4/export_objects?job_hash=6342e10bd7dca3240c698aa79c98362e',
+                headers=headers_without_content_type)
+            if (await resp.json())['status'] != 'running':
                 break
 
         body = [{
@@ -2426,15 +2486,18 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
                 'slots': [{'id': 2}]
             }]
         }]
-        obj = json.loads(client.post('/placements/', headers=headers, body=json.dumps(body)).body)[0]
-        resp = client.get('/placements/{}/recommendations?filter_object_exclusive_of=item_id:1|sku:test1'.format(obj['small_hash']), headers=headers)
-        assert resp.status_code == 200
-        assert json.loads(resp.body)['recommendations'] == [
+        resp = await client.post('/placements/', headers=headers, data=ujson.dumps(body))
+        obj = (await resp.json())[0]
+
+        resp = await client.get('/placements/{}/recommendations?filter_object_exclusive_of=item_id:1|sku:test1'.format(obj['small_hash']), headers=headers_without_content_type)
+        assert resp.status == 200
+        assert (await resp.json())['recommendations'] == [
             {'sku': 'test3', 'item_id': 3, 'type': 'products_new'},
             {'sku': 'test2', 'item_id': 2, 'filter_object': {'id': 2}, 'type': 'products_new'}]
 
-    def test_get_recommendations_of_index_inclusive(self, client, app, headers, filters_updater_client, redis):
-        items_model = app.models['products'].__models__[1]
+    async def test_get_recommendations_of_index_inclusive(self, init_db, client, headers, monkeypatch, headers_without_content_type):
+        random_patch(monkeypatch)
+        client = await client
         products = [{
             'item_id': 1,
             'sku': 'test1',
@@ -2447,24 +2510,24 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
             'item_id': 3,
             'sku': 'test3'
         }]
-        client.post('/products_new/?store_id=1', headers=headers, body=json.dumps(products))
+        await client.post('/products_new/?store_id=1', headers=headers, data=ujson.dumps(products))
 
-        filters_updater_client.post('/products_new/update_filters?store_id=1', headers=headers)
+        await client.post('/products_new/update_filters?store_id=1', headers=headers_without_content_type)
         sleep(0.05)
         while True:
-            resp = filters_updater_client.get(
-                '/products_new/update_filters?store_id=1&hash=6342e10bd7dca3240c698aa79c98362e',
-                headers=headers)
-            if json.loads(resp.body)['status'] != 'running':
+            resp = await client.get(
+                '/products_new/update_filters?store_id=1&job_hash=6342e10bd7dca3240c698aa79c98362e',
+                headers=headers_without_content_type)
+            if (await resp.json())['status'] != 'running':
                 break
 
-        filters_updater_client.post('/engines/4/export_objects?import_data=true', headers=headers)
+        await client.post('/engines/4/export_objects?import_data=true', headers=headers_without_content_type)
         sleep(0.05)
         while True:
-            resp = filters_updater_client.get(
-                '/engines/1/export_objects?hash=6342e10bd7dca3240c698aa79c98362e',
-                headers=headers)
-            if json.loads(resp.body)['status'] != 'running':
+            resp = await client.get(
+                '/engines/4/export_objects?job_hash=6342e10bd7dca3240c698aa79c98362e',
+                headers=headers_without_content_type)
+            if (await resp.json())['status'] != 'running':
                 break
 
         body = [{
@@ -2475,16 +2538,19 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
                 'slots': [{'id': 2}]
             }]
         }]
-        obj = json.loads(client.post('/placements/', headers=headers, body=json.dumps(body)).body)[0]
-        resp = client.get('/placements/{}/recommendations?index_inclusive_of=item_id:1|sku:test1,item_id:2|sku:test2'.format(obj['small_hash']), headers=headers)
-        assert resp.status_code == 200
+        resp = await client.post('/placements/', headers=headers, data=ujson.dumps(body))
+        obj = (await resp.json())[0]
+
+        resp = await client.get('/placements/{}/recommendations?index_inclusive_of=item_id:1|sku:test1,item_id:2|sku:test2'.format(obj['small_hash']), headers=headers_without_content_type)
+        assert resp.status == 200
         obj1 = {'sku': 'test1', 'item_id': 1, 'filter_object': {'id': 1}, 'type': 'products_new'}
         obj2 = {'sku': 'test2', 'item_id': 2, 'filter_object': {'id': 2}, 'type': 'products_new'}
-        assert json.loads(resp.body)['recommendations'] == [obj1, obj2] or \
-            json.loads(resp.body)['recommendations'] == [obj2, obj1]
+        assert (await resp.json())['recommendations'] == [obj1, obj2] or \
+            (await resp.json())['recommendations'] == [obj2, obj1]
 
-    def test_get_recommendations_of_index_exclusive(self, client, app, headers, filters_updater_client, redis):
-        items_model = app.models['products'].__models__[1]
+    async def test_get_recommendations_of_index_exclusive(self, init_db, client, headers, monkeypatch, headers_without_content_type):
+        random_patch(monkeypatch)
+        client = await client
         products = [{
             'item_id': 1,
             'sku': 'test1',
@@ -2497,24 +2563,24 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
             'item_id': 3,
             'sku': 'test3'
         }]
-        client.post('/products_new/?store_id=1', headers=headers, body=json.dumps(products))
+        await client.post('/products_new/?store_id=1', headers=headers, data=ujson.dumps(products))
 
-        filters_updater_client.post('/products_new/update_filters?store_id=1', headers=headers)
+        await client.post('/products_new/update_filters?store_id=1', headers=headers_without_content_type)
         sleep(0.05)
         while True:
-            resp = filters_updater_client.get(
-                '/products_new/update_filters?store_id=1&hash=6342e10bd7dca3240c698aa79c98362e',
-                headers=headers)
-            if json.loads(resp.body)['status'] != 'running':
+            resp = await client.get(
+                '/products_new/update_filters?store_id=1&job_hash=6342e10bd7dca3240c698aa79c98362e',
+                headers=headers_without_content_type)
+            if (await resp.json())['status'] != 'running':
                 break
 
-        filters_updater_client.post('/engines/4/export_objects?import_data=true', headers=headers)
+        await client.post('/engines/4/export_objects?import_data=true', headers=headers_without_content_type)
         sleep(0.05)
         while True:
-            resp = filters_updater_client.get(
-                '/engines/1/export_objects?hash=6342e10bd7dca3240c698aa79c98362e',
-                headers=headers)
-            if json.loads(resp.body)['status'] != 'running':
+            resp = await client.get(
+                '/engines/4/export_objects?job_hash=6342e10bd7dca3240c698aa79c98362e',
+                headers=headers_without_content_type)
+            if (await resp.json())['status'] != 'running':
                 break
 
         body = [{
@@ -2525,7 +2591,9 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
                 'slots': [{'id': 2}]
             }]
         }]
-        obj = json.loads(client.post('/placements/', headers=headers, body=json.dumps(body)).body)[0]
-        resp = client.get('/placements/{}/recommendations?index_exclusive_of=item_id:1|sku:test1,item_id:2|sku:test2'.format(obj['small_hash']), headers=headers)
-        assert resp.status_code == 200
-        assert json.loads(resp.body)['recommendations'] == [{'sku': 'test3', 'item_id': 3, 'type': 'products_new'}]
+        resp = await client.post('/placements/', headers=headers, data=ujson.dumps(body))
+        obj = (await resp.json())[0]
+
+        resp = await client.get('/placements/{}/recommendations?index_exclusive_of=item_id:1|sku:test1,item_id:2|sku:test2'.format(obj['small_hash']), headers=headers_without_content_type)
+        assert resp.status == 200
+        assert (await resp.json())['recommendations'] == [{'sku': 'test3', 'item_id': 3, 'type': 'products_new'}]

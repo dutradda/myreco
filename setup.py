@@ -22,9 +22,13 @@ with open('README.md') as readme:
     long_description = readme.read()
 
 
+dependency_links = []
 install_requires = []
 with open('requirements.txt') as requirements:
-    install_requires = requirements.readlines()
+    lines = requirements.readlines()
+    install_requires = lines[2:]
+    dependency_links = lines[:2]
+    del lines
 
 
 tests_require = []
@@ -42,7 +46,7 @@ setup(
     author='Diogo Dutra',
     author_email='dutradda@gmail.com',
     url='https://github.com/dutradda/myreco',
-    download_url='http://github.com/dutradda/myreco/archive/master.zip',
+    download_url='http://github.com/dutradda/myreco/archive/master.tar.gz',
     license='MIT',
     keywords='recommendations neighborhood visualsimilarity visual similarity topseller top seller'\
     		' swagger openapi falconframework falcon framework',
@@ -52,6 +56,7 @@ setup(
     ],
     tests_require=tests_require,
     install_requires=install_requires,
+    dependency_links=dependency_links,
     classifiers=[
     	'License :: OSI Approved :: MIT License',
         'Development Status :: 3 - Alpha',

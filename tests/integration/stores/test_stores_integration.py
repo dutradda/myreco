@@ -1,6 +1,6 @@
 # MIT License
 
-# Copyright (c) 2016 Diogo Dutra
+# Copyright (c) 2016 Diogo Dutra <dutradda@gmail.com>
 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -21,216 +21,207 @@
 # SOFTWARE.
 
 
-from tests.integration.fixtures_models import SQLAlchemyRedisModelBase, StoresModel, UsersModel
-from falconswagger.swagger_api import SwaggerAPI
-from base64 import b64encode
-from fakeredis import FakeStrictRedis
 import pytest
-import json
+import ujson
 
 
 @pytest.fixture
-def model_base():
-    return SQLAlchemyRedisModelBase
-
-
-@pytest.fixture
-def app(session):
+def init_db(models, session):
     user = {
         'name': 'test',
         'email': 'test',
         'password': 'test',
         'admin': True
     }
-    UsersModel.insert(session, user)
-
-    return SwaggerAPI([StoresModel], session.bind, FakeStrictRedis(),
-                      title='Myreco API')
-
-
-@pytest.fixture
-def headers():
-    return {
-        'Authorization': b64encode('test:test'.encode()).decode()
-    }
-
+    session.loop.run_until_complete(models['users'].insert(session, user))
 
 
 class TestStoresModelPost(object):
 
-    def test_post_without_body(self, client, headers):
-        resp = client.post('/stores/', headers=headers)
-        assert resp.status_code == 400
-        assert json.loads(resp.body) == {'error': 'Request body is missing'}
+   async def test_post_without_body(self, init_db, client, headers, headers_without_content_type):
+        client = await client
+        resp = await client.post('/stores/', headers=headers)
+        assert resp.status == 400
+        assert (await resp.json()) == {'message': 'Request body is missing'}
 
-    def test_post_with_invalid_body(self, client, headers):
-        resp = client.post('/stores/', headers=headers, body='[{}]')
-        assert resp.status_code == 400
-        assert json.loads(resp.body) ==  {
-            'error': {
-                'input': {},
-                'message': "'name' is a required property",
-                'schema': {
-                    'type': 'object',
-                    'additionalProperties': False,
-                    'required': ['name', 'country', 'configuration'],
-                    'properties': {
-                        'configuration': {"$ref": "#/definitions/configuration"},
-                        'name': {'type': 'string'},
-                        'country': {'type': 'string'}
-                    }
+   async def test_post_with_invalid_body(self, init_db, client, headers, headers_without_content_type):
+        client = await client
+        resp = await client.post('/stores/', headers=headers, data='[{}]')
+        assert resp.status == 400
+        assert (await resp.json()) ==  {
+            'message': "'name' is a required property",
+            'schema': {
+                'type': 'object',
+                'additionalProperties': False,
+                'required': ['name', 'country', 'configuration'],
+                'properties': {
+                    'configuration': {"$ref": "#/definitions/configuration"},
+                    'name': {'type': 'string'},
+                    'country': {'type': 'string'}
                 }
             }
         }
 
-    def test_post(self, client, headers):
+   async def test_post(self, init_db, client, headers, headers_without_content_type):
+        client = await client
         body = [{
             'name': 'test',
             'country': 'test',
             'configuration': {'data_path': '/test'}
         }]
-        resp = client.post('/stores/', headers=headers, body=json.dumps(body))
+        resp = await client.post('/stores/', headers=headers, data=ujson.dumps(body))
         body[0]['id'] = 1
 
-        assert resp.status_code == 201
-        assert json.loads(resp.body) ==  body
+        assert resp.status == 201
+        assert (await resp.json()) ==  body
 
-    def test_post_with_invalid_grant(self, client):
+   async def test_post_with_invalid_grant(self, client):
+        client = await client
         body = [{
             'name': 'test',
             'country': 'test'
         }]
-        resp = client.post('/stores/', headers={'Authorization': 'invalid'}, body=json.dumps(body))
-        assert resp.status_code == 401
-        assert json.loads(resp.body) ==  {'error': 'Invalid authorization'}
+        resp = await client.post('/stores/', headers={'Authorization': 'invalid'}, data=ujson.dumps(body))
+        assert resp.status == 401
+        assert (await resp.json()) ==  {'message': 'Invalid authorization'}
 
 
 class TestStoresModelGet(object):
 
-    def test_get_not_found(self, client, headers):
-        resp = client.get('/stores/', headers=headers)
-        assert resp.status_code == 404
+   async def test_get_not_found(self, init_db, client, headers, headers_without_content_type):
+        client = await client
+        resp = await client.get('/stores/', headers=headers_without_content_type)
+        assert resp.status == 404
 
-    def test_get_invalid_with_body(self, client, headers):
-        resp = client.get('/stores/', headers=headers, body='{}')
-        assert resp.status_code == 400
-        assert json.loads(resp.body) == {'error': 'Request body is not acceptable'}
+   async def test_get_invalid_with_body(self, init_db, client, headers, headers_without_content_type):
+        client = await client
+        resp = await client.get('/stores/', headers=headers, data='{}')
+        assert resp.status == 400
+        assert (await resp.json()) == {'message': 'Request body is not acceptable'}
 
-    def test_get(self, client, headers):
+   async def test_get(self, init_db, client, headers, headers_without_content_type):
+        client = await client
         body = [{
             'name': 'test',
             'country': 'test',
             'configuration': {'data_path': '/test'}
         }]
-        client.post('/stores/', headers=headers, body=json.dumps(body))
+        await client.post('/stores/', headers=headers, data=ujson.dumps(body))
         body[0]['id'] = 1
 
-        resp = client.get('/stores/', headers=headers)
-        assert resp.status_code == 200
-        assert json.loads(resp.body) ==  body
+        resp = await client.get('/stores/', headers=headers_without_content_type)
+        assert resp.status == 200
+        assert (await resp.json()) ==  body
 
 
 class TestStoresModelUriTemplatePatch(object):
 
-    def test_patch_without_body(self, client, headers):
-        resp = client.patch('/stores/1/', headers=headers, body='')
-        assert resp.status_code == 400
-        assert json.loads(resp.body) == {'error': 'Request body is missing'}
+   async def test_patch_without_body(self, init_db, client, headers, headers_without_content_type):
+        client = await client
+        resp = await client.patch('/stores/1/', headers=headers, data='')
+        assert resp.status == 400
+        assert (await resp.json()) == {'message': 'Request body is missing'}
 
-    def test_patch_with_invalid_body(self, client, headers):
-        resp = client.patch('/stores/1/', headers=headers, body='{}')
-        assert resp.status_code == 400
-        assert json.loads(resp.body) ==  {
-            'error': {
-                'input': {},
-                'message': '{} does not have enough properties',
-                'schema': {
-                    'type': 'object',
-                    'additionalProperties': False,
-                    'minProperties': 1,
-                    'properties': {
-                        'configuration': {"$ref": "#/definitions/configuration"},
-                        'name': {'type': 'string'},
-                        'country': {'type': 'string'}
-                    }
+   async def test_patch_with_invalid_body(self, init_db, client, headers, headers_without_content_type):
+        client = await client
+        resp = await client.patch('/stores/1/', headers=headers, data='{}')
+        assert resp.status == 400
+        assert (await resp.json()) ==  {
+            'message': '{} does not have enough properties',
+            'schema': {
+                'type': 'object',
+                'additionalProperties': False,
+                'minProperties': 1,
+                'properties': {
+                    'configuration': {"$ref": "#/definitions/configuration"},
+                    'name': {'type': 'string'},
+                    'country': {'type': 'string'}
                 }
             }
         }
 
-    def test_patch_not_found(self, client, headers):
+   async def test_patch_not_found(self, init_db, client, headers, headers_without_content_type):
+        client = await client
         body = {
             'name': 'test',
             'country': 'test',
             'configuration': {'data_path': '/test'}
         }
-        resp = client.patch('/stores/1/', headers=headers, body=json.dumps(body))
-        assert resp.status_code == 404
+        resp = await client.patch('/stores/1/', headers=headers, data=ujson.dumps(body))
+        assert resp.status == 404
 
-    def test_patch(self, client, headers):
+   async def test_patch(self, init_db, client, headers, headers_without_content_type):
+        client = await client
         body = [{
             'name': 'test',
             'country': 'test',
             'configuration': {'data_path': '/test'}
         }]
-        obj = json.loads(client.post('/stores/', headers=headers, body=json.dumps(body)).body)[0]
+        resp = await client.post('/stores/', headers=headers, data=ujson.dumps(body))
+        obj = (await resp.json())[0]
 
         body = {
             'name': 'test2'
         }
-        resp = client.patch('/stores/1/', headers=headers, body=json.dumps(body))
+        resp = await client.patch('/stores/1/', headers=headers, data=ujson.dumps(body))
         obj['name'] = 'test2'
 
-        assert resp.status_code == 200
-        assert json.loads(resp.body) ==  obj
+        assert resp.status == 200
+        assert (await resp.json()) ==  obj
 
 
 class TestStoresModelUriTemplateDelete(object):
 
-    def test_delete_with_body(self, client, headers):
-        resp = client.delete('/stores/1/', headers=headers, body='{}')
-        assert resp.status_code == 400
-        assert json.loads(resp.body) == {'error': 'Request body is not acceptable'}
+   async def test_delete_with_body(self, init_db, client, headers, headers_without_content_type):
+        client = await client
+        resp = await client.delete('/stores/1/', headers=headers, data='{}')
+        assert resp.status == 400
+        assert (await resp.json()) == {'message': 'Request body is not acceptable'}
 
-    def test_delete(self, client, headers):
+   async def test_delete(self, init_db, client, headers, headers_without_content_type):
+        client = await client
         body = [{
             'name': 'test',
             'country': 'test',
             'configuration': {'data_path': '/test'}
         }]
-        client.post('/stores/', headers=headers, body=json.dumps(body))
+        await client.post('/stores/', headers=headers, data=ujson.dumps(body))
 
-        resp = client.get('/stores/1/', headers=headers)
-        assert resp.status_code == 200
+        resp = await client.get('/stores/1/', headers=headers_without_content_type)
+        assert resp.status == 200
 
-        resp = client.delete('/stores/1/', headers=headers)
-        assert resp.status_code == 204
+        resp = await client.delete('/stores/1/', headers=headers_without_content_type)
+        assert resp.status == 204
 
-        resp = client.get('/stores/1/', headers=headers)
-        assert resp.status_code == 404
+        resp = await client.get('/stores/1/', headers=headers_without_content_type)
+        assert resp.status == 404
 
 
 class TestStoresModelUriTemplateGet(object):
 
-    def test_get_with_body(self, client, headers):
-        resp = client.get('/stores/1/', headers=headers, body='{}')
-        assert resp.status_code == 400
-        assert json.loads(resp.body) == {'error': 'Request body is not acceptable'}
+   async def test_get_with_body(self, init_db, client, headers, headers_without_content_type):
+        client = await client
+        resp = await client.get('/stores/1/', headers=headers, data='{}')
+        assert resp.status == 400
+        assert (await resp.json()) == {'message': 'Request body is not acceptable'}
 
-    def test_get_not_found(self, client, headers):
-        resp = client.get('/stores/1/', headers=headers)
-        assert resp.status_code == 404
+   async def test_get_not_found(self, init_db, client, headers, headers_without_content_type):
+        client = await client
+        resp = await client.get('/stores/1/', headers=headers_without_content_type)
+        assert resp.status == 404
 
-    def test_get(self, client, headers):
+   async def test_get(self, init_db, client, headers, headers_without_content_type):
+        client = await client
         body = [{
             'name': 'test',
             'country': 'test',
             'configuration': {'data_path': '/test'}
         }]
-        client.post('/stores/', headers=headers, body=json.dumps(body))
+        await client.post('/stores/', headers=headers, data=ujson.dumps(body))
 
-        resp = client.get('/stores/1/', headers=headers)
+        resp = await client.get('/stores/1/', headers=headers_without_content_type)
         body[0]['id'] = 1
         body[0]['configuration'] = {'data_path': '/test'}
 
-        assert resp.status_code == 200
-        assert json.loads(resp.body) == body[0]
+        assert resp.status == 200
+        assert (await resp.json()) == body[0]

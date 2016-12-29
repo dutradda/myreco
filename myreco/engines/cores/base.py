@@ -1,6 +1,6 @@
 # MIT License
 
-# Copyright (c) 2016 Diogo Dutra
+# Copyright (c) 2016 Diogo Dutra <dutradda@gmail.com>
 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -21,18 +21,17 @@
 # SOFTWARE.
 
 
-from falconswagger.utils import build_validator, get_module_path
-from falconswagger.mixins import LoggerMixin
-from falconswagger.json_builder import JsonBuilder
+from swaggerit.utils import build_validator, get_module_path, set_logger
+from swaggerit.json_builder import JsonBuilder
 from myreco.engines.cores.items_indices_map import ItemsIndicesMap
 from myreco.engines.cores.utils import build_engine_data_path, build_engine_key_prefix
 from jsonschema import Draft4Validator
 from abc import ABCMeta, abstractmethod
 from bottleneck import argpartition
 from glob import glob
-import msgpack
+from aiofiles import gzip_open
+import ujson
 import os.path
-import gzip
 
 
 class EngineError(Exception):
@@ -48,12 +47,12 @@ class EngineCoreMeta(ABCMeta):
             cls.__config_validator__ = build_validator(schema, get_module_path(cls))
 
 
-class EngineCore(LoggerMixin, metaclass=EngineCoreMeta):
+class EngineCore(metaclass=EngineCoreMeta):
 
     def __init__(self, engine=None, items_model=None):
         self.engine = engine
         self.items_model = items_model
-        self._build_logger()
+        set_logger(self, build_engine_key_prefix(self.engine))
 
     def get_variables(self):
         return []
@@ -65,33 +64,33 @@ class EngineCore(LoggerMixin, metaclass=EngineCoreMeta):
     def _validate_config(self, engine):
         pass
 
-    def get_recommendations(self, session, filters, max_recos, show_details, **variables):
-        rec_vector = self._build_rec_vector(session, **variables)
+    async def get_recommendations(self, session, filters, max_recos, show_details, **variables):
+        rec_vector = await self._build_rec_vector(session, **variables)
 
         if rec_vector is not None:
-            [filter_.filter(session, rec_vector, ids) for filter_, ids in filters.items()]
-            return self._build_rec_list(session, rec_vector, max_recos, show_details)
+            [await filter_.filter(session, rec_vector, ids) for filter_, ids in filters.items()]
+            return await self._build_rec_list(session, rec_vector, max_recos, show_details)
 
         return []
 
     @abstractmethod
-    def _build_rec_vector(self, session, **variables):
+    async def _build_rec_vector(self, session, **variables):
         pass
 
-    def _build_rec_list(self, session, rec_vector, max_recos, show_details):
+    async def _build_rec_list(self, session, rec_vector, max_recos, show_details):
         items_indices_map = ItemsIndicesMap(self.items_model)
         best_indices = self._get_best_indices(rec_vector, max_recos)
-        best_items_keys = items_indices_map.get_items(best_indices, session)
+        best_items_keys = await items_indices_map.get_items(best_indices, session)
 
         if show_details and best_items_keys:
-            return [msgpack.loads(item, encoding='utf-8') for item in session.redis_bind.hmget(
-                            self.items_model.__key__, best_items_keys) if item is not None]
+            return [ujson.loads(item) for item in await session.redis_bind.hmget(
+                            self.items_model.__key__, *best_items_keys) if item is not None]
 
         else:
             items_ids = []
             for key in best_items_keys:
                 item = {}
-                self.items_model.set_ids(item, key)
+                self.items_model.set_instance_ids(item, key)
                 self._set_item_values(item)
                 items_ids.append(item)
 
@@ -103,7 +102,7 @@ class EngineCore(LoggerMixin, metaclass=EngineCoreMeta):
 
         best_indices = argpartition(-rec_vector, max_recos-1)[:max_recos]
         best_values = rec_vector[best_indices]
-        return [i for i, v in
+        return [int(i) for i, v in
             sorted(zip(best_indices, best_values), key=lambda x: x[1], reverse=True) if v > 0.0]
 
     def _set_item_values(self, item):
@@ -117,23 +116,23 @@ class EngineCore(LoggerMixin, metaclass=EngineCoreMeta):
     def export_objects(self, session):
         pass
 
-    def _build_csv_readers(self, pattern):
+    async def _build_csv_readers(self, pattern):
         path = build_engine_data_path(self.engine)
         readers = []
         for filename in glob(os.path.join(path, '{}*.gz'.format(pattern))):
-            file_ = gzip.open(filename, 'rt')
+            file_ = await gzip_open(filename, 'rt')
             readers.append(file_)
         return readers
 
-    def _get_items_indices_map_dict(self, items_indices_map, session):
-        items_indices_map = items_indices_map.get_all(session)
+    async def _get_items_indices_map_dict(self, items_indices_map, session):
+        items_indices_map_dict = await items_indices_map.get_all(session)
 
-        if not items_indices_map.values():
+        if not items_indices_map_dict.values():
             raise EngineError(
                 "The Indices Map for '{}' is empty. Please update these items"
                 .format(self.engine['item_type']['name']))
 
-        return items_indices_map
+        return items_indices_map_dict
 
 
 class AbstractDataImporter(metaclass=ABCMeta):
@@ -146,9 +145,12 @@ class AbstractDataImporter(metaclass=ABCMeta):
         pass
 
 
-class RedisObjectBase(LoggerMixin):
+class RedisObjectBase(object):
 
     def __init__(self, engine_core):
-        self._build_logger()
         self._engine_core = engine_core
+        self._set_redis_key()
+        set_logger(self, self._redis_key)
+
+    def _set_redis_key(self):
         self._redis_key = build_engine_key_prefix(self._engine_core.engine)

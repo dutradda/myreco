@@ -1,6 +1,6 @@
 # MIT License
 
-# Copyright (c) 2016 Diogo Dutra
+# Copyright (c) 2016 Diogo Dutra <dutradda@gmail.com>
 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -21,86 +21,49 @@
 # SOFTWARE.
 
 
-from myreco.users.models import (GrantsModelBase, URIsModelBase, MethodsModelBase,
-    UsersModelBase, build_users_grants_table, build_users_stores_table)
-from myreco.stores.model import StoresModelBase
-from myreco.variables.model import VariablesModelBase
-from myreco.placements.models import (PlacementsModelBase, VariationsModelBase,
-    ABTestUsersModelBase, build_variations_slots_table)
-from myreco.slots.models import (SlotsVariablesModelBase,
-    SlotsModelBase, build_slots_fallbacks_table)
-from myreco.engines.models import EnginesModelBase, EnginesCoresModelBase
-from myreco.engines.cores.base import EngineCore, AbstractDataImporter
+from myreco.engines.cores.base import AbstractDataImporter, EngineCore
 from myreco.engines.cores.utils import build_engine_data_path
-from myreco.items_types.models import ItemsTypesModelBase
-from myreco.factory import ModelsFactory
-from unittest.mock import MagicMock
+from unittest import mock
+from jsonschema import ValidationError
 from os import makedirs
-from csv import DictWriter
 import os.path
 import gzip
-import json
+import ujson
+import asyncio
 
 
-table_args = {'mysql_engine':'innodb'}
-factory = ModelsFactory('myreco', commons_models_attributes={'__table_args__': table_args},
-    					commons_tables_attributes=table_args)
-models = factory.make_all_models()
+class DataImporterTest(AbstractDataImporter):
 
-GrantsModel = models['grants']
+    def get_data(self, items_indices_map, session):
+        asyncio.run_coroutine_threadsafe(
+            asyncio.sleep(0.5),
+            session.loop
+        )
+        data_path = build_engine_data_path(self._engine)
+        if not os.path.isdir(data_path):
+            makedirs(data_path)
 
-URIsModel = models['uris']
+        data = [{'item_key': '2|test2', 'value': 1},
+                {'item_key': '1|test1', 'value': 3},
+                {'item_key': '3|test3', 'value': 2}]
+        data = map(ujson.dumps, data)
+        data = '\n'.join(data)
 
-MethodsModel = models['methods']
-
-UsersModel = models['users']
-
-StoresModel = models['stores']
-
-VariablesModel = models['variables']
-
-PlacementsModel = models['placements']
-
-VariationsModel = models['variations']
-
-ABTestUsersModel = models['ab_test_users']
-
-SlotsVariablesModel = models['slots_variables']
-
-SlotsModel = models['slots']
-
-EnginesModel = models['engines']
-
-EnginesCoresModel = models['engines_cores']
-
-ItemsTypesModel = models['items_types']
-    
-SQLAlchemyRedisModelBase = factory.base_model
-
-DataImporter = MagicMock()
+        filename_prefix = 'top_seller'
+        file_ = gzip.open(os.path.join(data_path, filename_prefix) + '-000000001.gz', 'wt')
+        file_.write(data)
+        file_.close()
+        return {'lines_count': 3}
 
 
-class TestDataImporter(AbstractDataImporter):
-
-        def get_data(self, items_indices_map, session):
-            data_path = build_engine_data_path(self._engine)
-            if not os.path.isdir(data_path):
-                makedirs(data_path)
-
-            data = [{'item_key': '2|test2', 'value': 1},
-                    {'item_key': '1|test1', 'value': 3},
-                    {'item_key': '3|test3', 'value': 2}]
-            data = map(json.dumps, data)
-            data = '\n'.join(data)
-
-            filename_prefix = 'top_seller'
-            file_ = gzip.open(os.path.join(data_path, filename_prefix) + '-000000001.gz', 'wt')
-            file_.write(data)
-            file_.close()
-            return {'lines_count': 3}
+def CoroMock():
+    coro = mock.MagicMock(name="CoroutineResult")
+    corofunc = mock.MagicMock(name="CoroutineFunction", side_effect=asyncio.coroutine(coro))
+    corofunc.coro = coro
+    return corofunc
 
 
-class TestEngine(EngineCore):
+class EngineCoreTest(EngineCore):
     __configuration_schema__ = {
         "type": "object",
         "required": ["item_id_name", "aggregators_ids_name"],
@@ -136,7 +99,7 @@ class TestEngine(EngineCore):
             raise ValidationError(message.format('aggregators_ids_name'),
                 instance=engine['configuration'], schema=item_type_schema_props)
 
-    def _build_rec_vector(self):
+    async def _build_rec_vector(self):
         pass
 
-    get_recommendations = MagicMock()
+    get_recommendations = CoroMock()

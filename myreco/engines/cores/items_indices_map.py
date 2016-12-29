@@ -1,6 +1,6 @@
 # MIT License
 
-# Copyright (c) 2016 Diogo Dutra
+# Copyright (c) 2016 Diogo Dutra <dutradda@gmail.com>
 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -21,9 +21,6 @@
 # SOFTWARE.
 
 
-from falconswagger.mixins import LoggerMixin
-
-
 class ItemsIndicesDict(dict):
 
     def __init__(self, items_indices_map, items_model):
@@ -40,31 +37,31 @@ class ItemsIndicesDict(dict):
     def get(self, key, default=None):
         if isinstance(key, str):
             key = key.encode()
-        return dict.get(self, key, default)
+        v = dict.get(self, key, default)
+        return v
 
 
-class ItemsIndicesMap(LoggerMixin):
+class ItemsIndicesMap(object):
 
     def __init__(self, items_model):
-        self._build_logger()
         self.items_model = items_model
         self.key = items_model.__key__ + '_indices_map'
         self.indices_items_key = items_model.__key__ + '_items_map'
 
-    def get_all(self, session):
-        items_indices_map = session.redis_bind.hgetall(self.key)
+    async def get_all(self, session):
+        items_indices_map = await session.redis_bind.hgetall(self.key)
         items_indices_map = {k: int(v.decode()) for k, v in items_indices_map.items()}
         return ItemsIndicesDict(items_indices_map, self.items_model)
 
-    def get_indices_items_map(self, session):
-        map_ = session.redis_bind.hgetall(self.indices_items_key)
+    async def get_indices_items_map(self, session):
+        map_ = await session.redis_bind.hgetall(self.indices_items_key)
         return {int(k): v.decode() for k, v in map_.items()}
 
-    def update(self, session):
-        items_indices_map = session.redis_bind.hgetall(self.key)
-        indices_items_map = session.redis_bind.hgetall(self.indices_items_key)
+    async def update(self, session):
+        items_indices_map = await session.redis_bind.hgetall(self.key)
+        indices_items_map = await session.redis_bind.hgetall(self.indices_items_key)
 
-        items = self.items_model.get_all(session)
+        items = await self.items_model.get_all(session)
         items_keys = self._build_keys(items)
 
         new_keys = [key for key in items_keys if key not in items_indices_map]
@@ -93,29 +90,31 @@ class ItemsIndicesMap(LoggerMixin):
             counter += 1
 
         if keys_to_delete:
-            session.redis_bind.hdel(self.key, *keys_to_delete)
-            session.redis_bind.hdel(self.indices_items_key, *free_indices)
+            await session.redis_bind.hdel(self.key, *keys_to_delete)
+            await session.redis_bind.hdel(self.indices_items_key, *free_indices)
 
         if items_indices_map:
-            session.redis_bind.hmset(self.key, items_indices_map)
-            session.redis_bind.hmset(self.indices_items_key, indices_items_map)
+            await session.redis_bind.hmset_dict(self.key, items_indices_map)
+            await session.redis_bind.hmset_dict(self.indices_items_key, indices_items_map)
 
-        return self._format_output(self.get_all(session))
+        return self._format_output(await self.get_all(session))
 
     def _build_keys(self, items):
         return set([self.items_model.get_instance_key(item) for item in items])
 
     def _format_output(self, output):
-        return {'total_items': len(output.keys()), 'maximum_index': max(output.values())}
+        maximum_index = max(output.values()) if len(output.keys()) else None
+        ret = {'total_items': len(output.keys()), 'maximum_index': maximum_index}
+        return ret
 
-    def get_items(self, indices, session):
+    async def get_items(self, indices, session):
         if indices:
             return [item for item in \
-                session.redis_bind.hmget(self.indices_items_key, indices) if item is not None]
+                await session.redis_bind.hmget(self.indices_items_key, *indices) if item is not None]
         else:
             return []
 
-    def get_indices(self, ids, session):
+    async def get_indices(self, ids, session):
         keys = self._build_keys(ids)
         return [int(index.decode()) for index in \
-            session.redis_bind.hmget(self.key, keys) if index is not None]
+            await session.redis_bind.hmget(self.key, *keys) if index is not None]

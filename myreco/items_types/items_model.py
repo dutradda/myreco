@@ -1,6 +1,6 @@
 # MIT License
 
-# Copyright (c) 2016 Diogo Dutra
+# Copyright (c) 2016 Diogo Dutra <dutradda@gmail.com>
 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -23,8 +23,13 @@
 
 from myreco.engines.cores.items_indices_map import ItemsIndicesMap
 from myreco.engines.cores.filters.filters import BooleanFilterBy
-from falconswagger.models.orm.redis import ModelRedisMeta
-from falcon import HTTPNotFound
+from myreco.utils import build_item_key
+from swaggerit.models.orm.factory import FactoryOrmModels
+from swaggerit.models.orm.redis import ModelRedisMeta
+from swaggerit.models.orm.jobs import JobsModel
+from swaggerit.request import SwaggerRequest
+from swaggerit.response import SwaggerResponse
+from collections import defaultdict
 
 
 class ItemsModelBaseMeta(ModelRedisMeta):
@@ -43,48 +48,166 @@ class ItemsModelBaseMeta(ModelRedisMeta):
         return ModelRedisMeta.get(cls, session, **kwargs)
 
 
-class ItemsCollectionsModelBaseMeta(ModelRedisMeta):
+class ItemsModelCollection(JobsModel):
+    __methods__ = defaultdict(dict)
 
-    def insert(cls, session, objs, **kwargs):
-        items_model = cls._get_model(kwargs)
-        ret_values = items_model.insert(session, objs, **kwargs)
-        cls._set_stock_filter(session, items_model)
-        return ret_values
-
-    def _get_model(cls, kwargs):
-        store_id = kwargs.pop('store_id')
-        items_model = cls.__models__.get(store_id)
+    async def swagger_insert(self, req, session):
+        items_model = self._get_model(req.query)
         if items_model is None:
-            raise HTTPNotFound()
-        return items_model
+            return SwaggerResponse(404)
 
-    def _set_stock_filter(cls, session, items_model):
-        items_keys = set(session.redis_bind.hkeys(items_model.__key__))
-        items_indices_map = ItemsIndicesMap(items_model).get_all(session)
+        resp = await items_model.swagger_insert(req, session)
+        await self._set_stock_filter(session, items_model)
+        return resp
+
+    def _get_model(self, query):
+        store_id = query.pop('store_id')
+        return self.get_model(build_item_key(self.__item_type__['name'], store_id))
+
+    async def _set_stock_filter(self, session, items_model):
+        items_keys = set(await session.redis_bind.hkeys(items_model.__key__))
+        items_indices_map = await ItemsIndicesMap(items_model).get_all(session)
         items_indices_keys = set(items_indices_map.keys())
         remaining_keys = items_indices_keys.intersection(items_keys)
         old_keys = items_indices_keys.difference(items_keys)
 
         items = []
-        cls._set_stock_item(remaining_keys, items_model, items_indices_map, True, items)
-        cls._set_stock_item(old_keys, items_model, items_indices_map, False, items)
+        self._set_stock_item(remaining_keys, items_model, items_indices_map, True, items)
+        self._set_stock_item(old_keys, items_model, items_indices_map, False, items)
 
         stock_filter = BooleanFilterBy(items_model, 'stock')
-        stock_filter.update(session, items)
+        await stock_filter.update(session, items)
 
-    def _set_stock_item(cls, keys, items_model, items_indices_map, value, items):
+    def _set_stock_item(self, keys, items_model, items_indices_map, value, items):
         for key in keys:
             item = {}
-            items_model.set_ids(item, key)
+            items_model.set_instance_ids(item, key)
             item.update({'stock': value, 'index': int(items_indices_map[key])})
             items.append(item)
 
-    def update(cls, session, objs, ids=None, **kwargs):
-        items_model = cls._get_model(kwargs)
-        ret_values = items_model.update(session, objs, ids=ids, **kwargs)
-        cls._set_stock_filter(session, items_model)
-        return ret_values
+    async def swagger_update_many(self, req, session):
+        items_model = self._get_model(req.query)
+        if items_model is None:
+            return SwaggerResponse(404)
 
-    def get(cls, session, ids=None, limit=None, offset=None, **kwargs):
-        items_model = cls._get_model(kwargs)
-        return items_model.get(session, ids=ids, limit=limit, offset=offset, **kwargs)
+        resp = await items_model.swagger_update_many(req, session)
+        await self._set_stock_filter(session, items_model)
+        return resp
+
+    def _update_path_params(self, items_model_collection, path_params):
+        new_path_params = dict()
+        id_names = items_model_collection.__item_type__['schema']['id_names']
+        self.set_instance_ids(new_path_params, path_params['item_id'], keys=sorted(id_names))
+        path_params.clear()
+        path_params.update(new_path_params)
+
+    async def swagger_get(self, req, session):
+        items_model = self._get_model(req.query)
+        if items_model is None:
+            return SwaggerResponse(404)
+
+        req = SwaggerRequest(
+            req.url, req.method,
+            path_params=list(req.path_params.values())[0],
+            query=req.query,
+            headers=req.headers,
+            body=req.body,
+            body_schema=req.body_schema,
+            context=req.context
+        )
+        return await items_model.swagger_get(req, session)
+
+    async def swagger_get_all(self, req, session):
+        items_model = self._get_model(req.query)
+        if items_model is None:
+            return SwaggerResponse(404)
+
+        return await items_model.swagger_get_all(req, session)
+
+
+def build_items_model_collection_schema_base(base_uri, schema, patch_schema, id_names_uri):
+    return {
+        base_uri: {
+            'parameters': [{
+                'name': 'Authorization',
+                'in': 'header',
+                'required': True,
+                'type': 'string'
+            },{
+                'name': 'store_id',
+                'in': 'query',
+                'required': True,
+                'type': 'integer'
+            }],
+            'post': {
+                'parameters': [{
+                    'name': 'body',
+                    'in': 'body',
+                    'required': True,
+                    'schema': {
+                        'type': 'array',
+                        'minItems': 1,
+                        'items': schema
+                    }
+                }],
+                'operationId': 'swagger_insert',
+                'responses': {'201': {'description': 'Created'}}
+            },
+            'patch': {
+                'parameters': [{
+                    'name': 'body',
+                    'in': 'body',
+                    'required': True,
+                    'schema': {
+                        'type': 'array',
+                        'minItems': 1,
+                        'items': patch_schema
+                    }
+                }],
+                'operationId': 'swagger_update_many',
+                'responses': {'200': {'description': 'Updated'}}
+            },
+            'get': {
+                'parameters': [{
+                    'name': 'page',
+                    'in': 'query',
+                    'type': 'integer',
+                    'default': 1
+                },{
+                    'name': 'items_per_page',
+                    'in': 'query',
+                    'type': 'integer',
+                    'default': 1000
+                },{
+                    'name': 'item_key',
+                    'in': 'query',
+                    'type': 'array',
+                    'items': {'type': 'string'}
+                }],
+                'operationId': 'swagger_get_all',
+                'responses': {'200': {'description': 'Got'}}
+            },
+        },
+        id_names_uri: {
+            'parameters': [{
+                'name': 'Authorization',
+                'in': 'header',
+                'required': True,
+                'type': 'string'
+            },{
+                'name': 'store_id',
+                'in': 'query',
+                'required': True,
+                'type': 'integer'
+            },{
+                'name': 'item_key',
+                'in': 'path',
+                'required': True,
+                'type': 'string'
+            }],
+            'get': {
+                'operationId': 'swagger_get',
+                'responses': {'200': {'description': 'Got'}}
+            }
+        }
+    }

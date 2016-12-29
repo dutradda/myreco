@@ -1,6 +1,6 @@
 # MIT License
 
-# Copyright (c) 2016 Diogo Dutra
+# Copyright (c) 2016 Diogo Dutra <dutradda@gmail.com>
 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -21,11 +21,12 @@
 # SOFTWARE.
 
 
-from falconswagger.utils import get_model_schema
+from swaggerit.utils import get_model_schema
 from sqlalchemy.ext.declarative import AbstractConcreteBase, declared_attr
 from base64 import b64decode
 import sqlalchemy as sa
 import binascii
+import re
 
 
 class GrantsModelBase(AbstractConcreteBase):
@@ -91,7 +92,7 @@ class UsersModelBase(AbstractConcreteBase):
         return sa.orm.relationship('StoresModel', uselist=True, secondary='users_stores')
 
     @classmethod
-    def authorize(cls, session, authorization, uri_template, path, method):
+    async def authorize(cls, session, authorization, url, method):
         try:
             authorization = b64decode(authorization).decode()
         except binascii.Error:
@@ -102,7 +103,7 @@ class UsersModelBase(AbstractConcreteBase):
         if not ':' in authorization:
             return None
 
-        user = cls.get(session, {'id': authorization})
+        user = await cls.get(session, {'id': authorization})
         user = user[0] if user else user
         if user and user.get('admin'):
             session.user = user
@@ -114,48 +115,50 @@ class UsersModelBase(AbstractConcreteBase):
 
             for grant in user['grants']:
                 grant_uri = grant['uri']['uri']
-                if (grant_uri == uri_template or grant_uri == path) \
+                if (grant_uri == url or re.match(grant_uri, url)) \
                         and grant['method']['method'].lower() == method.lower():
                     session.user = user
                     return True
 
-    @classmethod
-    def insert(cls, session, objs, commit=True, todict=True):
-        objs = cls._to_list(objs)
-        cls._set_objs_ids_and_grant(objs, session)
-        return type(cls).insert(cls, session, objs, commit, todict)
+            return False
 
     @classmethod
-    def _set_objs_ids_and_grant(cls, objs, session):
+    async def insert(cls, session, objs, commit=True, todict=True):
+        objs = cls._to_list(objs)
+        await cls._set_objs_ids_and_grant(objs, session)
+        return await type(cls).insert(cls, session, objs, commit, todict)
+
+    @classmethod
+    async def _set_objs_ids_and_grant(cls, objs, session):
         objs = cls._to_list(objs)
 
-        patch_method = cls.get_model('methods').get(session, ids={'method': 'patch'}, todict=False)
+        patch_method = await cls.get_model('methods').get(session, ids={'method': 'patch'}, todict=False)
         if not patch_method:
-            patch_method = cls.get_model('methods').insert(session, [{'method': 'patch'}], todict=False)
+            patch_method = await cls.get_model('methods').insert(session, [{'method': 'patch'}], todict=False)
         patch_method = patch_method[0]
 
-        get_method = cls.get_model('methods').get(session, ids={'method': 'get'}, todict=False)
+        get_method = await cls.get_model('methods').get(session, ids={'method': 'get'}, todict=False)
         if not get_method:
-            get_method = cls.get_model('methods').insert(session, [{'method': 'get'}], todict=False)
+            get_method = await cls.get_model('methods').insert(session, [{'method': 'get'}], todict=False)
         get_method = get_method[0]
 
         for obj in objs:
             new_grants = []
             user_uri = '/users/{}'.format(obj['email'])
 
-            uri = cls.get_model('uris').get(session, ids={'uri': user_uri}, todict=False)
+            uri = await cls.get_model('uris').get(session, ids={'uri': user_uri}, todict=False)
             if not uri:
-                uri = cls.get_model('uris').insert(session, [{'uri': user_uri}], todict=False)
+                uri = await cls.get_model('uris').insert(session, [{'uri': user_uri}], todict=False)
             uri = uri[0]
 
-            grant = cls.get_model('grants').get(session, {'uri_id': uri.id, 'method_id': patch_method.id}, todict=False)
+            grant = await cls.get_model('grants').get(session, {'uri_id': uri.id, 'method_id': patch_method.id}, todict=False)
             if grant:
                 grant = grant[0].todict()
             else:
                 grant = {'uri_id': uri.id, 'method_id': patch_method.id, '_operation': 'insert'}
             new_grants.append(grant)
 
-            grant = cls.get_model('grants').get(session, {'uri_id': uri.id, 'method_id': get_method.id}, todict=False)
+            grant = await cls.get_model('grants').get(session, {'uri_id': uri.id, 'method_id': get_method.id}, todict=False)
             if grant:
                 grant = grant[0].todict()
             else:
@@ -168,7 +171,7 @@ class UsersModelBase(AbstractConcreteBase):
             obj['grants'] = grants
 
     @classmethod
-    def update(cls, session, objs, commit=True, todict=True, ids=None, ids_keys=None):
+    async def update(cls, session, objs, commit=True, todict=True, ids=None, ids_keys=None):
         if not ids:
             ids = []
             objs = cls._to_list(objs)
@@ -182,12 +185,12 @@ class UsersModelBase(AbstractConcreteBase):
                     ids.append({'email': email})
                     ids_keys = ('email',)
 
-        insts = type(cls).update(cls, session, objs, commit=False,
+        insts = await type(cls).update(cls, session, objs, commit=False,
                             todict=False, ids=ids, ids_keys=ids_keys)
         cls._set_insts_ids(insts)
 
         if commit:
-            session.commit()
+            await session.commit()
         return cls._build_todict_list(insts) if todict else insts
 
     @classmethod

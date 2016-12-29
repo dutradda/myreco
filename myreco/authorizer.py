@@ -21,24 +21,30 @@
 # SOFTWARE.
 
 
-import os
-import sys
-import pytest
-import logging.config
-
-logging.config.dictConfig({'version': 1, 'root': {'level': 'INFO'}})
-
-ROOT_PATH = os.path.dirname(os.path.abspath(__file__))
-sys.path.append(os.path.join(ROOT_PATH, '..'))
-
-from swaggerit.models.orm.factory import FactoryOrmModels
+from swaggerit.response import SwaggerResponse
+import ujson
 
 
-@pytest.fixture
-def model_base():
-    return FactoryOrmModels.make_sqlalchemy_redis_base()
+class MyrecoAuthorizer(object):
 
+    def __init__(self, users_model):
+        self._users_model = users_model
 
-@pytest.fixture
-def root_path():
-    return ROOT_PATH
+    async def __call__(self, req, session):
+        response401 = SwaggerResponse(401, body=ujson.dumps({'message': 'Invalid authorization'}))
+        response403 = SwaggerResponse(403, body=ujson.dumps({'message': 'Access denied'}))
+        authorization = req.headers['authorization']
+
+        basic_str = 'Basic '
+        if not authorization.startswith(basic_str):
+            return response401
+
+        authorization = authorization.replace(basic_str, '')
+        authorize = await self._users_model.authorize(session, authorization, req.url, req.method)
+
+        if authorize is None:
+            return response401
+        elif authorize is False:
+            return response403
+        else:
+            return None

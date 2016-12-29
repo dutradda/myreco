@@ -1,6 +1,6 @@
 # MIT License
 
-# Copyright (c) 2016 Diogo Dutra
+# Copyright (c) 2016 Diogo Dutra <dutradda@gmail.com>
 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -21,17 +21,16 @@
 # SOFTWARE.
 
 
-from falconswagger.utils import get_model_schema
-from falconswagger.json_builder import JsonBuilder
-from falconswagger.exceptions import ModelBaseError
+from swaggerit.utils import get_model_schema
+from swaggerit.json_builder import JsonBuilder
+from swaggerit.exceptions import SwaggerItModelError
 from myreco.engines.cores.filters.factory import FiltersFactory
-from myreco.utils import ModuleClassLoader, get_items_model_from_api
-from falcon.errors import HTTPNotFound
+from myreco.utils import ModuleClassLoader, get_items_model
 from sqlalchemy.ext.declarative import AbstractConcreteBase, declared_attr
 import random as random_
 import sqlalchemy as sa
 import hashlib
-import json
+import ujson
 
 
 class PlacementsModelBase(AbstractConcreteBase):
@@ -53,8 +52,8 @@ class PlacementsModelBase(AbstractConcreteBase):
     def variations(cls):
         return sa.orm.relationship('VariationsModel', uselist=True, passive_deletes=True)
 
-    def __init__(self, session, input_=None, **kwargs):
-        super().__init__(session, input_=input_, **kwargs)
+    async def init(self, session, input_=None, **kwargs):
+        await super().init(session, input_=input_, **kwargs)
         self._set_hash()
 
     def _set_hash(self):
@@ -70,18 +69,16 @@ class PlacementsModelBase(AbstractConcreteBase):
         super().__setattr__(name, value)
 
     @classmethod
-    def get_recommendations(cls, req, resp):
-        cls._get_recommendations(req, resp)
+    async def get_recommendations(cls, req, session):
+        return cls._build_recos_response(await cls._get_recommendations(req, session))
 
     @classmethod
-    def get_slots(cls, req, resp):
-        cls._get_recommendations(req, resp, True)
+    async def _get_recommendations(cls, req, session, by_slots=False):
+        placement = await cls._get_placement(req, session)
+        if placement is None:
+            return None
 
-    @classmethod
-    def _get_recommendations(cls, req, resp, by_slots=False):
-        placement = cls._get_placement(req, resp)
-        session = req.context['session']
-        input_variables = req.context['parameters']['query_string']
+        input_variables = req.query
         show_details = placement.get('show_details')
         distribute_recos = placement.get('distribute_recos')
         recos = []
@@ -90,9 +87,9 @@ class PlacementsModelBase(AbstractConcreteBase):
         for slot in placement['variations'][0]['slots']:
             slot_recos = {'fallbacks': []}
             slot_recos['main'] = \
-                cls._get_recos_by_slot(slot, input_variables, session, show_details)
+                await cls._get_recos_by_slot(slot, input_variables, session, show_details)
 
-            cls._get_fallbacks_recos(slot_recos, slot, input_variables, session, show_details)
+            await cls._get_fallbacks_recos(slot_recos, slot, input_variables, session, show_details)
 
             if by_slots:
                 slot = {'name': slot['name'], 'item_type': slot['engine']['item_type']['name']}
@@ -102,7 +99,7 @@ class PlacementsModelBase(AbstractConcreteBase):
                 cls._get_recos(recos, slot_recos, slot, distribute_recos)
 
         if not recos:
-            raise HTTPNotFound()
+            return None
 
         if not by_slots:
             if distribute_recos:
@@ -111,30 +108,29 @@ class PlacementsModelBase(AbstractConcreteBase):
         placement = {'name': placement['name'], 'small_hash': placement['small_hash']}
         placement[recos_key] = recos
 
-        resp.body = json.dumps(placement)
+        return placement
 
     @classmethod
-    def _get_placement(cls, req, resp):
-        small_hash = req.context['parameters']['path']['small_hash']
-        session = req.context['session']
-        placements = cls.get(session, {'small_hash': small_hash})
+    async def _get_placement(cls, req, session):
+        small_hash = req.path_params['small_hash']
+        placements = await cls.get(session, {'small_hash': small_hash})
 
         if not placements:
-            raise HTTPNotFound()
+            return None
 
         return placements[0]
 
     @classmethod
-    def _get_recos_by_slot(cls, slot, input_variables, session, show_details, max_recos=None):
+    async def _get_recos_by_slot(cls, slot, input_variables, session, show_details, max_recos=None):
         engine = slot['engine']
-        items_model = get_items_model_from_api(cls.__api__, engine)
+        items_model = get_items_model(engine)
         engine_vars, filters = \
             cls._get_variables_and_filters(slot, items_model, input_variables)
         core_config = engine['core']['configuration']['core_module']
         core_instance = ModuleClassLoader.load(core_config)(engine, items_model)
         max_recos = slot['max_recos'] if max_recos is None else max_recos
 
-        return core_instance.get_recommendations(
+        return await core_instance.get_recommendations(
             session, filters, max_recos, show_details, **engine_vars)
 
     @classmethod
@@ -182,7 +178,7 @@ class PlacementsModelBase(AbstractConcreteBase):
                 return var['schema'], filter_input_schema
 
     @classmethod
-    def _get_fallbacks_recos(cls, slot_recos, slot, input_variables, session, show_details):
+    async def _get_fallbacks_recos(cls, slot_recos, slot, input_variables, session, show_details):
         if len(slot_recos['main']) != slot['max_recos']:
             for fallback in slot['fallbacks']:
                 fallbacks_recos_size = \
@@ -191,7 +187,7 @@ class PlacementsModelBase(AbstractConcreteBase):
                 if max_recos == 0:
                     break
 
-                fallback_recos = cls._get_recos_by_slot(
+                fallback_recos = await cls._get_recos_by_slot(
                     fallback, input_variables, session, show_details, max_recos)
                 all_recos = cls._get_all_recos(slot_recos)
                 fallback_recos = cls._unique_recos(fallback_recos, all_recos)
@@ -248,12 +244,16 @@ class PlacementsModelBase(AbstractConcreteBase):
         return unique
 
     @classmethod
-    def _build_id_names_schema(cls, engine):
-        return {
-            'type': 'array',
-            'items': [engine['item_type']['schema']['properties'][id_name] \
-                for id_name in engine['item_type']['schema']['id_names']]
-        }
+    def _build_recos_response(cls, recos):
+        if recos is None:
+            return cls._build_response(404)
+        else:
+            headers = {'Content-Type': 'application/json'}
+            return cls._build_response(200, body=cls._pack_obj(recos), headers=headers)
+
+    @classmethod
+    async def get_slots(cls, req, session):
+        return cls._build_recos_response(await cls._get_recommendations(req, session, True))
 
 
 class VariationsModelBase(AbstractConcreteBase):

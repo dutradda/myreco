@@ -12,17 +12,17 @@
             "required": true
         }],
         "post": {
-            "operationId": "post_job",
+            "operationId": "post_import_data_job",
             "responses": {"201": {"description": "Executing"}}
         },
         "get": {
             "parameters": [{
-                "name": "hash",
+                "name": "job_hash",
                 "in": "query",
                 "type": "string",
                 "required": true
             }],
-            "operationId": "get_job",
+            "operationId": "get_import_data_job",
             "responses": {"200": {"description": "Got"}}
         }
     }

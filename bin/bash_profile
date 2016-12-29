@@ -1,0 +1,28 @@
+# Sets the MYRECO_DEV_HOME variable to your working directory
+# export MYRECO_DEV_HOME=$HOME/dev/myreco
+
+
+function docker-compose-wrapper-myreco {
+    docker-compose -f $MYRECO_DEV_HOME/docker/docker-compose.yml "${@}"
+}
+
+
+function myreco-exec {
+    docker-compose-wrapper-myreco exec myreco "${@}"
+}
+
+
+function myreco-up {
+    docker-compose-wrapper-myreco up -d "${@}"
+}
+
+
+function myreco-kill {
+    docker-compose-wrapper-myreco kill "${@}"
+}
+
+
+function myreco-tests {
+    myreco-up &>/dev/null
+    docker-compose-wrapper-myreco exec myreco run-tests "${@}"
+}

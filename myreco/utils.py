@@ -1,6 +1,6 @@
 # MIT License
 
-# Copyright (c) 2016 Diogo Dutra
+# Copyright (c) 2016 Diogo Dutra <dutradda@gmail.com>
 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -21,8 +21,9 @@
 # SOFTWARE.
 
 
-from falconswagger.exceptions import ModelBaseError
-from myreco.items_types.models import build_item_key
+from swaggerit.exceptions import SwaggerItModelError
+from swaggerit.models.orm.factory import FactoryOrmModels
+from swaggerit.utils import get_model
 from importlib import import_module
 
 
@@ -41,15 +42,20 @@ class ModuleClassLoader(object):
                 cls._classes[key] = class_
 
             except Exception as error:
-                raise ModelBaseError("invalid module '{}.{}' configuration for this engine",
-                                     config['path'], config['class_name'])
+                raise SwaggerItModelError(
+                    "invalid module '{}.{}' configuration for this engine".format(
+                    config['path'], config['class_name']))
 
         return class_
 
 
-def get_items_model_from_api(api, engine):
-    if api:
-        items_types_model_key = build_item_key(engine['item_type']['name'])
-        items_collection = api.models.get(items_types_model_key)
-        if items_collection:
-            return items_collection.__models__.get(engine['store_id'])
+def build_item_key(name, sufix=None):
+    name = name.lower().replace(' ', '_')
+    if sufix:
+        return '{}_{}'.format(name, sufix)
+    return name
+
+
+def get_items_model(engine):
+    items_types_model_key = build_item_key(engine['item_type']['name'], engine['store_id'])
+    return get_model(items_types_model_key)

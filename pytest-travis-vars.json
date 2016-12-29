@@ -5,5 +5,10 @@
         "user": "root",
         "password": null,
         "database": "myreco_test"
+    },
+    "redis": {
+        "host": "localhost",
+        "port": 6379,
+        "db": 0
     }
 }

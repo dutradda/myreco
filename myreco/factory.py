@@ -1,6 +1,6 @@
 # MIT License
 
-# Copyright (c) 2016 Diogo Dutra
+# Copyright (c) 2016 Diogo Dutra <dutradda@gmail.com>
 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -35,31 +35,17 @@ from myreco.engines.models import (
 from myreco.items_types.models import ItemsTypesModelBase, build_items_types_stores_table
 from myreco.items_types.items_data_importer_model import ItemsTypesModelDataImporterBase
 from myreco.items_types.items_update_filters_model import ItemsTypesModelFiltersUpdaterBase
-from falconswagger.models.orm.sqlalchemy_redis import ModelSQLAlchemyRedisFactory
-from falconswagger.hooks import Authorizer
+from swaggerit.models.orm.factory import FactoryOrmModels
 
 
 class FactoryError(Exception):
     pass
 
 
-class MyrecoAuthorizer(Authorizer):
-
-    def __init__(self, realm, base_model=None):
-        Authorizer.__init__(self, realm)
-        self.base_model = base_model
-
-    def authorize(self, session, authorization, uri_template, path, method):
-        return self.base_model.get_model('users').authorize(
-            session, authorization, uri_template, path, method)
-
-
 class ModelsFactory(object):
 
-    def __init__(self, realm, commons_models_attributes=None, commons_tables_attributes=None):
-        self.authorizer = MyrecoAuthorizer(realm)
-        self.base_model = ModelSQLAlchemyRedisFactory.make(authorizer=self.authorizer)
-        self.base_model.__authorizer__.base_model = self.base_model
+    def __init__(self, commons_models_attributes=None, commons_tables_attributes=None):
+        self.base_model = FactoryOrmModels.make_sqlalchemy_redis_base()
         self.meta_class = type(self.base_model)
         self._commons_models_attrs = self._init_attributes(commons_models_attributes)
         self._commons_tables_attrs = self._init_attributes(commons_tables_attributes)

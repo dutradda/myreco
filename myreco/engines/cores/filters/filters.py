@@ -1,6 +1,6 @@
 # MIT License
 
-# Copyright (c) 2016 Diogo Dutra
+# Copyright (c) 2016 Diogo Dutra <dutradda@gmail.com>
 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -22,13 +22,12 @@
 
 
 from myreco.engines.cores.items_indices_map import ItemsIndicesMap
-from falconswagger.mixins import LoggerMixin
 from zlib import decompress, compress
 from collections import defaultdict
 import numpy as np
 
 
-class FilterBaseBy(LoggerMixin):
+class FilterBaseBy(object):
     dtype = np.bool
 
     def __init__(self, items_model, name, is_inclusive=True, id_names=None, skip_values=None):
@@ -38,10 +37,6 @@ class FilterBaseBy(LoggerMixin):
         self.is_inclusive = is_inclusive
         self.id_names = id_names
         self.skip_values = set(skip_values) if skip_values is not None else skip_values
-        self._build_logger()
-
-    def _build_logger_name(self):
-        return '{}.{}'.format(LoggerMixin._build_logger_name(self), self.name)
 
     def _unpack_filter(self, filter_, new_size=None):
         filter_ = np.fromstring(filter_, dtype=type(self).dtype)
@@ -74,17 +69,17 @@ class FilterBaseBy(LoggerMixin):
     def _list_cast(self, obj):
         return obj if isinstance(obj, list) or isinstance(obj, tuple) else (obj,)
 
-    def _log_build(self):
-        self._logger.debug("Building '{}' filter...".format(self.name))
-
     def _not_skip_value(self, value):
         return (self.skip_values is None or value not in self.skip_values)
+
+    async def _get_items(self, session, items_ids):
+        keys = [self.items_model.get_instance_key(item_id) for item_id in items_ids]
+        return await self.items_model.get(session, keys)
 
 
 class BooleanFilterBy(FilterBaseBy):
 
-    def update(self, session, items):
-        self._log_build()
+    async def update(self, session, items):
         filter_ = self._build_empty_array(len(items))
 
         for item in items:
@@ -92,11 +87,11 @@ class BooleanFilterBy(FilterBaseBy):
             if value is not None and self._not_skip_value(value):
                 filter_[item['index']] = value
 
-        session.redis_bind.set(self.key, self._pack_filter(filter_))
+        await session.redis_bind.set(self.key, self._pack_filter(filter_))
         return {'true_values': np.nonzero(filter_)[0].size}
 
-    def filter(self, session, rec_vector, *args, **kwargs):
-        filter_ = session.redis_bind.get(self.key)
+    async def filter(self, session, rec_vector, *args, **kwargs):
+        filter_ = await session.redis_bind.get(self.key)
         if filter_ is not None:
             filter_ = self._unpack_filter(filter_, rec_vector.size)
             self._filter(filter_, rec_vector)
@@ -104,11 +99,11 @@ class BooleanFilterBy(FilterBaseBy):
 
 class MultipleFilterBy(FilterBaseBy):
 
-    def filter(self, session, rec_vector, ids):
+    async def filter(self, session, rec_vector, ids):
         ids = self._list_cast(ids)
 
         if ids:
-            filters = session.redis_bind.hmget(self.key, ids)
+            filters = await session.redis_bind.hmget(self.key, *ids)
             filters = [self._unpack_filter(filter_, rec_vector.size)
                         for filter_ in filters if filter_ is not None]
             final_filter = np.ones(rec_vector.size, dtype=np.bool)
@@ -118,8 +113,7 @@ class MultipleFilterBy(FilterBaseBy):
 
             self._filter(final_filter, rec_vector)
 
-    def update(self, session, items):
-        self._log_build()
+    async def update(self, session, items):
         filter_map = defaultdict(list)
         set_data = dict()
         size = len(items)
@@ -130,7 +124,7 @@ class MultipleFilterBy(FilterBaseBy):
             set_data[filter_id] = self._pack_filter(filter_)
 
         if set_data:
-            session.redis_bind.hmset(self.key, set_data)
+            await session.redis_bind.hmset_dict(self.key, set_data)
 
         return {'filters_quantity': len(set_data)}
 
@@ -162,10 +156,10 @@ class ObjectFilterBy(MultipleFilterBy):
             ids = [property_obj[id_name] for id_name in self.id_names]
             return repr(tuple([id_ for _, id_ in sorted(zip(self.id_names, ids), key=lambda x: x[0])]))
 
-    def filter(self, session, rec_vector, properties):
+    async def filter(self, session, rec_vector, properties):
         properties = self._list_cast(properties)
         ids = [self._get_id_from_property({self.name: prop}) for prop in properties]
-        MultipleFilterBy.filter(self, session, rec_vector, ids)
+        await MultipleFilterBy.filter(self, session, rec_vector, ids)
 
 
 class ArrayFilterBy(SimpleFilterBy):
@@ -178,38 +172,37 @@ class ArrayFilterBy(SimpleFilterBy):
 
 class SimpleFilterOf(SimpleFilterBy):
 
-    def filter(self, session, rec_vector, items_ids):
-        items = self.items_model.get(session, items_ids)
-        filter_ids = [item[self.name] for item in items]
-        SimpleFilterBy.filter(self, session, rec_vector, filter_ids)
+    async def filter(self, session, rec_vector, items_ids):
+        items = await self._get_items(session, items_ids)
+        filter_ids = [item.get(self.name) for item in items]
+        await SimpleFilterBy.filter(self, session, rec_vector, filter_ids)
 
 
 class ObjectFilterOf(ObjectFilterBy):
 
-    def filter(self, session, rec_vector, items_ids):
-        items = self.items_model.get(session, items_ids)
+    async def filter(self, session, rec_vector, items_ids):
+        items = await self._get_items(session, items_ids)
         filter_ids = [item.get(self.name) for item in items]
-        ObjectFilterBy.filter(self, session, rec_vector, filter_ids)
+        await ObjectFilterBy.filter(self, session, rec_vector, filter_ids)
 
 
 class ArrayFilterOf(ArrayFilterBy):
 
-    def filter(self, session, rec_vector, items_ids):
-        items = self.items_model.get(session, items_ids)
+    async def filter(self, session, rec_vector, items_ids):
+        items = await self._get_items(session, items_ids)
         filter_ids = []
         [filter_ids.extend(item[self.name]) for item in items]
-        ArrayFilterBy.filter(self, session, rec_vector, filter_ids)
+        await ArrayFilterBy.filter(self, session, rec_vector, filter_ids)
 
 
 class IndexFilterOf(FilterBaseBy):
 
-    def update(self, *args, **kwargs):
-        self._log_build()
+    async def update(self, *args, **kwargs):
         return 'OK'
 
-    def filter(self, session, rec_vector, items_ids):
+    async def filter(self, session, rec_vector, items_ids):
         items_indices_map = ItemsIndicesMap(self.items_model)
-        indices = items_indices_map.get_indices(items_ids, session)
+        indices = await items_indices_map.get_indices(items_ids, session)
         if indices:
             indices = np.array(indices, dtype=np.int32)
             self._filter_by_indices(rec_vector, indices)
@@ -228,11 +221,11 @@ class IndexFilterByPropertyOf(SimpleFilterOf, IndexFilterOf):
     def _build_filter_array(self, items_indices, size):
         return np.array(items_indices, dtype=np.int32)
 
-    def filter(self, session, rec_vector, items_ids):
-        items = self.items_model.get(session, items_ids)
+    async def filter(self, session, rec_vector, items_ids):
+        items = await self._get_items(session, items_ids)
         filter_ids = [item[self.name] for item in items]
         if filter_ids:
-            filters = session.redis_bind.hmget(self.key, filter_ids)
+            filters = await session.redis_bind.hmget(self.key, *filter_ids)
             filters = [self._unpack_filter(filter_) for filter_ in filters if filter_ is not None]
 
             if filters:

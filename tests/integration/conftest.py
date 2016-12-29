@@ -1,6 +1,6 @@
 # MIT License
 
-# Copyright (c) 2016 Diogo Dutra
+# Copyright (c) 2016 Diogo Dutra <dutradda@gmail.com>
 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -21,35 +21,62 @@
 # SOFTWARE.
 
 
-from falconswagger.models.orm.session import Session
+from myreco.factory import ModelsFactory
+from myreco.api import MyrecoAPI
+from swaggerit.models.orm.session import Session
 from unittest import mock
 from sqlalchemy import create_engine
-from redis import StrictRedis
-
-
+from aioredis import create_redis
+from base64 import b64encode
+import sqlalchemy as sa
 import pytest
 import pymysql
+import asyncio
+import uvloop
 
 
-@pytest.fixture
-def redis(request):
-    r = StrictRedis(db=5)
-    request.addfinalizer(lambda: r.flushdb())
-    return r
+@pytest.fixture(scope='session')
+def base_model(api):
+    return api.models_factory.base_model
+
+
+@pytest.fixture(scope='session')
+def models(api):
+    return api.all_models
+
+
+@pytest.fixture(scope='session')
+def loop():
+    loop = uvloop.new_event_loop()
+    # loop = asyncio.new_event_loop() # just for debugging
+    asyncio.set_event_loop(loop)
+    return loop
+
+
+@pytest.fixture(scope='session')
+def redis(variables, loop):
+    coro = create_redis(
+        (variables['redis']['host'], variables['redis']['port']),
+        db=variables['redis']['db'],
+        loop=loop
+    )
+    return loop.run_until_complete(coro)
 
 
 @pytest.fixture(scope='session')
 def pymysql_conn(variables):
-    conn = pymysql.connect(
-        user=variables['database']['user'], password=variables['database']['password'])
+    database = variables['database'].pop('database')
+    conn = pymysql.connect(**variables['database'])
 
     with conn.cursor() as cursor:
         try:
-            cursor.execute('create database {};'.format(variables['database']['database']))
+            cursor.execute('drop database {};'.format(database))
         except:
             pass
-        cursor.execute('use {};'.format(variables['database']['database']))
+        cursor.execute('create database {};'.format(database))
+        cursor.execute('use {};'.format(database))
     conn.commit()
+    variables['database']['database'] = database
 
     return conn
 
@@ -68,31 +95,94 @@ def engine(variables, pymysql_conn):
     return create_engine(url)
 
 
+@pytest.fixture(scope='session')
+def api(engine, redis, loop):
+    api = MyrecoAPI(sqlalchemy_bind=engine, redis_bind=redis,
+                     title='Myreco API', loop=loop, debug=True,
+                     type_='exporter')
+
+    class ModelTest(api.models_factory.base_model):
+        __tablename__ = 'test'
+        id = sa.Column(sa.Integer, primary_key=True)
+
+        @classmethod
+        async def do_nothing(cls, req, resp, **kwargs):
+            return cls._build_response(200)
+
+        __schema__ = {
+            '/testing': {
+                'parameters': [{
+                    'name': 'Authorization',
+                    'in': 'header',
+                    'required': True,
+                    'type': 'string'
+                }],
+                'post': {
+                    'operationId': 'do_nothing',
+                    'responses': {'201': {'description': 'Created'}}
+                }
+            },
+            '/testing/{id}': {
+                'parameters': [{
+                    'name': 'id',
+                    'in': 'path',
+                    'required': True,
+                    'type': 'integer'
+                },{
+                    'name': 'Authorization',
+                    'in': 'header',
+                    'required': True,
+                    'type': 'string'
+                }],
+                'post': {
+                    'operationId': 'do_nothing',
+                    'responses': {'201': {'description': 'Created'}}
+                }
+            }
+        }
+
+    api.add_model(ModelTest)
+    api.router._resources = api.router._resources[-8:] + api.router._resources[:-8]
+    return api
+
+
 @pytest.fixture
-def session(model_base, request, variables, redis, engine, pymysql_conn):
-    model_base.metadata.bind = engine
-    model_base.metadata.create_all()
+def client(api, test_client):
+    return test_client(api)
+
+
+@pytest.fixture
+def session(variables, redis, engine, pymysql_conn, base_model, loop):
+    base_model.metadata.bind = engine
+    base_model.metadata.create_all()
 
     with pymysql_conn.cursor() as cursor:
-        tables = ['placements', 'variables', 'slots', 'engines',
-                  'stores', 'engines_cores', 'users', 'grants',
-                  'items_types', 'items_types_stores', 'methods',
-                  'slots_fallbacks', 'slots_variables', 'uris',
-                  'users_grants', 'users_stores', 'variations',
-                  'variations_slots', 'ab_test_users']
-        for table in tables:
+        cursor.execute('SET FOREIGN_KEY_CHECKS = 0;')
+        for table in base_model.metadata.tables.values():
             cursor.execute('delete from {};'.format(table))
 
             try:
                 cursor.execute('alter table {} auto_increment=1;'.format(table))
             except:
                 pass
+        cursor.execute('SET FOREIGN_KEY_CHECKS = 1;')
     pymysql_conn.commit()
+    loop.run_until_complete(redis.flushdb())
+    session = Session(bind=engine, redis_bind=redis, loop=loop)
+    yield session
+    session.close()
 
-    session = Session(bind=engine, redis_bind=redis)
 
-    def tear_down():
-        session.close()
+@pytest.fixture
+def headers():
+    return {
+        'Authorization': 'Basic ' + b64encode('test:test'.encode()).decode(),
+        'Content-Type': 'application/json'
+    }
 
-    request.addfinalizer(tear_down)
-    return session
+
+@pytest.fixture
+def headers_without_content_type():
+    return {
+        'Authorization': 'Basic ' + b64encode('test:test'.encode()).decode()
+    }

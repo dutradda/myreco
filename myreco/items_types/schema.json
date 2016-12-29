@@ -7,7 +7,7 @@
             "type": "string"
         }],
         "post": {
-            "operationId": "post_by_body",
+            "operationId": "swagger_insert",
             "parameters": [{
                 "name": "body",
                 "in": "body",
@@ -31,7 +31,7 @@
                     }
                 }
             }],
-            "operationId": "get_by_body",
+            "operationId": "swagger_get_all",
             "responses": {"200": {"description": "Got"}}
         }
     },
@@ -48,7 +48,7 @@
             "required": true
         }],
         "patch": {
-            "operationId": "patch_by_uri_template",
+            "operationId": "swagger_update",
             "parameters": [{
                 "name": "body",
                 "in": "body",
@@ -58,11 +58,11 @@
             "responses": {"200": {"description": "Got"}}
         },
         "delete": {
-            "operationId": "delete_by_uri_template",
+            "operationId": "swagger_delete",
             "responses": {"204": {"description": "Deleted"}}
         },
         "get": {
-            "operationId": "get_by_uri_template",
+            "operationId": "swagger_get",
             "responses": {"200": {"description": "Got"}}
         }
     },
