@@ -1,6 +1,6 @@
 https://github.com/dutradda/swaggerit/archive/master.tar.gz
 https://github.com/dutradda/aiofiles/archive/gzip_support.tar.gz
-numpy==1.11.2
+numpy==1.11.3
 scipy==0.18.1
 Bottleneck==1.2.0
 boto3==1.4.2
