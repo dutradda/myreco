@@ -62,9 +62,9 @@ class ModelsFactory(object):
 
     def make_all_models(self, app_type='recommender'):
         self.make_all_tables()
-        app_types = {'recommender', 'importer', 'exporter'}
-        if app_type not in app_types:
-            FactoryError(
+        app_types = {'recommender', 'data_importer', 'objects_exporter'}
+        if (app_type not in app_types):
+            raise FactoryError(
                 "Invalid application type '{}'. Valid types: {}".format(
                     app_type, ', '.join(app_types)))
 
@@ -119,9 +119,9 @@ class ModelsFactory(object):
 
         if app_type == 'recommender':
             bases_classes = (EnginesModelBase, self.base_model)
-        elif app_type == 'importer':
+        elif app_type == 'data_importer':
             bases_classes = (EnginesModelDataImporterBase, self.base_model)
-        elif app_type == 'exporter':
+        elif app_type == 'objects_exporter':
             bases_classes = (EnginesModelObjectsExporterBase, self.base_model)
 
         return self.meta_class('EnginesModel', bases_classes, attributes)
@@ -147,9 +147,9 @@ class ModelsFactory(object):
 
         if app_type == 'recommender':
             bases_classes = (ItemsTypesModelBase, self.base_model)
-        elif app_type == 'importer':
+        elif app_type == 'data_importer':
             bases_classes = (ItemsTypesModelDataImporterBase, self.base_model)
-        elif app_type == 'exporter':
+        elif app_type == 'objects_exporter':
             bases_classes = (ItemsTypesModelFiltersUpdaterBase, self.base_model)
 
         return self.meta_class('ItemsTypesModel', bases_classes, attributes)

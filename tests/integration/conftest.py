@@ -99,7 +99,7 @@ def engine(variables, pymysql_conn):
 def api(engine, redis, loop):
     api = MyrecoAPI(sqlalchemy_bind=engine, redis_bind=redis,
                      title='Myreco API', loop=loop, debug=True,
-                     type_='exporter')
+                     type_='objects_exporter')
 
     class ModelTest(api.models_factory.base_model):
         __tablename__ = 'test'
