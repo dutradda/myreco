@@ -204,7 +204,6 @@ class ItemsTypesModelDataImporterBase(ItemsTypesModelBase):
                     'parameters': [{
                         'name': 'job_hash',
                         'in': 'query',
-                        'required': True,
                         'type': 'string'
                     }],
                     'operationId': 'get_import_data_file_job',

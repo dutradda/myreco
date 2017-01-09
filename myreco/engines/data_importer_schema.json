@@ -19,8 +19,7 @@
             "parameters": [{
                 "name": "job_hash",
                 "in": "query",
-                "type": "string",
-                "required": true
+                "type": "string"
             }],
             "operationId": "get_import_data_job",
             "responses": {"200": {"description": "Got"}}

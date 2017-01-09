@@ -19,8 +19,7 @@
             "parameters": [{
                 "name": "job_hash",
                 "in": "query",
-                "type": "string",
-                "required": true
+                "type": "string"
             },{
                 "name": "import_data",
                 "in": "query",

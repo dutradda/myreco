@@ -129,7 +129,6 @@ class ItemsTypesModelFiltersUpdaterBase(ItemsTypesModelDataImporterBase):
                 'parameters': [{
                     'name': 'job_hash',
                     'in': 'query',
-                    'required': True,
                     'type': 'string'
                 }],
                 'operationId': 'get_update_filters_job',
