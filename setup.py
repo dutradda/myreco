@@ -26,8 +26,7 @@ dependency_links = []
 install_requires = []
 with open('requirements.txt') as requirements:
     lines = requirements.readlines()
-    install_requires = lines[2:]
-    dependency_links = lines[:2]
+    install_requires = lines[1:]
     del lines
 
 
@@ -56,7 +55,6 @@ setup(
     ],
     tests_require=tests_require,
     install_requires=install_requires,
-    dependency_links=dependency_links,
     classifiers=[
     	'License :: OSI Approved :: MIT License',
         'Development Status :: 3 - Alpha',
