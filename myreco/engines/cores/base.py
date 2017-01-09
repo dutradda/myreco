@@ -68,7 +68,9 @@ class EngineCore(metaclass=EngineCoreMeta):
         rec_vector = await self._build_rec_vector(session, **variables)
 
         if rec_vector is not None:
-            [await filter_.filter(session, rec_vector, ids) for filter_, ids in filters.items()]
+            for filter_, ids in filters.items():
+                await filter_.filter(session, rec_vector, ids)
+
             return await self._build_rec_list(session, rec_vector, max_recos, show_details)
 
         return []
