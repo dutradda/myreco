@@ -48,13 +48,13 @@ class ItemsModelCollectionDataImporter(ItemsModelCollection):
 
         return self._create_job(
             self._run_import_data_file_job,
-            req, session, stream=stream)
+            req, session, '_importer', stream=stream)
 
-    def _create_job(self, func, req, session, stream=None):
+    def _create_job(self, func, req, session, jobs_id_prefix, stream=None):
         session = self._copy_session(session)
         store_id = req.query['store_id']
         items_model = self._get_model(req.query)
-        jobs_id = items_model.__key__
+        jobs_id = items_model.__key__ + jobs_id_prefix
         return super()._create_job(
             func, jobs_id,
             req, session,
@@ -162,7 +162,7 @@ class ItemsModelCollectionDataImporter(ItemsModelCollection):
         }
 
     async def get_import_data_file_job(self, req, session):
-        jobs_id = self._get_model(req.query).__key__
+        jobs_id = self._get_model(req.query).__key__ + '_importer'
         return await self._get_job(jobs_id, req, session)
 
 

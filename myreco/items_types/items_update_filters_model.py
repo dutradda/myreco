@@ -32,7 +32,7 @@ from myreco.items_types.items_data_importer_model import (
 class ItemsModelCollectionFiltersUpdater(ItemsModelCollectionDataImporter):
 
     async def post_update_filters_job(self, req, session):
-        return self._create_job(self._run_update_filters_job, req, session)
+        return self._create_job(self._run_update_filters_job, req, session, '_updater')
 
     async def _run_update_filters_job(self, req, session, items_model, store_id, **kwargs):
         self._logger.info("Started update filters for '{}'".format(items_model.__key__))
@@ -97,7 +97,7 @@ class ItemsModelCollectionFiltersUpdater(ItemsModelCollectionDataImporter):
         return items
 
     async def get_update_filters_job(self, req, session):
-        jobs_id = self._get_model(req.query).__key__
+        jobs_id = self._get_model(req.query).__key__ + '_updater'
         return await self._get_job(jobs_id, req, session)
 
 
