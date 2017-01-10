@@ -70,19 +70,16 @@ class PlacementsModelBase(AbstractConcreteBase):
 
     @classmethod
     async def get_recommendations(cls, req, session):
-        return cls._build_recos_response(await cls._get_recommendations(req, session))
-
-    @classmethod
-    async def _get_recommendations(cls, req, session, by_slots=False):
         placement = await cls._get_placement(req, session)
         if placement is None:
-            return None
+            return cls._build_recos_response(None)
 
+        explict_fallbacks = req.query.pop('explict_fallbacks', False)
         input_variables = req.query
-        show_details = placement.get('show_details')
+        show_details = req.query.pop('show_details', placement.get('show_details'))
         distribute_recos = placement.get('distribute_recos')
-        recos = []
-        recos_key = 'slots' if by_slots else 'recommendations'
+        recos = slots = []
+        recos_key = 'slots'
 
         for slot in placement['variations'][0]['slots']:
             slot_recos = {'fallbacks': []}
@@ -91,24 +88,27 @@ class PlacementsModelBase(AbstractConcreteBase):
 
             await cls._get_fallbacks_recos(slot_recos, slot, input_variables, session, show_details)
 
-            if by_slots:
-                slot = {'name': slot['name'], 'item_type': slot['engine']['item_type']['name']}
-                slot['recommendations'] = slot_recos
-                recos.append(slot)
-            else:
-                cls._get_recos(recos, slot_recos, slot, distribute_recos)
+            slot = {'name': slot['name'], 'item_type': slot['engine']['item_type']['name']}
+            slot['recommendations'] = slot_recos
+            if slot_recos['main'] or slot_recos['fallbacks']:
+                slots.append(slot)
 
-        if not recos:
-            return None
+        if not slots:
+            return cls._build_recos_response(None)
 
-        if not by_slots:
+        if not explict_fallbacks:
+            for slot in slots:
+                slot['recommendations'] = cls._get_all_slot_recos(slot['recommendations'])
+
             if distribute_recos:
+                recos_key = 'distributed_recommendations'
+                recos = cls._get_all_recos_from_slots(slots)
                 recos = cls._distribute_recos(recos)
 
         placement = {'name': placement['name'], 'small_hash': placement['small_hash']}
         placement[recos_key] = recos
 
-        return placement
+        return cls._build_recos_response(placement)
 
     @classmethod
     async def _get_placement(cls, req, session):
@@ -189,29 +189,25 @@ class PlacementsModelBase(AbstractConcreteBase):
 
                 fallback_recos = await cls._get_recos_by_slot(
                     fallback, input_variables, session, show_details, max_recos)
-                all_recos = cls._get_all_recos(slot_recos)
+                all_recos = cls._get_all_slot_recos(slot_recos)
                 fallback_recos = cls._unique_recos(fallback_recos, all_recos)
                 slot_recos['fallbacks'].append(fallback_recos)
 
     @classmethod
-    def _get_all_recos(cls, slot_recos):
+    def _get_all_slot_recos(cls, slot_recos):
         all_recos = list(slot_recos['main'])
         [all_recos.extend(fallback_recos) for fallback_recos in slot_recos['fallbacks']]
         return all_recos
 
     @classmethod
-    def _get_recos(cls, recos, slot_recos, slot, distribute_recos):
-        fallbacks_recos = []
-        [fallbacks_recos.extend(recos) for recos in slot_recos['fallbacks']]
-        slot_recos = slot_recos['main'] + fallbacks_recos
+    def _get_all_recos_from_slots(cls, slots):
+        recos = []
+        for slot in slots:
+            for reco in slot['recommendations']:
+                reco['type'] = slot['item_type']
 
-        for reco in slot_recos:
-            reco['type'] = slot['engine']['item_type']['name']
-
-        if distribute_recos:
-            recos.append(slot_recos)
-        else:
-            recos.extend(slot_recos)
+            recos.append(slot['recommendations'])
+        return recos
 
     @classmethod
     def _distribute_recos(cls, recos_list, random=True):
@@ -250,10 +246,6 @@ class PlacementsModelBase(AbstractConcreteBase):
         else:
             headers = {'Content-Type': 'application/json'}
             return cls._build_response(200, body=cls._pack_obj(recos), headers=headers)
-
-    @classmethod
-    async def get_slots(cls, req, session):
-        return cls._build_recos_response(await cls._get_recommendations(req, session, True))
 
 
 class VariationsModelBase(AbstractConcreteBase):

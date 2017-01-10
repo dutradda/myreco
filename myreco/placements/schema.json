@@ -60,13 +60,16 @@
     },
     "/placements/{small_hash}/recommendations": {
         "get": {
+            "parameters": [{
+                "name": "explict_fallbacks",
+                "in": "query",
+                "type": "boolean"
+            },{
+                "name": "show_details",
+                "in": "query",
+                "type": "boolean"
+            }],
             "operationId": "get_recommendations",
-            "responses": {"200": {"description": "Got"}}
-        }
-    },
-    "/placements/{small_hash}/slots": {
-        "get": {
-            "operationId": "get_slots",
             "responses": {"200": {"description": "Got"}}
         }
     },

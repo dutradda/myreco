@@ -1167,8 +1167,11 @@ class TestPlacementsGetRecomendations(object):
 
         resp = await client.get('/placements/{}/recommendations'.format(obj['small_hash']), headers=headers_without_content_type)
         assert resp.status == 200
-        assert (await resp.json())['recommendations'] == [{'sku': 'test1', 'item_id': 1, 'type': 'products_new'},
-            {'sku': 'test3', 'item_id': 3, 'type': 'products_new'}, {'sku': 'test2', 'item_id': 2, 'type': 'products_new'}]
+        assert (await resp.json())['slots'][0]['recommendations'] == [
+            {'sku': 'test1', 'item_id': 1},
+            {'sku': 'test3', 'item_id': 3},
+            {'sku': 'test2', 'item_id': 2}
+        ]
 
     async def test_get_recommendations_with_fallback(self, init_db, client, headers, monkeypatch, headers_without_content_type):
         random_patch(monkeypatch)
@@ -1219,10 +1222,13 @@ class TestPlacementsGetRecomendations(object):
         EngineCoreTest.get_recommendations.coro.reset_mock()
 
         assert resp.status == 200
-        assert (await resp.json())['recommendations'] == [{'sku': 'test1', 'item_id': 1, 'type': 'products_new'},
-            {'sku': 'test3', 'item_id': 3, 'type': 'products_new'}, {'sku': 'test2', 'item_id': 2, 'type': 'products_new'}]
+        assert (await resp.json())['slots'][0]['recommendations'] == [
+            {'sku': 'test1', 'item_id': 1},
+            {'sku': 'test3', 'item_id': 3},
+            {'sku': 'test2', 'item_id': 2}
+        ]
 
-    async def test_get_recommendations_by_slots(self, init_db, client, headers, monkeypatch, headers_without_content_type):
+    async def test_get_recommendations_with_explict_fallbacks(self, init_db, client, headers, monkeypatch, headers_without_content_type):
         random_patch(monkeypatch)
         client = await client
         products = [{
@@ -1266,7 +1272,8 @@ class TestPlacementsGetRecomendations(object):
         resp = await client.post('/placements/', headers=headers, data=ujson.dumps(body))
         obj = (await resp.json())[0]
 
-        resp = await client.get('/placements/{}/slots'.format(obj['small_hash']), headers=headers_without_content_type)
+        resp = await client.get('/placements/{}/recommendations?explict_fallbacks=true'.format(
+                                obj['small_hash']), headers=headers_without_content_type)
         assert resp.status == 200
         assert (await resp.json()) == {
             "name": "Placement Test",
@@ -1347,10 +1354,10 @@ class TestPlacementsGetRecomendations(object):
 
         resp = await client.get('/placements/{}/recommendations'.format(obj['small_hash']), headers=headers_without_content_type)
         assert resp.status == 200
-        assert (await resp.json())['recommendations'] == [
-            {'sku': 'test1', 'item_id': 1, 'type': 'products_new'},
-            {'sku': 'test3', 'item_id': 3, 'type': 'products_new'},
-            {'sku': 'test2', 'item_id': 2, 'type': 'products_new'}
+        assert (await resp.json())['slots'][0]['recommendations'] == [
+            {'sku': 'test1', 'item_id': 1},
+            {'sku': 'test3', 'item_id': 3},
+            {'sku': 'test2', 'item_id': 2}
         ]
 
     async def test_get_recommendations_distributed(self, init_db, client, headers, monkeypatch, headers_without_content_type):
@@ -1404,7 +1411,7 @@ class TestPlacementsGetRecomendations(object):
         EngineCoreTest.get_recommendations.coro.reset_mock()
 
         assert resp.status == 200
-        assert (await resp.json())['recommendations'] == [
+        assert (await resp.json())['distributed_recommendations'] == [
             {'sku': 'test1', 'item_id': 1, 'type': 'products_new'},
             {'sku': 'test3', 'item_id': 3, 'type': 'products_new'},
             {'test': 1, 'type': 'products'},
@@ -1463,9 +1470,10 @@ class TestPlacementsGetRecomendationsFilters(object):
 
         resp = await client.get('/placements/{}/recommendations?filter_string_inclusive=test'.format(obj['small_hash']), headers=headers_without_content_type)
         assert resp.status == 200
-        assert (await resp.json())['recommendations'] == [
-            {'sku': 'test1', 'item_id': 1, 'filter_string': 'test', 'type': 'products_new'},
-            {'sku': 'test2', 'item_id': 2, 'filter_string': 'test', 'type': 'products_new'}]
+        assert (await resp.json())['slots'][0]['recommendations'] == [
+            {'sku': 'test1', 'item_id': 1, 'filter_string': 'test'},
+            {'sku': 'test2', 'item_id': 2, 'filter_string': 'test'}
+        ]
 
     async def test_get_recommendations_by_string_exclusive(self, init_db, client, headers, monkeypatch, headers_without_content_type):
         random_patch(monkeypatch)
@@ -1515,7 +1523,7 @@ class TestPlacementsGetRecomendationsFilters(object):
 
         resp = await client.get('/placements/{}/recommendations?filter_string_exclusive=test'.format(obj['small_hash']), headers=headers_without_content_type)
         assert resp.status == 200
-        assert (await resp.json())['recommendations'] == [{'sku': 'test3', 'item_id': 3, 'type': 'products_new'}]
+        assert (await resp.json())['slots'][0]['recommendations'] == [{'sku': 'test3', 'item_id': 3}]
 
     async def test_get_recommendations_by_integer_inclusive(self, init_db, client, headers, monkeypatch, headers_without_content_type):
         random_patch(monkeypatch)
@@ -1565,9 +1573,10 @@ class TestPlacementsGetRecomendationsFilters(object):
 
         resp = await client.get('/placements/{}/recommendations?filter_integer_inclusive=1'.format(obj['small_hash']), headers=headers_without_content_type)
         assert resp.status == 200
-        assert (await resp.json())['recommendations'] == [
-            {'sku': 'test1', 'item_id': 1, 'filter_integer': 1, 'type': 'products_new'},
-            {'sku': 'test2', 'item_id': 2, 'filter_integer': 1, 'type': 'products_new'}]
+        assert (await resp.json())['slots'][0]['recommendations'] == [
+            {'sku': 'test1', 'item_id': 1, 'filter_integer': 1},
+            {'sku': 'test2', 'item_id': 2, 'filter_integer': 1}
+        ]
 
     async def test_get_recommendations_by_integer_exclusive(self, init_db, client, headers, monkeypatch, headers_without_content_type):
         random_patch(monkeypatch)
@@ -1617,7 +1626,7 @@ class TestPlacementsGetRecomendationsFilters(object):
 
         resp = await client.get('/placements/{}/recommendations?filter_integer_exclusive=1'.format(obj['small_hash']), headers=headers_without_content_type)
         assert resp.status == 200
-        assert (await resp.json())['recommendations'] == [{'sku': 'test3', 'item_id': 3, 'type': 'products_new'}]
+        assert (await resp.json())['slots'][0]['recommendations'] == [{'sku': 'test3', 'item_id': 3}]
 
     async def test_get_recommendations_by_boolean_inclusive(self, init_db, client, headers, monkeypatch, headers_without_content_type):
         random_patch(monkeypatch)
@@ -1667,8 +1676,10 @@ class TestPlacementsGetRecomendationsFilters(object):
 
         resp = await client.get('/placements/{}/recommendations?filter_boolean_inclusive=true'.format(obj['small_hash']), headers=headers_without_content_type)
         assert resp.status == 200
-        assert (await resp.json())['recommendations'] == [{'sku': 'test1', 'item_id': 1, 'filter_boolean': True, 'type': 'products_new'},
-            {'sku': 'test2', 'item_id': 2, 'filter_boolean': True, 'type': 'products_new'}]
+        assert (await resp.json())['slots'][0]['recommendations'] == [
+            {'sku': 'test1', 'item_id': 1, 'filter_boolean': True},
+            {'sku': 'test2', 'item_id': 2, 'filter_boolean': True}
+        ]
 
     async def test_get_recommendations_by_boolean_exclusive(self, init_db, client, headers, monkeypatch, headers_without_content_type):
         random_patch(monkeypatch)
@@ -1718,7 +1729,7 @@ class TestPlacementsGetRecomendationsFilters(object):
 
         resp = await client.get('/placements/{}/recommendations?filter_boolean_exclusive=true'.format(obj['small_hash']), headers=headers_without_content_type)
         assert resp.status == 200
-        assert (await resp.json())['recommendations'] == [{'sku': 'test3', 'item_id': 3, 'type': 'products_new'}]
+        assert (await resp.json())['slots'][0]['recommendations'] == [{'sku': 'test3', 'item_id': 3}]
 
     async def test_get_recommendations_by_array_inclusive(self, init_db, client, headers, monkeypatch, headers_without_content_type):
         random_patch(monkeypatch)
@@ -1768,8 +1779,9 @@ class TestPlacementsGetRecomendationsFilters(object):
 
         resp = await client.get('/placements/{}/recommendations?filter_array_inclusive=t2,t3'.format(obj['small_hash']), headers=headers_without_content_type)
         assert resp.status == 200
-        assert (await resp.json())['recommendations'] == [
-            {'sku': 'test2', 'item_id': 2, 'filter_array': ['t2', 't3'], 'type': 'products_new'}]
+        assert (await resp.json())['slots'][0]['recommendations'] == [
+            {'sku': 'test2', 'item_id': 2, 'filter_array': ['t2', 't3']}
+        ]
 
     async def test_get_recommendations_by_array_exclusive(self, init_db, client, headers, monkeypatch, headers_without_content_type):
         random_patch(monkeypatch)
@@ -1819,7 +1831,7 @@ class TestPlacementsGetRecomendationsFilters(object):
 
         resp = await client.get('/placements/{}/recommendations?filter_array_exclusive=t2'.format(obj['small_hash']), headers=headers_without_content_type)
         assert resp.status == 200
-        assert (await resp.json())['recommendations'] == [{'sku': 'test3', 'item_id': 3, 'type': 'products_new'}]
+        assert (await resp.json())['slots'][0]['recommendations'] == [{'sku': 'test3', 'item_id': 3}]
 
     async def test_get_recommendations_by_object_inclusive(self, init_db, client, headers, monkeypatch, headers_without_content_type):
         random_patch(monkeypatch)
@@ -1870,8 +1882,9 @@ class TestPlacementsGetRecomendationsFilters(object):
         resp = await client.get('/placements/{}/recommendations?filter_object_inclusive=id:1'.format(obj['small_hash']), headers=headers_without_content_type)
 
         assert resp.status == 200
-        assert (await resp.json())['recommendations'] == [
-            {'sku': 'test1', 'item_id': 1, 'filter_object': {'id': 1}, 'type': 'products_new'}]
+        assert (await resp.json())['slots'][0]['recommendations'] == [
+            {'sku': 'test1', 'item_id': 1, 'filter_object': {'id': 1}}
+        ]
 
     async def test_get_recommendations_by_object_exclusive(self, init_db, client, headers, monkeypatch, headers_without_content_type):
         random_patch(monkeypatch)
@@ -1921,9 +1934,10 @@ class TestPlacementsGetRecomendationsFilters(object):
 
         resp = await client.get('/placements/{}/recommendations?filter_object_exclusive=id:1'.format(obj['small_hash']), headers=headers_without_content_type)
         assert resp.status == 200
-        assert (await resp.json())['recommendations'] == [
-            {'sku': 'test3', 'item_id': 3, 'type': 'products_new'},
-            {'sku': 'test2', 'item_id': 2, 'filter_object': {'id': 2}, 'type': 'products_new'}]
+        assert (await resp.json())['slots'][0]['recommendations'] == [
+            {'sku': 'test3', 'item_id': 3},
+            {'sku': 'test2', 'item_id': 2, 'filter_object': {'id': 2}}
+        ]
 
 
 class TestPlacementsGetRecomendationsFiltersOf(object):
@@ -1976,8 +1990,8 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
 
         resp = await client.get('/placements/{}/recommendations?filter_string_inclusive_of=item_id:1|sku:test1'.format(obj['small_hash']), headers=headers_without_content_type)
         assert resp.status == 200
-        assert (await resp.json())['recommendations'] == [
-            {'sku': 'test1', 'item_id': 1, 'filter_string': 'test1', 'type': 'products_new'}]
+        assert (await resp.json())['slots'][0]['recommendations'] == [
+            {'sku': 'test1', 'item_id': 1, 'filter_string': 'test1'}]
 
     async def test_get_recommendations_of_string_exclusive(self, init_db, client, headers, monkeypatch, headers_without_content_type):
         random_patch(monkeypatch)
@@ -2027,9 +2041,9 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
 
         resp = await client.get('/placements/{}/recommendations?filter_string_exclusive_of=item_id:1|sku:test1'.format(obj['small_hash']), headers=headers_without_content_type)
         assert resp.status == 200
-        assert (await resp.json())['recommendations'] == [
-            {'sku': 'test3', 'item_id': 3, 'type': 'products_new'},
-            {'sku': 'test2', 'item_id': 2, 'filter_string': 'test2', 'type': 'products_new'}]
+        assert (await resp.json())['slots'][0]['recommendations'] == [
+            {'sku': 'test3', 'item_id': 3},
+            {'sku': 'test2', 'item_id': 2, 'filter_string': 'test2'}]
 
     async def test_get_recommendations_of_integer_inclusive(self, init_db, client, headers, monkeypatch, headers_without_content_type):
         random_patch(monkeypatch)
@@ -2079,8 +2093,8 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
 
         resp = await client.get('/placements/{}/recommendations?filter_integer_inclusive_of=item_id:1|sku:test1'.format(obj['small_hash']), headers=headers_without_content_type)
         assert resp.status == 200
-        assert (await resp.json())['recommendations'] == [
-            {'sku': 'test1', 'item_id': 1, 'filter_integer': 1, 'type': 'products_new'}]
+        assert (await resp.json())['slots'][0]['recommendations'] == [
+            {'sku': 'test1', 'item_id': 1, 'filter_integer': 1}]
 
     async def test_get_recommendations_of_integer_exclusive(self, init_db, client, headers, monkeypatch, headers_without_content_type):
         random_patch(monkeypatch)
@@ -2130,9 +2144,10 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
 
         resp = await client.get('/placements/{}/recommendations?filter_integer_exclusive_of=item_id:1|sku:test1'.format(obj['small_hash']), headers=headers_without_content_type)
         assert resp.status == 200
-        assert (await resp.json())['recommendations'] == [
-            {'sku': 'test3', 'item_id': 3, 'type': 'products_new'},
-            {'sku': 'test2', 'item_id': 2, 'filter_integer': 2, 'type': 'products_new'}]
+        assert (await resp.json())['slots'][0]['recommendations'] == [
+            {'sku': 'test3', 'item_id': 3},
+            {'sku': 'test2', 'item_id': 2, 'filter_integer': 2}
+        ]
 
     async def test_get_recommendations_of_boolean_inclusive(self, init_db, client, headers, monkeypatch, headers_without_content_type):
         random_patch(monkeypatch)
@@ -2182,9 +2197,10 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
 
         resp = await client.get('/placements/{}/recommendations?filter_boolean_inclusive_of=item_id:1|sku:test1'.format(obj['small_hash']), headers=headers_without_content_type)
         assert resp.status == 200
-        assert (await resp.json())['recommendations'] == [
-            {'sku': 'test1', 'item_id': 1, 'filter_boolean': True, 'type': 'products_new'},
-            {'sku': 'test2', 'item_id': 2, 'filter_boolean': True, 'type': 'products_new'}]
+        assert (await resp.json())['slots'][0]['recommendations'] == [
+            {'sku': 'test1', 'item_id': 1, 'filter_boolean': True},
+            {'sku': 'test2', 'item_id': 2, 'filter_boolean': True}
+        ]
 
     async def test_get_recommendations_of_boolean_inclusive_with_false(self, init_db, client, headers, monkeypatch, headers_without_content_type):
         random_patch(monkeypatch)
@@ -2235,9 +2251,10 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
 
         resp = await client.get('/placements/{}/recommendations?filter_boolean_inclusive_of=item_id:3|sku:test3'.format(obj['small_hash']), headers=headers_without_content_type)
         assert resp.status == 200
-        assert (await resp.json())['recommendations'] == [
-            {'sku': 'test1', 'item_id': 1, 'filter_boolean': True, 'type': 'products_new'},
-            {'sku': 'test2', 'item_id': 2, 'filter_boolean': True, 'type': 'products_new'}]
+        assert (await resp.json())['slots'][0]['recommendations'] == [
+            {'sku': 'test1', 'item_id': 1, 'filter_boolean': True},
+            {'sku': 'test2', 'item_id': 2, 'filter_boolean': True}
+        ]
 
     async def test_get_recommendations_of_boolean_exclusive(self, init_db, client, headers, monkeypatch, headers_without_content_type):
         random_patch(monkeypatch)
@@ -2287,8 +2304,8 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
 
         resp = await client.get('/placements/{}/recommendations?filter_boolean_exclusive_of=item_id:1|sku:test1'.format(obj['small_hash']), headers=headers_without_content_type)
         assert resp.status == 200
-        assert (await resp.json())['recommendations'] == [
-            {'sku': 'test3', 'item_id': 3, 'type': 'products_new'}]
+        assert (await resp.json())['slots'][0]['recommendations'] == [
+            {'sku': 'test3', 'item_id': 3}]
 
     async def test_get_recommendations_of_array_inclusive(self, init_db, client, headers, monkeypatch, headers_without_content_type):
         random_patch(monkeypatch)
@@ -2338,8 +2355,8 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
 
         resp = await client.get('/placements/{}/recommendations?filter_array_inclusive_of=item_id:1|sku:test1'.format(obj['small_hash']), headers=headers_without_content_type)
         assert resp.status == 200
-        assert (await resp.json())['recommendations'] == [
-            {'sku': 'test1', 'item_id': 1, 'filter_array': ['t1', 't2'], 'type': 'products_new'}]
+        assert (await resp.json())['slots'][0]['recommendations'] == [
+            {'sku': 'test1', 'item_id': 1, 'filter_array': ['t1', 't2']}]
 
     async def test_get_recommendations_of_array_exclusive(self, init_db, client, headers, monkeypatch, headers_without_content_type):
         random_patch(monkeypatch)
@@ -2389,9 +2406,9 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
 
         resp = await client.get('/placements/{}/recommendations?filter_array_exclusive_of=item_id:1|sku:test1'.format(obj['small_hash']), headers=headers_without_content_type)
         assert resp.status == 200
-        assert (await resp.json())['recommendations'] == [
-            {'sku': 'test3', 'item_id': 3, 'type': 'products_new'},
-            {'sku': 'test2', 'item_id': 2, 'filter_array': ['t2', 't3'], 'type': 'products_new'}]
+        assert (await resp.json())['slots'][0]['recommendations'] == [
+            {'sku': 'test3', 'item_id': 3},
+            {'sku': 'test2', 'item_id': 2, 'filter_array': ['t2', 't3']}]
 
     async def test_get_recommendations_of_object_inclusive(self, init_db, client, headers, monkeypatch, headers_without_content_type):
         random_patch(monkeypatch)
@@ -2441,7 +2458,8 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
 
         resp = await client.get('/placements/{}/recommendations?filter_object_inclusive_of=item_id:1|sku:test1'.format(obj['small_hash']), headers=headers_without_content_type)
         assert resp.status == 200
-        assert (await resp.json())['recommendations'] == [{'sku': 'test1', 'item_id': 1, 'filter_object': {'id': 1}, 'type': 'products_new'}]
+        assert (await resp.json())['slots'][0]['recommendations'] == [
+            {'sku': 'test1', 'item_id': 1, 'filter_object': {'id': 1}}]
 
     async def test_get_recommendations_of_object_exclusive(self, init_db, client, headers, monkeypatch, headers_without_content_type):
         random_patch(monkeypatch)
@@ -2491,9 +2509,9 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
 
         resp = await client.get('/placements/{}/recommendations?filter_object_exclusive_of=item_id:1|sku:test1'.format(obj['small_hash']), headers=headers_without_content_type)
         assert resp.status == 200
-        assert (await resp.json())['recommendations'] == [
-            {'sku': 'test3', 'item_id': 3, 'type': 'products_new'},
-            {'sku': 'test2', 'item_id': 2, 'filter_object': {'id': 2}, 'type': 'products_new'}]
+        assert (await resp.json())['slots'][0]['recommendations'] == [
+            {'sku': 'test3', 'item_id': 3},
+            {'sku': 'test2', 'item_id': 2, 'filter_object': {'id': 2}}]
 
     async def test_get_recommendations_of_index_inclusive(self, init_db, client, headers, monkeypatch, headers_without_content_type):
         random_patch(monkeypatch)
@@ -2543,10 +2561,10 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
 
         resp = await client.get('/placements/{}/recommendations?index_inclusive_of=item_id:1|sku:test1,item_id:2|sku:test2'.format(obj['small_hash']), headers=headers_without_content_type)
         assert resp.status == 200
-        obj1 = {'sku': 'test1', 'item_id': 1, 'filter_object': {'id': 1}, 'type': 'products_new'}
-        obj2 = {'sku': 'test2', 'item_id': 2, 'filter_object': {'id': 2}, 'type': 'products_new'}
-        assert (await resp.json())['recommendations'] == [obj1, obj2] or \
-            (await resp.json())['recommendations'] == [obj2, obj1]
+        obj1 = {'sku': 'test1', 'item_id': 1, 'filter_object': {'id': 1}}
+        obj2 = {'sku': 'test2', 'item_id': 2, 'filter_object': {'id': 2}}
+        assert (await resp.json())['slots'][0]['recommendations'] == [obj1, obj2] or \
+            (await resp.json())['slots'][0]['recommendations'] == [obj2, obj1]
 
     async def test_get_recommendations_of_index_exclusive(self, init_db, client, headers, monkeypatch, headers_without_content_type):
         random_patch(monkeypatch)
@@ -2596,4 +2614,4 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
 
         resp = await client.get('/placements/{}/recommendations?index_exclusive_of=item_id:1|sku:test1,item_id:2|sku:test2'.format(obj['small_hash']), headers=headers_without_content_type)
         assert resp.status == 200
-        assert (await resp.json())['recommendations'] == [{'sku': 'test3', 'item_id': 3, 'type': 'products_new'}]
+        assert (await resp.json())['slots'][0]['recommendations'] == [{'sku': 'test3', 'item_id': 3}]
