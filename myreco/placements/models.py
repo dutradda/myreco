@@ -144,38 +144,51 @@ class PlacementsModelBase(AbstractConcreteBase):
             var_engine_name = engine_var['inside_engine_name']
 
             if var_name in input_variables:
-                schema, filter_input_schema = cls._get_variable_schema(engine, engine_var)
+                var_value = input_variables[var_name]
 
-                filter_input_schema = schema if filter_input_schema is None else filter_input_schema
-                var_value = JsonBuilder.build(input_variables[var_name], filter_input_schema)
+                if engine_var['is_filter']:
+                    filter_schema, input_schema = \
+                        cls._get_filter_and_input_schema(engine, engine_var)
 
-                if not engine_var['is_filter']:
-                    engine_vars[var_engine_name] = var_value
+                    if filter_schema is not None and input_schema is not None:
+                        if engine_var['filter_type'].endswith('Of'):
+                            schema = {'type': 'array', 'items': {'type': 'string'}}
+                            var_value = JsonBuilder.build(var_value, schema)
+                            var_value = [items_model.build_ids_object_string(v) for v in var_value]
+
+                        filter_ = FiltersFactory.make(items_model, engine_var, filter_schema)
+                        filters[filter_] = JsonBuilder.build(var_value, input_schema)
+
                 else:
-                    filter_ = FiltersFactory.make(items_model, engine_var, schema)
-                    filters[filter_] = var_value
+                    schema = cls._get_variable_schema(engine, engine_var)
+                    if schema is not None:
+                        engine_vars[var_engine_name] = JsonBuilder.build(var_value, schema)
 
         return engine_vars, filters
 
     @classmethod
-    def _get_variable_schema(cls, engine, engine_var):
-        filter_input_schema = None
-
-        if engine_var['is_filter']:
-            if engine_var['filter_type'].endswith('Of'):
-                filter_input_schema = {'type': 'array', 'items': engine['item_type']['schema']}
-
-            variables = engine['item_type']['available_filters']
-        else:
-            variables = engine['variables']
-
-        for var in variables:
+    def _get_filter_and_input_schema(cls, engine, engine_var):
+        for var in engine['item_type']['available_filters']:
             if var['name'] == engine_var['inside_engine_name']:
-                if engine_var['is_filter'] and var['schema'].get('type') != 'array' \
-                        and not engine_var['filter_type'].endswith('Of'):
-                    filter_input_schema = {'type': 'array', 'items': var['schema']}
+                if engine_var['filter_type'].endswith('Of'):
+                    input_schema = {'type': 'array', 'items': engine['item_type']['schema']}
 
-                return var['schema'], filter_input_schema
+                elif var['schema'].get('type') != 'array':
+                    input_schema = {'type': 'array', 'items': var['schema']}
+
+                else:
+                    input_schema = var['schema']
+
+                filter_schema = var['schema']
+                return filter_schema, input_schema
+
+        return None, None
+
+    @classmethod
+    def _get_variable_schema(cls, engine, engine_var):
+        for var in engine['variables']:
+            if var['name'] == engine_var['inside_engine_name']:
+                return var['schema']
 
     @classmethod
     async def _get_fallbacks_recos(cls, slot_recos, slot, input_variables, session, show_details):

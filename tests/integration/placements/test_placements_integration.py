@@ -1988,7 +1988,7 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
         resp = await client.post('/placements/', headers=headers, data=ujson.dumps(body))
         obj = (await resp.json())[0]
 
-        resp = await client.get('/placements/{}/recommendations?filter_string_inclusive_of=item_id:1|sku:test1'.format(obj['small_hash']), headers=headers_without_content_type)
+        resp = await client.get('/placements/{}/recommendations?filter_string_inclusive_of=1|test1'.format(obj['small_hash']), headers=headers_without_content_type)
         assert resp.status == 200
         assert (await resp.json())['slots'][0]['recommendations'] == [
             {'sku': 'test1', 'item_id': 1, 'filter_string': 'test1'}]
@@ -2039,7 +2039,7 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
         resp = await client.post('/placements/', headers=headers, data=ujson.dumps(body))
         obj = (await resp.json())[0]
 
-        resp = await client.get('/placements/{}/recommendations?filter_string_exclusive_of=item_id:1|sku:test1'.format(obj['small_hash']), headers=headers_without_content_type)
+        resp = await client.get('/placements/{}/recommendations?filter_string_exclusive_of=1|test1'.format(obj['small_hash']), headers=headers_without_content_type)
         assert resp.status == 200
         assert (await resp.json())['slots'][0]['recommendations'] == [
             {'sku': 'test3', 'item_id': 3},
@@ -2091,7 +2091,7 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
         resp = await client.post('/placements/', headers=headers, data=ujson.dumps(body))
         obj = (await resp.json())[0]
 
-        resp = await client.get('/placements/{}/recommendations?filter_integer_inclusive_of=item_id:1|sku:test1'.format(obj['small_hash']), headers=headers_without_content_type)
+        resp = await client.get('/placements/{}/recommendations?filter_integer_inclusive_of=1|test1'.format(obj['small_hash']), headers=headers_without_content_type)
         assert resp.status == 200
         assert (await resp.json())['slots'][0]['recommendations'] == [
             {'sku': 'test1', 'item_id': 1, 'filter_integer': 1}]
@@ -2142,7 +2142,7 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
         resp = await client.post('/placements/', headers=headers, data=ujson.dumps(body))
         obj = (await resp.json())[0]
 
-        resp = await client.get('/placements/{}/recommendations?filter_integer_exclusive_of=item_id:1|sku:test1'.format(obj['small_hash']), headers=headers_without_content_type)
+        resp = await client.get('/placements/{}/recommendations?filter_integer_exclusive_of=1|test1'.format(obj['small_hash']), headers=headers_without_content_type)
         assert resp.status == 200
         assert (await resp.json())['slots'][0]['recommendations'] == [
             {'sku': 'test3', 'item_id': 3},
@@ -2195,7 +2195,7 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
         resp = await client.post('/placements/', headers=headers, data=ujson.dumps(body))
         obj = (await resp.json())[0]
 
-        resp = await client.get('/placements/{}/recommendations?filter_boolean_inclusive_of=item_id:1|sku:test1'.format(obj['small_hash']), headers=headers_without_content_type)
+        resp = await client.get('/placements/{}/recommendations?filter_boolean_inclusive_of=1|test1'.format(obj['small_hash']), headers=headers_without_content_type)
         assert resp.status == 200
         assert (await resp.json())['slots'][0]['recommendations'] == [
             {'sku': 'test1', 'item_id': 1, 'filter_boolean': True},
@@ -2249,7 +2249,7 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
         resp = await client.post('/placements/', headers=headers, data=ujson.dumps(body))
         obj = (await resp.json())[0]
 
-        resp = await client.get('/placements/{}/recommendations?filter_boolean_inclusive_of=item_id:3|sku:test3'.format(obj['small_hash']), headers=headers_without_content_type)
+        resp = await client.get('/placements/{}/recommendations?filter_boolean_inclusive_of=3|test3'.format(obj['small_hash']), headers=headers_without_content_type)
         assert resp.status == 200
         assert (await resp.json())['slots'][0]['recommendations'] == [
             {'sku': 'test1', 'item_id': 1, 'filter_boolean': True},
@@ -2302,7 +2302,7 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
         resp = await client.post('/placements/', headers=headers, data=ujson.dumps(body))
         obj = (await resp.json())[0]
 
-        resp = await client.get('/placements/{}/recommendations?filter_boolean_exclusive_of=item_id:1|sku:test1'.format(obj['small_hash']), headers=headers_without_content_type)
+        resp = await client.get('/placements/{}/recommendations?filter_boolean_exclusive_of=1|test1'.format(obj['small_hash']), headers=headers_without_content_type)
         assert resp.status == 200
         assert (await resp.json())['slots'][0]['recommendations'] == [
             {'sku': 'test3', 'item_id': 3}]
@@ -2353,7 +2353,7 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
         resp = await client.post('/placements/', headers=headers, data=ujson.dumps(body))
         obj = (await resp.json())[0]
 
-        resp = await client.get('/placements/{}/recommendations?filter_array_inclusive_of=item_id:1|sku:test1'.format(obj['small_hash']), headers=headers_without_content_type)
+        resp = await client.get('/placements/{}/recommendations?filter_array_inclusive_of=1|test1'.format(obj['small_hash']), headers=headers_without_content_type)
         assert resp.status == 200
         assert (await resp.json())['slots'][0]['recommendations'] == [
             {'sku': 'test1', 'item_id': 1, 'filter_array': ['t1', 't2']}]
@@ -2404,7 +2404,7 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
         resp = await client.post('/placements/', headers=headers, data=ujson.dumps(body))
         obj = (await resp.json())[0]
 
-        resp = await client.get('/placements/{}/recommendations?filter_array_exclusive_of=item_id:1|sku:test1'.format(obj['small_hash']), headers=headers_without_content_type)
+        resp = await client.get('/placements/{}/recommendations?filter_array_exclusive_of=1|test1'.format(obj['small_hash']), headers=headers_without_content_type)
         assert resp.status == 200
         assert (await resp.json())['slots'][0]['recommendations'] == [
             {'sku': 'test3', 'item_id': 3},
@@ -2456,7 +2456,7 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
         resp = await client.post('/placements/', headers=headers, data=ujson.dumps(body))
         obj = (await resp.json())[0]
 
-        resp = await client.get('/placements/{}/recommendations?filter_object_inclusive_of=item_id:1|sku:test1'.format(obj['small_hash']), headers=headers_without_content_type)
+        resp = await client.get('/placements/{}/recommendations?filter_object_inclusive_of=1|test1'.format(obj['small_hash']), headers=headers_without_content_type)
         assert resp.status == 200
         assert (await resp.json())['slots'][0]['recommendations'] == [
             {'sku': 'test1', 'item_id': 1, 'filter_object': {'id': 1}}]
@@ -2507,7 +2507,7 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
         resp = await client.post('/placements/', headers=headers, data=ujson.dumps(body))
         obj = (await resp.json())[0]
 
-        resp = await client.get('/placements/{}/recommendations?filter_object_exclusive_of=item_id:1|sku:test1'.format(obj['small_hash']), headers=headers_without_content_type)
+        resp = await client.get('/placements/{}/recommendations?filter_object_exclusive_of=1|test1'.format(obj['small_hash']), headers=headers_without_content_type)
         assert resp.status == 200
         assert (await resp.json())['slots'][0]['recommendations'] == [
             {'sku': 'test3', 'item_id': 3},
@@ -2559,7 +2559,7 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
         resp = await client.post('/placements/', headers=headers, data=ujson.dumps(body))
         obj = (await resp.json())[0]
 
-        resp = await client.get('/placements/{}/recommendations?index_inclusive_of=item_id:1|sku:test1,item_id:2|sku:test2'.format(obj['small_hash']), headers=headers_without_content_type)
+        resp = await client.get('/placements/{}/recommendations?index_inclusive_of=1|test1,2|test2'.format(obj['small_hash']), headers=headers_without_content_type)
         assert resp.status == 200
         obj1 = {'sku': 'test1', 'item_id': 1, 'filter_object': {'id': 1}}
         obj2 = {'sku': 'test2', 'item_id': 2, 'filter_object': {'id': 2}}
@@ -2612,6 +2612,6 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
         resp = await client.post('/placements/', headers=headers, data=ujson.dumps(body))
         obj = (await resp.json())[0]
 
-        resp = await client.get('/placements/{}/recommendations?index_exclusive_of=item_id:1|sku:test1,item_id:2|sku:test2'.format(obj['small_hash']), headers=headers_without_content_type)
+        resp = await client.get('/placements/{}/recommendations?index_exclusive_of=1|test1,2|test2'.format(obj['small_hash']), headers=headers_without_content_type)
         assert resp.status == 200
         assert (await resp.json())['slots'][0]['recommendations'] == [{'sku': 'test3', 'item_id': 3}]
