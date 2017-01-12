@@ -72,10 +72,6 @@ class FilterBaseBy(object):
     def _not_skip_value(self, value):
         return (self.skip_values is None or value not in self.skip_values)
 
-    async def _get_items(self, session, items_ids):
-        keys = [self.items_model.get_instance_key(item_id) for item_id in items_ids]
-        return await self.items_model.get(session, keys)
-
 
 class BooleanFilterBy(FilterBaseBy):
 
@@ -172,24 +168,24 @@ class ArrayFilterBy(SimpleFilterBy):
 
 class SimpleFilterOf(SimpleFilterBy):
 
-    async def filter(self, session, rec_vector, items_ids):
-        items = await self._get_items(session, items_ids)
+    async def filter(self, session, rec_vector, items_keys):
+        items = await self.items_model.get(session, items_keys)
         filter_ids = [item.get(self.name) for item in items]
         await SimpleFilterBy.filter(self, session, rec_vector, filter_ids)
 
 
 class ObjectFilterOf(ObjectFilterBy):
 
-    async def filter(self, session, rec_vector, items_ids):
-        items = await self._get_items(session, items_ids)
+    async def filter(self, session, rec_vector, items_keys):
+        items = await self.items_model.get(session, items_keys)
         filter_ids = [item.get(self.name) for item in items]
         await ObjectFilterBy.filter(self, session, rec_vector, filter_ids)
 
 
 class ArrayFilterOf(ArrayFilterBy):
 
-    async def filter(self, session, rec_vector, items_ids):
-        items = await self._get_items(session, items_ids)
+    async def filter(self, session, rec_vector, items_keys):
+        items = await self.items_model.get(session, items_keys)
         filter_ids = []
         [filter_ids.extend(item[self.name]) for item in items]
         await ArrayFilterBy.filter(self, session, rec_vector, filter_ids)
@@ -200,9 +196,9 @@ class IndexFilterOf(FilterBaseBy):
     async def update(self, *args, **kwargs):
         return 'OK'
 
-    async def filter(self, session, rec_vector, items_ids):
+    async def filter(self, session, rec_vector, items_keys):
         items_indices_map = ItemsIndicesMap(self.items_model)
-        indices = await items_indices_map.get_indices(items_ids, session)
+        indices = await items_indices_map.get_indices(items_keys, session)
         if indices:
             indices = np.array(indices, dtype=np.int32)
             self._filter_by_indices(rec_vector, indices)
@@ -221,8 +217,8 @@ class IndexFilterByPropertyOf(SimpleFilterOf, IndexFilterOf):
     def _build_filter_array(self, items_indices, size):
         return np.array(items_indices, dtype=np.int32)
 
-    async def filter(self, session, rec_vector, items_ids):
-        items = await self._get_items(session, items_ids)
+    async def filter(self, session, rec_vector, items_keys):
+        items = await self.items_model.get(session, items_keys)
         filter_ids = [item[self.name] for item in items]
         if filter_ids:
             filters = await session.redis_bind.hmget(self.key, *filter_ids)

@@ -151,11 +151,6 @@ class PlacementsModelBase(AbstractConcreteBase):
                         cls._get_filter_and_input_schema(engine, engine_var)
 
                     if filter_schema is not None and input_schema is not None:
-                        if engine_var['filter_type'].endswith('Of'):
-                            schema = {'type': 'array', 'items': {'type': 'string'}}
-                            var_value = JsonBuilder.build(var_value, schema)
-                            var_value = [items_model.build_ids_object_string(v) for v in var_value]
-
                         filter_ = FiltersFactory.make(items_model, engine_var, filter_schema)
                         filters[filter_] = JsonBuilder.build(var_value, input_schema)
 
@@ -171,7 +166,7 @@ class PlacementsModelBase(AbstractConcreteBase):
         for var in engine['item_type']['available_filters']:
             if var['name'] == engine_var['inside_engine_name']:
                 if engine_var['filter_type'].endswith('Of'):
-                    input_schema = {'type': 'array', 'items': engine['item_type']['schema']}
+                    input_schema = {'type': 'array', 'items': {'type': 'string'}}
 
                 elif var['schema'].get('type') != 'array':
                     input_schema = {'type': 'array', 'items': var['schema']}

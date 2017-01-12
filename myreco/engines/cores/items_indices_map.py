@@ -114,7 +114,6 @@ class ItemsIndicesMap(object):
         else:
             return []
 
-    async def get_indices(self, ids, session):
-        keys = self._build_keys(ids)
+    async def get_indices(self, keys, session):
         return [int(index.decode()) for index in \
             await session.redis_bind.hmget(self.key, *keys) if index is not None]
