@@ -33,7 +33,7 @@ class MyrecoAuthorizer(object):
     async def __call__(self, req, session):
         response401 = SwaggerResponse(401, body=ujson.dumps({'message': 'Invalid authorization'}))
         response403 = SwaggerResponse(403, body=ujson.dumps({'message': 'Access denied'}))
-        authorization = req.headers['authorization']
+        authorization = req.headers.get('authorization', '')
 
         basic_str = 'Basic '
         if not authorization.startswith(basic_str):

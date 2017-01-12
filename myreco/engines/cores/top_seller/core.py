@@ -24,7 +24,6 @@
 from myreco.engines.cores.base import EngineCore, EngineError, RedisObjectBase
 from myreco.engines.cores.utils import build_engine_key_prefix
 from swaggerit.utils import get_model_schema
-from swaggerit.json_builder import JsonBuilder
 import numpy as np
 import os.path
 import zlib
