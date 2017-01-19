@@ -34,7 +34,7 @@ import asyncio
 
 class DataImporterTest(AbstractDataImporter):
 
-    def get_data(self, items_indices_map, session):
+    def get_data(self, session):
         asyncio.run_coroutine_threadsafe(
             asyncio.sleep(0.5),
             session.loop

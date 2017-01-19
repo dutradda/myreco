@@ -34,8 +34,7 @@ class TopSellerEngineCore(EngineCore):
     __configuration_schema__ = get_model_schema(__file__)
 
     async def export_objects(self, session, items_indices_map):
-        key = build_engine_key_prefix(self.engine)
-        self._logger.info("Started export objects for '{}'".format(key))
+        self._logger.info("Started export objects")
 
         readers = await self._build_csv_readers('top_seller')
         items_indices_map_dict = await self._get_items_indices_map_dict(items_indices_map, session)
@@ -43,7 +42,7 @@ class TopSellerEngineCore(EngineCore):
         top_seller = TopSellerRedisObject(self)
         ret = await top_seller.update(readers, session, items_indices_map_dict)
 
-        self._logger.info("Finished export objects for '{}'".format(key))
+        self._logger.info("Finished export objects")
         return ret
 
     async def _build_rec_vector(self, session, **variables):

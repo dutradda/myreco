@@ -65,18 +65,20 @@ class ItemsModelCollection(JobsModel):
         return self.get_model(build_item_key(self.__item_type__['name'], store_id))
 
     async def _set_stock_filter(self, session, items_model):
-        items_keys = set(await session.redis_bind.hkeys(items_model.__key__))
         items_indices_map = await ItemsIndicesMap(items_model).get_all(session)
-        items_indices_keys = set(items_indices_map.keys())
-        remaining_keys = items_indices_keys.intersection(items_keys)
-        old_keys = items_indices_keys.difference(items_keys)
 
-        items = []
-        self._set_stock_item(remaining_keys, items_model, items_indices_map, True, items)
-        self._set_stock_item(old_keys, items_model, items_indices_map, False, items)
+        if items_indices_map.values():
+            items_keys = set(await session.redis_bind.hkeys(items_model.__key__))
+            items_indices_keys = set(items_indices_map.keys())
+            remaining_keys = items_indices_keys.intersection(items_keys)
+            old_keys = items_indices_keys.difference(items_keys)
 
-        stock_filter = BooleanFilterBy(items_model, 'stock')
-        await stock_filter.update(session, items)
+            items = []
+            self._set_stock_item(remaining_keys, items_model, items_indices_map, True, items)
+            self._set_stock_item(old_keys, items_model, items_indices_map, False, items)
+
+            stock_filter = BooleanFilterBy(items_model, 'stock')
+            await stock_filter.update(session, items)
 
     def _set_stock_item(self, keys, items_model, items_indices_map, value, items):
         for key in keys:

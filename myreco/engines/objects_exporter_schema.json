@@ -12,6 +12,12 @@
             "required": true
         }],
         "post": {
+            "parameters": [{
+                "name": "import_data",
+                "in": "query",
+                "type": "boolean",
+                "default": false
+            }],
             "operationId": "post_export_objects_job",
             "responses": {"201": {"description": "Executing"}}
         },
@@ -20,11 +26,6 @@
                 "name": "job_hash",
                 "in": "query",
                 "type": "string"
-            },{
-                "name": "import_data",
-                "in": "query",
-                "type": "boolean",
-                "default": false
             }],
             "operationId": "get_export_objects_job",
             "responses": {"200": {"description": "Got"}}

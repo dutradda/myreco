@@ -158,14 +158,8 @@ class EnginesModelDataImporterBase(EnginesModelBase):
 
     @classmethod
     def _run_import_data_job(cls, req, session, engine):
-        items_indices_map = cls._build_items_indices_map(engine)
         data_importer = cls._build_data_importer(engine)
-        return data_importer.get_data(items_indices_map, session)
-
-    @classmethod
-    def _build_items_indices_map(cls, engine):
-        items_model = get_items_model(engine._build_self_dict())
-        return ItemsIndicesMap(items_model)
+        return data_importer.get_data(session)
 
     @classmethod
     def _build_data_importer(cls, engine):
@@ -208,7 +202,7 @@ class EnginesModelObjectsExporterBase(EnginesModelDataImporterBase):
 
         if import_data:
             data_importer = cls._build_data_importer(engine)
-            importer_result = data_importer.get_data(items_indices_map, session)
+            importer_result = data_importer.get_data(session)
             exporter_result = asyncio.run_coroutine_threadsafe(
                 engine.core_instance.export_objects(session, items_indices_map),
                 session.loop
@@ -223,6 +217,11 @@ class EnginesModelObjectsExporterBase(EnginesModelDataImporterBase):
                 engine.core_instance.export_objects(session, items_indices_map),
                 session.loop
             ).result()
+
+    @classmethod
+    def _build_items_indices_map(cls, engine):
+        items_model = get_items_model(engine._build_self_dict())
+        return ItemsIndicesMap(items_model)
 
     @classmethod
     async def get_export_objects_job(cls, req, session):

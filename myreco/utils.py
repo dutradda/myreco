@@ -43,8 +43,11 @@ class ModuleClassLoader(object):
 
             except Exception as error:
                 raise SwaggerItModelError(
-                    "invalid module '{}.{}' configuration for this engine".format(
-                    config['path'], config['class_name']))
+                    "Error loading module '{}.{}'.\nError Class: {}. Error Message: {}".format(
+                        config['path'], config['class_name'],
+                        error.__class__.__name__, str(error)
+                    )
+                )
 
         return class_
 

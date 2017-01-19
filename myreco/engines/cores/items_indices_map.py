@@ -47,6 +47,7 @@ class ItemsIndicesMap(object):
         self.items_model = items_model
         self.key = items_model.__key__ + '_indices_map'
         self.indices_items_key = items_model.__key__ + '_items_map'
+        self.length_key = items_model.__key__ + '_indices_length'
 
     async def get_all(self, session):
         items_indices_map = await session.redis_bind.hgetall(self.key)
@@ -67,7 +68,7 @@ class ItemsIndicesMap(object):
         new_keys = [key for key in items_keys if key not in items_indices_map]
         old_keys = set([key for key in items_keys if key in items_indices_map])
         keys_to_delete = set(items_indices_map.keys()).difference(old_keys)
-        free_indices = [int(v) for k, v in items_indices_map.items() if k in keys_to_delete]
+        free_indices = [v for k, v in items_indices_map.items() if k in keys_to_delete]
 
         [items_indices_map.pop(k) for k in keys_to_delete]
         [indices_items_map.pop(i, None) for i in free_indices]
@@ -96,6 +97,8 @@ class ItemsIndicesMap(object):
         if items_indices_map:
             await session.redis_bind.hmset_dict(self.key, items_indices_map)
             await session.redis_bind.hmset_dict(self.indices_items_key, indices_items_map)
+            length = max([int(i) for i in items_indices_map.values()])+1
+            await session.redis_bind.set(self.length_key, length)
 
         return self._format_output(await self.get_all(session))
 
@@ -117,3 +120,6 @@ class ItemsIndicesMap(object):
     async def get_indices(self, keys, session):
         return [int(index.decode()) for index in \
             await session.redis_bind.hmget(self.key, *keys) if index is not None]
+
+    async def get_length(self, session):
+        return await session.redis_bind.get(self.length_key)

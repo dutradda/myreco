@@ -52,7 +52,15 @@ class EngineCore(metaclass=EngineCoreMeta):
     def __init__(self, engine=None, items_model=None):
         self.engine = engine
         self.items_model = items_model
-        set_logger(self, build_engine_key_prefix(self.engine))
+
+        if engine['store']:
+            self._key = build_engine_key_prefix(self.engine)
+            self._data_path = build_engine_data_path(self.engine)
+        else:
+            self._key = ''
+            self._data_path = None
+
+        set_logger(self, self._key)
 
     def get_variables(self):
         return []
@@ -115,7 +123,7 @@ class EngineCore(metaclass=EngineCoreMeta):
 
             item[k] = JsonBuilder.build(item[k], schema)
 
-    def export_objects(self, session):
+    async def export_objects(self, session, items_indices_map):
         pass
 
     async def _build_csv_readers(self, pattern):
@@ -141,10 +149,28 @@ class AbstractDataImporter(metaclass=ABCMeta):
 
     def __init__(self, engine):
         self._engine = engine
+        self._key = build_engine_key_prefix(self._engine)
+        self._data_path = build_engine_data_path(self._engine)
+        set_logger(self, self._key)
+        makedirs(self._data_path)
 
     @abstractmethod
-    def get_data(cls, items_indices_map, session):
+    def get_data(self, items_indices_map, session):
         pass
+
+    def _log_get_data_started(self):
+        self._logger.info("Started import data")
+
+    def _log_get_data_finished(self):
+        self._logger.info("Finished import data")
+
+
+def makedirs(dir_):
+    try:
+        os.makedirs(dir_)
+    except OSError as e:
+        if os.errno.EEXIST != e.errno:
+            raise
 
 
 class RedisObjectBase(object):

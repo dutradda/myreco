@@ -72,11 +72,14 @@ class FilterBaseBy(object):
     def _not_skip_value(self, value):
         return (self.skip_values is None or value not in self.skip_values)
 
+    def _get_array_size(self, items):
+        return max([item['index'] for item in items])+1
+
 
 class BooleanFilterBy(FilterBaseBy):
 
     async def update(self, session, items):
-        filter_ = self._build_empty_array(len(items))
+        filter_ = self._build_empty_array(self._get_array_size(items))
 
         for item in items:
             value = item.get(self.name)
@@ -112,7 +115,7 @@ class MultipleFilterBy(FilterBaseBy):
     async def update(self, session, items):
         filter_map = defaultdict(list)
         set_data = dict()
-        size = len(items)
+        size = self._get_array_size(items)
 
         [self._update_filter(filter_map, item) for item in items]
         for filter_id, items_indices in filter_map.items():

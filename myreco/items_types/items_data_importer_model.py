@@ -32,6 +32,7 @@ import ujson
 import boto3
 import os
 import asyncio
+import gc
 
 
 class ItemsModelCollectionDataImporter(ItemsModelCollection):
@@ -68,10 +69,13 @@ class ItemsModelCollectionDataImporter(ItemsModelCollection):
             self._put_file_on_s3(stream, items_model, session, store_id)
             stream.seek(0)
 
-        return asyncio.run_coroutine_threadsafe(
+        result = asyncio.run_coroutine_threadsafe(
             self._update_items_from_zipped_file(stream, items_model, session),
             session.loop
         ).result()
+
+        gc.collect()
+        return result
 
     def _put_file_on_s3(self, stream, items_model, session, store_id):
         self._logger.info("Started put file on S3 for '{}'".format(items_model.__key__))
