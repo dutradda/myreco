@@ -1,7 +1,7 @@
 version: "2"
 services:
     mysql:
-        image: wangxian/alpine-mysql
+        image: mariadb
         container_name: myreco-mysql
         environment:
             MYSQL_ROOT_PASSWORD: root

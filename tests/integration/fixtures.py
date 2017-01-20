@@ -21,7 +21,7 @@
 # SOFTWARE.
 
 
-from myreco.engines.cores.base import AbstractDataImporter, EngineCore
+from myreco.engines.cores.top_seller.core import TopSellerEngineCore
 from myreco.engines.cores.utils import build_engine_data_path
 from unittest import mock
 from jsonschema import ValidationError
@@ -32,14 +32,21 @@ import ujson
 import asyncio
 
 
-class DataImporterTest(AbstractDataImporter):
+def CoroMock():
+    coro = mock.MagicMock(name="CoroutineResult")
+    corofunc = mock.MagicMock(name="CoroutineFunction", side_effect=asyncio.coroutine(coro))
+    corofunc.coro = coro
+    return corofunc
+
+
+class EngineCoreTest(TopSellerEngineCore):
 
     def get_data(self, session):
         asyncio.run_coroutine_threadsafe(
             asyncio.sleep(0.5),
             session.loop
         )
-        data_path = build_engine_data_path(self._engine)
+        data_path = build_engine_data_path(self.engine)
         if not os.path.isdir(data_path):
             makedirs(data_path)
 
@@ -56,14 +63,7 @@ class DataImporterTest(AbstractDataImporter):
         return {'lines_count': 3}
 
 
-def CoroMock():
-    coro = mock.MagicMock(name="CoroutineResult")
-    corofunc = mock.MagicMock(name="CoroutineFunction", side_effect=asyncio.coroutine(coro))
-    corofunc.coro = coro
-    return corofunc
-
-
-class EngineCoreTest(EngineCore):
+class EngineCoreTestWithVars(EngineCoreTest):
     __configuration_schema__ = {
         "type": "object",
         "required": ["item_id_name", "aggregators_ids_name"],
@@ -85,19 +85,19 @@ class EngineCoreTest(EngineCore):
             'schema': item_type_schema_props[aggregators_ids_name]
         }]
 
-    def _validate_config(self, engine):
-        item_id_name = engine['configuration']['item_id_name']
-        aggregators_ids_name = engine['configuration']['aggregators_ids_name']
-        item_type_schema_props = engine['item_type']['schema']['properties']
+    def _validate_config(self):
+        item_id_name = self.engine['configuration']['item_id_name']
+        aggregators_ids_name = self.engine['configuration']['aggregators_ids_name']
+        item_type_schema_props = self.engine['item_type']['schema']['properties']
         message = "Configuration key '{}' not in item_type schema"
 
         if item_id_name not in item_type_schema_props:
             raise ValidationError(message.format('item_id_name'),
-                instance=engine['configuration'], schema=item_type_schema_props)
+                instance=self.engine['configuration'], schema=item_type_schema_props)
 
         elif aggregators_ids_name not in item_type_schema_props:
             raise ValidationError(message.format('aggregators_ids_name'),
-                instance=engine['configuration'], schema=item_type_schema_props)
+                instance=self.engine['configuration'], schema=item_type_schema_props)
 
     async def _build_rec_vector(self):
         pass

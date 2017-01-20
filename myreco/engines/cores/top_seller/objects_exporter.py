@@ -21,21 +21,20 @@
 # SOFTWARE.
 
 
-import os
+from myreco.engines.cores.top_seller.redis_object import TopSellerRedisObject
+from myreco.engines.cores.objects_exporter import EngineCoreObjectsExporter
 
 
-def build_engine_key_prefix(engine):
-    return 'engine_{}_{}'.format(engine['id'], engine['core']['name'])
+class TopSellerObjectsExporterMixin(EngineCoreObjectsExporter):
 
+    async def export_objects(self, session, items_indices_map):
+        self._logger.info("Started export objects")
 
-def build_engine_data_path(engine):
-    engine_path = build_engine_key_prefix(engine)
-    return os.path.join(engine['store']['configuration']['data_path'], engine_path)
+        readers = await self._build_csv_readers('top_seller')
+        items_indices_map_dict = await self._get_items_indices_map_dict(items_indices_map, session)
 
+        top_seller = TopSellerRedisObject(self)
+        ret = await top_seller.update(readers, session, items_indices_map_dict)
 
-def makedirs(dir_):
-    try:
-        os.makedirs(dir_)
-    except OSError as e:
-        if os.errno.EEXIST != e.errno:
-            raise
+        self._logger.info("Finished export objects")
+        return ret

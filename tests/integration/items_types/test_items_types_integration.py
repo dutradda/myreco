@@ -146,7 +146,7 @@ class TestItemsTypesModelPost(object):
                         'minItems': 1,
                         'type': 'array'
                     },
-                    'properties': {'$ref': 'items_schema.json#/definitions/baseObject/properties/properties'}
+                    'properties': {'$ref': 'items/items_metaschema.json#/definitions/baseObject/properties/properties'}
                 }
             }
         }
@@ -378,7 +378,7 @@ class TestItemsModelSchema(object):
                             }
                         }
                     }],
-                    'operationId': 'ItemsModelCollectionFiltersUpdater.swagger_insert',
+                    'operationId': 'ItemsModelsCollectionFiltersUpdater.swagger_insert',
                     'responses': {'201': {'description': 'Created'}}
                 },
                 'patch': {
@@ -399,7 +399,7 @@ class TestItemsModelSchema(object):
                             }
                         }
                     }],
-                    'operationId': 'ItemsModelCollectionFiltersUpdater.swagger_update_many',
+                    'operationId': 'ItemsModelsCollectionFiltersUpdater.swagger_update_many',
                     'responses': {'200': {'description': 'Updated'}}
                 },
                 'get': {
@@ -419,11 +419,11 @@ class TestItemsModelSchema(object):
                         'type': 'array',
                         'items': {'type': 'string'}
                     }],
-                    'operationId': 'ItemsModelCollectionFiltersUpdater.swagger_get_all',
+                    'operationId': 'ItemsModelsCollectionFiltersUpdater.swagger_get_all',
                     'responses': {'200': {'description': 'Got'}}
                 },
                 'options': {
-                    'operationId': 'ItemsModelCollectionFiltersUpdater.options_test',
+                    'operationId': 'ItemsModelsCollectionFiltersUpdater.options_test',
                         'responses': {
                             '204': {
                                 'description': 'No Content',
@@ -451,11 +451,11 @@ class TestItemsModelSchema(object):
                     'required': True
                 }],
                 'get': {
-                    'operationId': 'ItemsModelCollectionFiltersUpdater.swagger_get',
+                    'operationId': 'ItemsModelsCollectionFiltersUpdater.swagger_get',
                     'responses': {'200': {'description': 'Got'}}
                 },
                 'options': {
-                    'operationId': 'ItemsModelCollectionFiltersUpdater.options_test_item_key',
+                    'operationId': 'ItemsModelsCollectionFiltersUpdater.options_test_item_key',
                         'responses': {
                             '204': {
                                 'description': 'No Content',
@@ -605,7 +605,9 @@ class TestItemsModelPatch(object):
 
 
 @pytest.fixture
-def update_filters_init_db(models, session, api):
+def update_filters_init_db(models, session, api, monkeypatch):
+    monkeypatch.setattr('myreco.engines.cores.base.makedirs', mock.MagicMock())
+
     user = {
         'name': 'test',
         'email': 'test',
@@ -645,7 +647,7 @@ def update_filters_init_db(models, session, api):
             }
         }
     }
-    session.loop.run_until_complete(models['items_types'].insert(session, item_type))
+    types = session.loop.run_until_complete(models['items_types'].insert(session, item_type))
 
     engine_core = {
         'name': 'top_seller',
@@ -749,7 +751,7 @@ class TestItemsTypesModelFiltersUpdater(object):
             'sku': 'test', 'filter1': 1, 'filter2': True,
             'filter3': 'test', 'filter4': {'id': 1}, 'filter5': [1]}]
         await client.post('/products?store_id=1',
-                                    data=ujson.dumps(products), headers=headers)
+                          data=ujson.dumps(products), headers=headers)
 
         resp = await client.post('/products/update_filters?store_id=1', headers=headers_without_content_type)
         assert await resp.json() == {'job_hash': '6342e10bd7dca3240c698aa79c98362e'}

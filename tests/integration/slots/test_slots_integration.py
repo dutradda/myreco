@@ -24,7 +24,7 @@
 from unittest import mock
 from time import sleep
 from datetime import datetime
-from tests.integration.fixtures import DataImporterTest, EngineCoreTest
+from tests.integration.fixtures import EngineCoreTest
 from swaggerit.models._base import _all_models
 import asyncio
 import tempfile
@@ -33,7 +33,9 @@ import ujson
 
 
 @pytest.fixture
-def init_db(models, session, api):
+def init_db(models, session, api, monkeypatch):
+    monkeypatch.setattr('myreco.engines.cores.base.makedirs', mock.MagicMock())
+
     user = {
         'name': 'test',
         'email': 'test',
@@ -54,7 +56,7 @@ def init_db(models, session, api):
         'configuration': {
             'core_module': {
                 'path': 'tests.integration.fixtures',
-                'class_name': 'EngineCoreTest'
+                'class_name': 'EngineCoreTestWithVars'
             }
         }
     }
@@ -63,12 +65,8 @@ def init_db(models, session, api):
         'name': 'top_seller',
         'configuration': {
             'core_module': {
-                'path': 'myreco.engines.cores.top_seller.core',
-                'class_name': 'TopSellerEngineCore'
-            },
-            'data_importer_module': {
                 'path': 'tests.integration.fixtures',
-                'class_name': 'DataImporterTest'
+                'class_name': 'EngineCoreTest'
             }
         }
     }
@@ -385,7 +383,7 @@ class TestSlotsModelPost(object):
                     'configuration': {
                         'core_module': {
                             'path': 'tests.integration.fixtures',
-                            'class_name': 'EngineCoreTest'
+                            'class_name': 'EngineCoreTestWithVars'
                         }
                     }
                 },
@@ -491,7 +489,7 @@ class TestSlotsModelPost(object):
                     'configuration': {
                         'core_module': {
                             'path': 'tests.integration.fixtures',
-                            'class_name': 'EngineCoreTest'
+                            'class_name': 'EngineCoreTestWithVars'
                         }
                     }
                 },
@@ -609,7 +607,7 @@ class TestSlotsModelPost(object):
                         'configuration': {
                             'core_module': {
                                 'path': 'tests.integration.fixtures',
-                                'class_name': 'EngineCoreTest'
+                                'class_name': 'EngineCoreTestWithVars'
                             }
                         }
                     },
@@ -692,7 +690,7 @@ class TestSlotsModelPost(object):
                     'configuration': {
                         'core_module': {
                             'path': 'tests.integration.fixtures',
-                            'class_name': 'EngineCoreTest'
+                            'class_name': 'EngineCoreTestWithVars'
                         }
                     }
                 },
@@ -828,7 +826,7 @@ class TestSlotsModelGet(object):
                     'configuration': {
                         'core_module': {
                             'path': 'tests.integration.fixtures',
-                            'class_name': 'EngineCoreTest'
+                            'class_name': 'EngineCoreTestWithVars'
                         }
                     }
                 },
@@ -1100,7 +1098,7 @@ class TestSlotsModelUriTemplatePatch(object):
                     'configuration': {
                         'core_module': {
                             'path': 'tests.integration.fixtures',
-                            'class_name': 'EngineCoreTest'
+                            'class_name': 'EngineCoreTestWithVars'
                         }
                     }
                 },
@@ -1252,7 +1250,7 @@ class TestSlotsModelUriTemplateGet(object):
                     'configuration': {
                         'core_module': {
                             'path': 'tests.integration.fixtures',
-                            'class_name': 'EngineCoreTest'
+                            'class_name': 'EngineCoreTestWithVars'
                         }
                     }
                 },

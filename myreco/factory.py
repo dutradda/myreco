@@ -29,12 +29,13 @@ from myreco.placements.models import (PlacementsModelBase, VariationsModelBase,
     ABTestUsersModelBase, build_variations_slots_table)
 from myreco.slots.models import (SlotsVariablesModelBase,
     SlotsModelBase, build_slots_fallbacks_table)
-from myreco.engines.models import (
-    EnginesModelBase, EnginesModelDataImporterBase,
-    EnginesModelObjectsExporterBase, EnginesCoresModelBase)
-from myreco.items_types.models import ItemsTypesModelBase, build_items_types_stores_table
-from myreco.items_types.items_data_importer_model import ItemsTypesModelDataImporterBase
-from myreco.items_types.items_update_filters_model import ItemsTypesModelFiltersUpdaterBase
+from myreco.engines.base_model import EnginesModelBase
+from myreco.engines.import_data_model import EnginesModelImportDataBase
+from myreco.engines.export_objects_model import EnginesModelExportObjectsBase
+from myreco.engines.cores.model import EnginesCoresModelBase
+from myreco.items_types.base_model import ItemsTypesModelBase, build_items_types_stores_table
+from myreco.items_types.import_data_file_model import ItemsTypesModelImportDataFileBase
+from myreco.items_types.update_filters_model import ItemsTypesModelUpdateFiltersBase
 from swaggerit.models.orm.factory import FactoryOrmModels
 
 
@@ -120,9 +121,9 @@ class ModelsFactory(object):
         if app_type == 'recommender':
             bases_classes = (EnginesModelBase, self.base_model)
         elif app_type == 'data_importer':
-            bases_classes = (EnginesModelDataImporterBase, self.base_model)
+            bases_classes = (EnginesModelImportDataBase, self.base_model)
         elif app_type == 'objects_exporter':
-            bases_classes = (EnginesModelObjectsExporterBase, self.base_model)
+            bases_classes = (EnginesModelExportObjectsBase, self.base_model)
 
         return self.meta_class('EnginesModel', bases_classes, attributes)
 
@@ -148,9 +149,9 @@ class ModelsFactory(object):
         if app_type == 'recommender':
             bases_classes = (ItemsTypesModelBase, self.base_model)
         elif app_type == 'data_importer':
-            bases_classes = (ItemsTypesModelDataImporterBase, self.base_model)
+            bases_classes = (ItemsTypesModelImportDataFileBase, self.base_model)
         elif app_type == 'objects_exporter':
-            bases_classes = (ItemsTypesModelFiltersUpdaterBase, self.base_model)
+            bases_classes = (ItemsTypesModelUpdateFiltersBase, self.base_model)
 
         return self.meta_class('ItemsTypesModel', bases_classes, attributes)
 

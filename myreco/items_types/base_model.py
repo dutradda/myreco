@@ -21,8 +21,9 @@
 # SOFTWARE.
 
 
-from myreco.items_types.items_model import (
-    ItemsModelBaseMeta, ItemsModelCollection, build_items_model_collection_schema_base)
+from myreco.items_types.items.model import ItemsModelBaseMeta
+from myreco.items_types.items.models_collection import (
+    ItemsModelsCollection, build_items_models_collection_schema_base)
 from myreco.utils import build_item_key
 from swaggerit.models.orm.factory import FactoryOrmModels
 from swaggerit.utils import get_model_schema, get_dir_path
@@ -84,31 +85,31 @@ class ItemsTypesModelBase(AbstractConcreteBase):
 
     @classmethod
     def _build_items_models_collections(cls, items_types):
-        return [cls._build_items_model_collection(item_type) for item_type in items_types]
+        return [cls._build_items_models_collection(item_type) for item_type in items_types]
 
     @classmethod
-    def _build_items_model_collection(cls, item_type):
+    def _build_items_models_collection(cls, item_type):
         name, schema = item_type['name'], item_type['schema']
         id_names = schema['id_names']
         class_name = cls._build_class_name(name) + 'Collection'
         key = build_item_key(name, 'collection')
         [cls._build_items_model(item_type, store) for store in item_type['stores']]
         item_model_key = key.replace('_collection', '')
-        items_model_collection_class = cls._get_items_model_collection_class()
-        items_model_collection_class.__key__ = key
+        items_models_collection_class = cls._get_items_models_collection_class()
+        items_models_collection_class.__key__ = key
         base_uri = '/{}'.format(item_model_key)
-        items_model_collection_class.__schema__ = \
-            cls._build_items_model_collection_schema(base_uri, schema, id_names)
-        items_model_collection_class.__item_type__ = item_type
-        items_model_collection_class.__item_type_model__ = cls
-        items_model_collection = items_model_collection_class()
-        cls.__items_models_colletions__[item_model_key] = items_model_collection
+        items_models_collection_class.__schema__ = \
+            cls._build_items_models_collection_schema(base_uri, schema, id_names)
+        items_models_collection_class.__item_type__ = item_type
+        items_models_collection_class.__item_type_model__ = cls
+        items_models_collection = items_models_collection_class()
+        cls.__items_models_colletions__[item_model_key] = items_models_collection
 
         if cls.__api__ is not None:
-            cls._set_items_model_collection_methods(items_model_collection, base_uri)
-            cls.__api__.update_swagger_paths(items_model_collection)
+            cls._set_items_models_collection_methods(items_models_collection, base_uri)
+            cls.__api__.update_swagger_paths(items_models_collection)
 
-        return items_model_collection
+        return items_models_collection
 
     @classmethod
     def _build_class_name(cls, *names):
@@ -131,11 +132,11 @@ class ItemsTypesModelBase(AbstractConcreteBase):
         return items_model
 
     @classmethod
-    def _get_items_model_collection_class(cls):
-        return ItemsModelCollection
+    def _get_items_models_collection_class(cls):
+        return ItemsModelsCollection
 
     @classmethod
-    def _build_items_model_collection_schema(cls, base_uri, schema, id_names):
+    def _build_items_models_collection_schema(cls, base_uri, schema, id_names):
         id_names_uri = base_uri + '/{item_key}'
         patch_schema = deepcopy(schema)
         required = patch_schema.get('required') # why it?
@@ -146,15 +147,15 @@ class ItemsTypesModelBase(AbstractConcreteBase):
             properties['_operation'] = {'enum': ['delete', 'update']}
 
         swagger_schema = \
-            build_items_model_collection_schema_base(base_uri, schema, patch_schema, id_names_uri)
+            build_items_models_collection_schema_base(base_uri, schema, patch_schema, id_names_uri)
 
         return swagger_schema
 
     @classmethod
-    def _set_items_model_collection_methods(cls, items_model_collection, base_uri):
-        for path, method, handler in cls.__api__.get_model_methods(items_model_collection):
+    def _set_items_models_collection_methods(cls, items_models_collection, base_uri):
+        for path, method, handler in cls.__api__.get_model_methods(items_models_collection):
             key = cls._get_items_model_colletion_method_key(path, (path == base_uri))
-            items_model_collection.__methods__[key][method] = handler
+            items_models_collection.__methods__[key][method] = handler
 
     @classmethod
     def _get_items_model_colletion_method_key(cls, path, first_condition):
@@ -199,21 +200,21 @@ class ItemsTypesModelBase(AbstractConcreteBase):
             [item_type for item_type in new_items_types if item_type['name'] not in old_names]
 
         for item_type in old_items_types_remove:
-            cls._remove_items_model_collection(item_type)
+            cls._remove_items_models_collection(item_type)
 
         for item_type in old_items_types_rebuild:
-            cls._rebuild_items_model_collection(item_type)
+            cls._rebuild_items_models_collection(item_type)
 
         for item_type in new_items_types:
-            cls._build_items_model_collection(item_type)
+            cls._build_items_models_collection(item_type)
 
     @classmethod
-    def _rebuild_items_model_collection(cls, item_type):
-        cls._remove_items_model_collection(item_type)
-        cls._build_items_model_collection(item_type)
+    def _rebuild_items_models_collection(cls, item_type):
+        cls._remove_items_models_collection(item_type)
+        cls._build_items_models_collection(item_type)
 
     @classmethod
-    def _remove_items_model_collection(cls, item_type):
+    def _remove_items_models_collection(cls, item_type):
         for store in item_type['stores']:
             key = build_item_key(item_type['name'], store['id'])
             type(cls).__all_models__.pop(key)
@@ -225,19 +226,19 @@ class ItemsTypesModelBase(AbstractConcreteBase):
     async def delete(cls, session, ids, commit=True, **kwargs):
         items_types = await cls.get(session, ids=ids)
         await type(cls).delete(cls, session, ids, commit=commit, **kwargs)
-        [cls._remove_items_model_collection(item_type) for item_type in items_types]
+        [cls._remove_items_models_collection(item_type) for item_type in items_types]
 
     @classmethod
     async def items_models_handler(cls, req, session):
         items_model_name = req.path_params['items_model_name']
-        items_model_collection = cls.__items_models_colletions__.get(items_model_name)
+        items_models_collection = cls.__items_models_colletions__.get(items_model_name)
 
-        if items_model_collection is None:
+        if items_models_collection is None:
             methods = None
         else:
             key = cls._get_items_model_colletion_method_key(
                 req.url, (not 'item_key' in req.path_params))
-            methods = items_model_collection.__methods__.get(key)
+            methods = items_models_collection.__methods__.get(key)
 
         if methods is None:
             return SwaggerResponse(404)
@@ -249,7 +250,6 @@ class ItemsTypesModelBase(AbstractConcreteBase):
             return SwaggerResponse(405, headers={'Allow', ', '.join(methods)})
 
         return await method(req, session)
-
 
 
 def build_items_types_stores_table(metadata, **kwargs):

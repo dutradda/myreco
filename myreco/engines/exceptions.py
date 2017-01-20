@@ -21,21 +21,5 @@
 # SOFTWARE.
 
 
-import os
-
-
-def build_engine_key_prefix(engine):
-    return 'engine_{}_{}'.format(engine['id'], engine['core']['name'])
-
-
-def build_engine_data_path(engine):
-    engine_path = build_engine_key_prefix(engine)
-    return os.path.join(engine['store']['configuration']['data_path'], engine_path)
-
-
-def makedirs(dir_):
-    try:
-        os.makedirs(dir_)
-    except OSError as e:
-        if os.errno.EEXIST != e.errno:
-            raise
+class EngineError(Exception):
+    pass

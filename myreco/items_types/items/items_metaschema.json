@@ -1,6 +1,6 @@
 {
     "$schema": "http://json-schema.org/draft-04/schema#",
-    "description": "Schema of Items Models",
+    "description": "Schema of Items Models Schemas",
     "definitions": {
         "schemaArray": {
             "type": "array",

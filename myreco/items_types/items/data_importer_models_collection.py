@@ -21,8 +21,8 @@
 # SOFTWARE.
 
 
-from myreco.items_types.items_model import ItemsModelCollection
-from myreco.items_types.models import ItemsTypesModelBase
+from myreco.items_types.items.models_collection import ItemsModelsCollection
+from myreco.items_types.base_model import ItemsTypesModelBase
 from swaggerit.exceptions import SwaggerItModelError
 from jsonschema import Draft4Validator
 from tempfile import NamedTemporaryFile
@@ -35,7 +35,7 @@ import asyncio
 import gc
 
 
-class ItemsModelCollectionDataImporter(ItemsModelCollection):
+class ItemsModelsCollectionDataImporter(ItemsModelsCollection):
 
     async def post_import_data_file_job(self, req, session):
         content_type = req.headers.get('content-type')
@@ -168,54 +168,3 @@ class ItemsModelCollectionDataImporter(ItemsModelCollection):
     async def get_import_data_file_job(self, req, session):
         jobs_id = self._get_model(req.query).__key__ + '_importer'
         return await self._get_job(jobs_id, req, session)
-
-
-class ItemsTypesModelDataImporterBase(ItemsTypesModelBase):
-
-    @classmethod
-    def _build_items_model_collection_schema(self, key, schema, id_names):
-        import_data_file_uri = '{}/import_data_file'.format(key)
-        schema = ItemsTypesModelBase._build_items_model_collection_schema(key, schema, id_names)
-        schema[import_data_file_uri] = {
-                'parameters': [{
-                    'name': 'Authorization',
-                    'in': 'header',
-                    'required': True,
-                    'type': 'string'
-                },{
-                    'name': 'store_id',
-                    'in': 'query',
-                    'required': True,
-                    'type': 'integer'
-                },{
-                    'name': 'upload_file',
-                    'in': 'query',
-                    'default': True,
-                    'type': 'boolean'
-                }],
-                'post': {
-                    'parameters': [{
-                        'name': 'data_file',
-                        'in': 'body',
-                        'required': True,
-                        'schema': {}
-                    }],
-                    'consumes': ['application/zip'],
-                    'operationId': 'post_import_data_file_job',
-                    'responses': {'200': {'description': 'Posted'}}
-                },
-                'get': {
-                    'parameters': [{
-                        'name': 'job_hash',
-                        'in': 'query',
-                        'type': 'string'
-                    }],
-                    'operationId': 'get_import_data_file_job',
-                    'responses': {'200': {'description': 'Got'}}
-                }
-            }
-        return schema
-
-    @classmethod
-    def _get_items_model_collection_class(self):
-        return ItemsModelCollectionDataImporter

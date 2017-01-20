@@ -21,21 +21,35 @@
 # SOFTWARE.
 
 
-import os
+from myreco.engines.cores.base import EngineCoreBase
+from abc import abstractmethod
+from glob import glob
+from aiofiles import gzip_open
+import os.path
 
 
-def build_engine_key_prefix(engine):
-    return 'engine_{}_{}'.format(engine['id'], engine['core']['name'])
+class EngineCoreObjectsExporter(EngineCoreBase):
 
+    @abstractmethod
+    def export_objects(self, session):
+        pass
 
-def build_engine_data_path(engine):
-    engine_path = build_engine_key_prefix(engine)
-    return os.path.join(engine['store']['configuration']['data_path'], engine_path)
+    async def _build_csv_readers(self, pattern):
+        readers = []
+        pattern = os.path.join(self._data_path, '{}*.gz'.format(pattern))
 
+        for filename in glob(pattern):
+            file_ = await gzip_open(filename, 'rt')
+            readers.append(file_)
 
-def makedirs(dir_):
-    try:
-        os.makedirs(dir_)
-    except OSError as e:
-        if os.errno.EEXIST != e.errno:
-            raise
+        return readers
+
+    async def _get_items_indices_map_dict(self, session):
+        items_indices_map_dict = await self._items_indices_map.get_all(session)
+
+        if not items_indices_map_dict.values():
+            raise EngineError(
+                "The Indices Map for '{}' is empty. Please update these items"
+                .format(self.engine['item_type']['name']))
+
+        return items_indices_map_dict

@@ -1,5 +1,5 @@
 {
-    "/engines_cores/": {
+    "/items_types/": {
         "parameters": [{
             "name": "Authorization",
             "in": "header",
@@ -17,11 +17,25 @@
             "responses": {"201": {"description": "Created"}}
         },
         "get": {
+            "parameters": [{
+                "name": "stores",
+                "in": "query",
+                "required": true,
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": ["id"],
+                    "properties": {
+                        "id": {"type": "integer"}
+                    }
+                }
+            }],
             "operationId": "swagger_get_all",
             "responses": {"200": {"description": "Got"}}
         }
     },
-    "/engines_cores/{id}/": {
+    "/items_types/{id}/": {
         "parameters": [{
             "name": "Authorization",
             "in": "header",
@@ -59,7 +73,8 @@
             "additionalProperties": false,
             "properties": {
                 "name": {"type": "string"},
-                "configuration": {"$ref": "#/definitions/configuration"}
+                "schema": {"$ref": "#/definitions/items"},
+                "stores": {"$ref": "#/definitions/stores"}
             }
         },
         "schema_array": {
@@ -68,27 +83,35 @@
             "items": {
                 "type": "object",
                 "additionalProperties": false,
-                "required": ["configuration"],
+                "required": ["name", "schema", "stores"],
                 "properties": {
                     "name": {"type": "string"},
-                    "configuration": {"$ref": "#/definitions/configuration"}
+                    "schema": {"$ref": "#/definitions/items"},
+                    "stores": {"$ref": "#/definitions/stores"}
                 }
             }
         },
-        "configuration": {
-            "type": "object",
-            "required": ["data_importer_module", "core_module"],
-            "properties": {
-                "data_importer_module": {"$ref": "#/definitions/module"},
-                "core_module": {"$ref": "#/definitions/module"}
+        "stores": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["id"],
+                "properties": {"id": {"type": "integer"}}
             }
         },
-        "module": {
+        "items": {
             "type": "object",
-            "required": ["path", "class_name"],
+            "required": ["type", "id_names", "properties"],
             "properties": {
-                "path": {"type": "string"},
-                "class_name": {"type": "string"}
+                "type": {"enum": ["object"]},
+                "id_names": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {"type": "string", "minLength": 1}
+                },
+                "properties": {"$ref": "items/items_metaschema.json#/definitions/baseObject/properties/properties"}
             }
         }
     }

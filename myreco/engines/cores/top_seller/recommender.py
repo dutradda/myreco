@@ -21,21 +21,12 @@
 # SOFTWARE.
 
 
-import os
+from myreco.engines.cores.top_seller.redis_object import TopSellerRedisObject
+from myreco.engines.cores.recommender import EngineCoreRecommender
+import numpy as np
 
 
-def build_engine_key_prefix(engine):
-    return 'engine_{}_{}'.format(engine['id'], engine['core']['name'])
+class TopSellerRecommenderMixin(EngineCoreRecommender):
 
-
-def build_engine_data_path(engine):
-    engine_path = build_engine_key_prefix(engine)
-    return os.path.join(engine['store']['configuration']['data_path'], engine_path)
-
-
-def makedirs(dir_):
-    try:
-        os.makedirs(dir_)
-    except OSError as e:
-        if os.errno.EEXIST != e.errno:
-            raise
+    async def _build_rec_vector(self, session, **variables):
+        return await TopSellerRedisObject(self).get_numpy_array(session)

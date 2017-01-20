@@ -21,21 +21,20 @@
 # SOFTWARE.
 
 
-import os
+from swaggerit.models.orm.redis import ModelRedisMeta
 
 
-def build_engine_key_prefix(engine):
-    return 'engine_{}_{}'.format(engine['id'], engine['core']['name'])
+class ItemsModelBaseMeta(ModelRedisMeta):
 
+    def __init__(cls, name, bases, attrs):
+        ModelRedisMeta.__init__(cls, name, bases, attrs)
+        cls.index = None
 
-def build_engine_data_path(engine):
-    engine_path = build_engine_key_prefix(engine)
-    return os.path.join(engine['store']['configuration']['data_path'], engine_path)
+    def get(cls, session, ids=None, limit=None, offset=None, **kwargs):
+        items_per_page, page = kwargs.get('items_per_page', 1000), kwargs.get('page', 1)
+        limit = items_per_page * page
+        offset = items_per_page * (page-1)
+        return ModelRedisMeta.get(cls, session, ids=ids, limit=limit, offset=offset, **kwargs)
 
-
-def makedirs(dir_):
-    try:
-        os.makedirs(dir_)
-    except OSError as e:
-        if os.errno.EEXIST != e.errno:
-            raise
+    def get_all(cls, session, **kwargs):
+        return ModelRedisMeta.get(cls, session, **kwargs)

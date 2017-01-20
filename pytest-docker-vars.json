@@ -1,0 +1,14 @@
+{
+    "database": {
+        "host": "myreco-mysql",
+        "port": 3306,
+        "user": "root",
+        "password": "root",
+        "database": "myreco_test"
+    },
+    "redis": {
+        "host": "myreco-redis",
+	"port": 6379,
+	"db": 0
+    }
+}

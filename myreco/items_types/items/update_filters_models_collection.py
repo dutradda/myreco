@@ -24,12 +24,10 @@
 from myreco.engines.cores.items_indices_map import ItemsIndicesMap
 from myreco.engines.cores.filters.factory import FiltersFactory
 from myreco.engines.cores.filters.filters import BooleanFilterBy
-from myreco.items_types.items_data_importer_model import (
-    ItemsModelCollectionDataImporter,
-    ItemsTypesModelDataImporterBase)
+from myreco.items_types.items.data_importer_models_collection import ItemsModelsCollectionDataImporter
 
 
-class ItemsModelCollectionFiltersUpdater(ItemsModelCollectionDataImporter):
+class ItemsModelsCollectionFiltersUpdater(ItemsModelsCollectionDataImporter):
 
     async def post_update_filters_job(self, req, session):
         return self._create_job(self._run_update_filters_job, req, session, '_updater')
@@ -99,44 +97,3 @@ class ItemsModelCollectionFiltersUpdater(ItemsModelCollectionDataImporter):
     async def get_update_filters_job(self, req, session):
         jobs_id = self._get_model(req.query).__key__ + '_updater'
         return await self._get_job(jobs_id, req, session)
-
-
-class ItemsTypesModelFiltersUpdaterBase(ItemsTypesModelDataImporterBase):
-
-    @classmethod
-    def _build_items_model_collection_schema(cls, key, schema, id_names):
-        update_filters_uri = '{}/update_filters'.format(key)
-        schema = ItemsTypesModelDataImporterBase.\
-            _build_items_model_collection_schema(key, schema, id_names)
-
-        schema[update_filters_uri] = {
-            'parameters': [{
-                'name': 'Authorization',
-                'in': 'header',
-                'required': True,
-                'type': 'string'
-            },{
-                'name': 'store_id',
-                'in': 'query',
-                'required': True,
-                'type': 'integer'
-            }],
-            'post': {
-                'operationId': 'post_update_filters_job',
-                'responses': {'201': {'description': 'Executing'}}
-            },
-            'get': {
-                'parameters': [{
-                    'name': 'job_hash',
-                    'in': 'query',
-                    'type': 'string'
-                }],
-                'operationId': 'get_update_filters_job',
-                'responses': {'200': {'description': 'Got'}}
-            }
-        }
-        return schema
-
-    @classmethod
-    def _get_items_model_collection_class(cls):
-        return ItemsModelCollectionFiltersUpdater

@@ -21,78 +21,31 @@
 # SOFTWARE.
 
 
-from myreco.engines.cores.base import EngineCore, EngineError, RedisObjectBase
-from myreco.engines.cores.utils import build_engine_key_prefix
-from swaggerit.utils import get_model_schema
-import numpy as np
-import os.path
-import zlib
-import ujson
+from myreco.engines.cores.top_seller.redis_object import TopSellerRedisObject
+from myreco.engines.cores.objects_exporter import EngineCoreObjectsExporter
+from myreco.engines.cores.recommender import EngineCoreRecommender
 
 
-class TopSellerEngineCore(EngineCore):
-    __configuration_schema__ = get_model_schema(__file__)
+class TopSellerEngineCore(EngineCoreObjectsExporter, EngineCoreRecommender):
+    __configuration_schema__ = {
+        "type": "object",
+        "required": ["days_interval"],
+        "properties": {
+            "days_interval": {"type": "integer"}
+        }
+    }
 
-    async def export_objects(self, session, items_indices_map):
+    async def _build_rec_vector(self, session, **variables):
+        return await TopSellerRedisObject(self).get_numpy_array(session)
+
+    async def export_objects(self, session):
         self._logger.info("Started export objects")
 
         readers = await self._build_csv_readers()
-        items_indices_map_dict = await self._get_items_indices_map_dict(items_indices_map, session)
+        items_indices_map_dict = await self._items_indices_map.get_all(session)
 
         top_seller = TopSellerRedisObject(self)
         ret = await top_seller.update(readers, session, items_indices_map_dict)
 
         self._logger.info("Finished export objects")
         return ret
-
-    async def _build_rec_vector(self, session, **variables):
-        return await TopSellerRedisObject(self).get_numpy_array(session)
-        rec_vector = await session.redis_bind.get(redis_key)
-        if rec_vector:
-            return np.fromstring(zlib.decompress(rec_vector), dtype=np.int32)
-
-
-class TopSellerRedisObject(RedisObjectBase):
-
-    async def update(self, readers, session, items_indices_map_dict):
-        await self._build_top_seller_vector(readers, session, items_indices_map_dict)
-        await session.redis_bind.set(
-            self._redis_key,
-            zlib.compress(self.numpy_array.tobytes())
-        )
-
-        return {
-            'length': int(self.numpy_array.size),
-            'max_sells': int(max(self.numpy_array)),
-            'min_sells': int(min(self.numpy_array))
-        }
-
-    async def _build_top_seller_vector(self, readers, session, items_indices_map_dict):
-        error_message = "No data found for engine '{}'".format(self._engine_core.engine['name'])
-        if not len(readers):
-            raise EngineError(error_message)
-
-        indices_values_map = dict()
-
-        for reader in readers:
-            await self._set_indices_values_map(indices_values_map, items_indices_map_dict, reader)
-
-        if not indices_values_map:
-            raise EngineError(error_message)
-
-        vector = np.zeros(max(indices_values_map.keys())+1, dtype=np.int32)
-        indices = np.array(list(indices_values_map.keys()), dtype=np.int32)
-        vector[indices] = np.array(list(indices_values_map.values()), dtype=np.int32)
-        self.numpy_array = vector
-
-    async def _set_indices_values_map(self, indices_values_map, items_indices_map_dict, reader):
-        async for line in reader:
-            line = ujson.loads(line)
-            index = items_indices_map_dict.get(line['item_key'])
-            if index is not None:
-                indices_values_map[int(index)] = int(line['value'])
-
-    async def get_numpy_array(self, session):
-        rec_vector = await session.redis_bind.get(self._redis_key)
-        if rec_vector:
-            return np.fromstring(zlib.decompress(rec_vector), dtype=np.int32)

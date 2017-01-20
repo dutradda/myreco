@@ -24,31 +24,13 @@
 from myreco.engines.cores.items_indices_map import ItemsIndicesMap
 from myreco.engines.cores.filters.filters import BooleanFilterBy
 from myreco.utils import build_item_key
-from swaggerit.models.orm.factory import FactoryOrmModels
-from swaggerit.models.orm.redis import ModelRedisMeta
 from swaggerit.models.orm.jobs import JobsModel
 from swaggerit.request import SwaggerRequest
 from swaggerit.response import SwaggerResponse
 from collections import defaultdict
 
 
-class ItemsModelBaseMeta(ModelRedisMeta):
-
-    def __init__(cls, name, bases, attrs):
-        ModelRedisMeta.__init__(cls, name, bases, attrs)
-        cls.index = None
-
-    def get(cls, session, ids=None, limit=None, offset=None, **kwargs):
-        items_per_page, page = kwargs.get('items_per_page', 1000), kwargs.get('page', 1)
-        limit = items_per_page * page
-        offset = items_per_page * (page-1)
-        return ModelRedisMeta.get(cls, session, ids=ids, limit=limit, offset=offset, **kwargs)
-
-    def get_all(cls, session, **kwargs):
-        return ModelRedisMeta.get(cls, session, **kwargs)
-
-
-class ItemsModelCollection(JobsModel):
+class ItemsModelsCollection(JobsModel):
     __methods__ = defaultdict(dict)
 
     async def swagger_insert(self, req, session):
@@ -96,9 +78,9 @@ class ItemsModelCollection(JobsModel):
         await self._set_stock_filter(session, items_model)
         return resp
 
-    def _update_path_params(self, items_model_collection, path_params):
+    def _update_path_params(self, items_models_collection, path_params):
         new_path_params = dict()
-        id_names = items_model_collection.__item_type__['schema']['id_names']
+        id_names = items_models_collection.__item_type__['schema']['id_names']
         self.set_instance_ids(new_path_params, path_params['item_id'], keys=sorted(id_names))
         path_params.clear()
         path_params.update(new_path_params)
@@ -127,7 +109,7 @@ class ItemsModelCollection(JobsModel):
         return await items_model.swagger_get_all(req, session)
 
 
-def build_items_model_collection_schema_base(base_uri, schema, patch_schema, id_names_uri):
+def build_items_models_collection_schema_base(base_uri, schema, patch_schema, id_names_uri):
     return {
         base_uri: {
             'parameters': [{

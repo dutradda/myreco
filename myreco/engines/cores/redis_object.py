@@ -21,21 +21,27 @@
 # SOFTWARE.
 
 
-import os
+from swaggerit.utils import set_logger
+from myreco.engines.cores.utils import build_engine_key_prefix
+import zlib
+import numpy as np
 
 
-def build_engine_key_prefix(engine):
-    return 'engine_{}_{}'.format(engine['id'], engine['core']['name'])
+class RedisObjectBase(object):
 
+    def __init__(self, engine_core):
+        self._engine_core = engine_core
+        self._set_redis_key()
+        set_logger(self, self._redis_key)
 
-def build_engine_data_path(engine):
-    engine_path = build_engine_key_prefix(engine)
-    return os.path.join(engine['store']['configuration']['data_path'], engine_path)
+    def _set_redis_key(self):
+        self._redis_key = build_engine_key_prefix(self._engine_core.engine)
 
+    def _pack_array(self, array):
+        return zlib.compress(array.tobytes())
 
-def makedirs(dir_):
-    try:
-        os.makedirs(dir_)
-    except OSError as e:
-        if os.errno.EEXIST != e.errno:
-            raise
+    def _unpack_array(self, array, dtype):
+        if array is not None:
+            return np.fromstring(zlib.decompress(array), dtype=dtype)
+        else:
+            return None

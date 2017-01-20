@@ -21,21 +21,34 @@
 # SOFTWARE.
 
 
-import os
+from swaggerit.utils import get_model_schema
+from sqlalchemy.ext.declarative import AbstractConcreteBase
+import sqlalchemy as sa
+import ujson
 
 
-def build_engine_key_prefix(engine):
-    return 'engine_{}_{}'.format(engine['id'], engine['core']['name'])
+class EnginesCoresModelBase(AbstractConcreteBase):
+    __tablename__ = 'engines_cores'
+    __schema__ = get_model_schema(__file__)
 
+    id = sa.Column(sa.Integer, primary_key=True)
+    name = sa.Column(sa.String(255), unique=True, nullable=False)
+    configuration_json = sa.Column(sa.Text, nullable=False)
 
-def build_engine_data_path(engine):
-    engine_path = build_engine_key_prefix(engine)
-    return os.path.join(engine['store']['configuration']['data_path'], engine_path)
+    @property
+    def configuration(self):
+        if not hasattr(self, '_configuration'):
+            self._configuration = ujson.loads(self.configuration_json)
+        return self._configuration
 
+    async def _setattr(self, attr_name, value, session, input_):
+        if attr_name == 'configuration':
+            value = ujson.dumps(value)
+            attr_name = 'configuration_json'
 
-def makedirs(dir_):
-    try:
-        os.makedirs(dir_)
-    except OSError as e:
-        if os.errno.EEXIST != e.errno:
-            raise
+        await super()._setattr(attr_name, value, session, input_)
+
+    def _format_output_json(self, dict_inst, schema):
+        if schema.get('configuration') is not False:
+            dict_inst.pop('configuration_json')
+            dict_inst['configuration'] = self.configuration

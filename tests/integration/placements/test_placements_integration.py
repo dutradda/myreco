@@ -21,7 +21,7 @@
 # SOFTWARE.
 
 
-from tests.integration.fixtures import DataImporterTest, EngineCoreTest
+from tests.integration.fixtures import EngineCoreTestWithVars, EngineCoreTest
 from swaggerit.models._base import _all_models
 from tempfile import TemporaryDirectory
 from time import sleep
@@ -61,7 +61,7 @@ def init_db(models, session, api, temp_dir):
         'configuration': {
             'core_module': {
                 'path': 'tests.integration.fixtures',
-                'class_name': 'EngineCoreTest'
+                'class_name': 'EngineCoreTestWithVars'
             }
         }
     }
@@ -70,12 +70,8 @@ def init_db(models, session, api, temp_dir):
         'name': 'top_seller',
         'configuration': {
             'core_module': {
-                'path': 'myreco.engines.cores.top_seller.core',
-                'class_name': 'TopSellerEngineCore'
-            },
-            'data_importer_module': {
                 'path': 'tests.integration.fixtures',
-                'class_name': 'DataImporterTest'
+                'class_name': 'EngineCoreTest'
             }
         }
     }
@@ -556,7 +552,7 @@ class TestPlacementsModelPost(object):
                             'configuration': {
                                 'core_module': {
                                     'path': 'tests.integration.fixtures',
-                                    'class_name': 'EngineCoreTest'
+                                    'class_name': 'EngineCoreTestWithVars'
                                 }
                             }
                         },
@@ -729,7 +725,7 @@ class TestPlacementsModelGet(object):
                             'configuration': {
                                 'core_module': {
                                     'path': 'tests.integration.fixtures',
-                                    'class_name': 'EngineCoreTest'
+                                    'class_name': 'EngineCoreTestWithVars'
                                 }
                             }
                         },
@@ -990,7 +986,7 @@ class TestPlacementsModelUriTemplateGet(object):
                             'configuration': {
                                 'core_module': {
                                     'path': 'tests.integration.fixtures',
-                                    'class_name': 'EngineCoreTest'
+                                    'class_name': 'EngineCoreTestWithVars'
                                 }
                             }
                         },
@@ -1217,9 +1213,9 @@ class TestPlacementsGetRecomendations(object):
         resp = await client.post('/placements/', headers=headers, data=ujson.dumps(body))
         obj = (await resp.json())[0]
 
-        EngineCoreTest.get_recommendations.coro.return_value = []
+        EngineCoreTestWithVars.get_recommendations.coro.return_value = []
         resp = await client.get('/placements/{}/recommendations'.format(obj['small_hash']), headers=headers_without_content_type)
-        EngineCoreTest.get_recommendations.coro.reset_mock()
+        EngineCoreTestWithVars.get_recommendations.coro.reset_mock()
 
         assert resp.status == 200
         assert (await resp.json())['slots'][0]['recommendations'] == [
@@ -1406,9 +1402,9 @@ class TestPlacementsGetRecomendations(object):
         obj = (await resp.json())[0]
 
         random.seed(0)
-        EngineCoreTest.get_recommendations.coro.return_value = [{'test': 1}, {'test': 2}]
+        EngineCoreTestWithVars.get_recommendations.coro.return_value = [{'test': 1}, {'test': 2}]
         resp = await client.get('/placements/{}/recommendations'.format(obj['small_hash']), headers=headers_without_content_type)
-        EngineCoreTest.get_recommendations.coro.reset_mock()
+        EngineCoreTestWithVars.get_recommendations.coro.reset_mock()
 
         assert resp.status == 200
         assert (await resp.json())['distributed_recommendations'] == [

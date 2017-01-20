@@ -24,7 +24,7 @@
 from unittest import mock
 from time import sleep
 from datetime import datetime
-from tests.integration.fixtures import DataImporterTest, EngineCoreTest
+from tests.integration.fixtures import EngineCoreTest
 from swaggerit.models._base import _all_models
 import asyncio
 import tempfile
@@ -54,12 +54,8 @@ def init_db(models, session, api):
         'name': 'top_seller',
         'configuration': {
             'core_module': {
-                'path': 'myreco.engines.cores.top_seller.core',
-                'class_name': 'TopSellerEngineCore'
-            },
-            'data_importer_module': {
                 'path': 'tests.integration.fixtures',
-                'class_name': 'DataImporterTest'
+                'class_name': 'EngineCoreTest'
             }
         }
     }
@@ -145,12 +141,8 @@ class TestEnginesModelPost(object):
             'name': 'top_seller',
             'configuration': {
                 'core_module': {
-                    'path': 'myreco.engines.cores.top_seller.core',
-                    'class_name': 'TopSellerEngineCore'
-                },
-                'data_importer_module': {
                     'path': 'tests.integration.fixtures',
-                    'class_name': 'DataImporterTest'
+                    'class_name': 'EngineCoreTest'
                 }
             }
         }
@@ -205,12 +197,8 @@ class TestEnginesModelGet(object):
             'name': 'top_seller',
             'configuration': {
                 'core_module': {
-                    'path': 'myreco.engines.cores.top_seller.core',
-                    'class_name': 'TopSellerEngineCore'
-                },
-                'data_importer_module': {
                     'path': 'tests.integration.fixtures',
-                    'class_name': 'DataImporterTest'
+                    'class_name': 'EngineCoreTest'
                 }
             }
         }
@@ -359,12 +347,8 @@ class TestEnginesModelUriTemplateGet(object):
             'name': 'top_seller',
             'configuration': {
                 'core_module': {
-                    'path': 'myreco.engines.cores.top_seller.core',
-                    'class_name': 'TopSellerEngineCore'
-                },
-                'data_importer_module': {
                     'path': 'tests.integration.fixtures',
-                    'class_name': 'DataImporterTest'
+                    'class_name': 'EngineCoreTest'
                 }
             }
         }
@@ -453,7 +437,7 @@ class TestEnginesModelsDataImporter(object):
 
     async def test_importer_get_with_error(self, init_db, headers_without_content_type, client, monkeypatch):
         set_patches(monkeypatch)
-        monkeypatch.setattr('tests.integration.fixtures.DataImporterTest.get_data',
+        monkeypatch.setattr('tests.integration.fixtures.EngineCoreTest.get_data',
                             mock.MagicMock(side_effect=Exception('testing')))
         client = await client
         await client.post('/engines/1/import_data', headers=headers_without_content_type)
@@ -498,7 +482,8 @@ def set_readers_builders_patch(monkeypatch, values=None):
     readers_builder = [s]
     mock_ = CoroMock()
     mock_.coro.return_value = readers_builder
-    monkeypatch.setattr('myreco.engines.cores.base.EngineCore._build_csv_readers', mock_)
+    monkeypatch.setattr('myreco.engines.cores.objects_exporter.'
+                        'EngineCoreObjectsExporter._build_csv_readers', mock_)
 
 
 class TestEnginesModelsObjectsExporter(object):
@@ -589,7 +574,7 @@ def set_data_importer_patch(monkeypatch, mock_=None):
     if mock_ is None:
         mock_ = mock.MagicMock()
 
-    monkeypatch.setattr('tests.integration.fixtures.DataImporterTest.get_data', mock_)
+    monkeypatch.setattr('tests.integration.fixtures.EngineCoreTest.get_data', mock_)
     return mock_
 
 
@@ -610,8 +595,8 @@ class TestEnginesModelsObjectsExporterWithImport(object):
 
         await _wait_job_finish(client, headers_without_content_type)
 
-        called = bool(DataImporterTest.get_data.called)
-        DataImporterTest.get_data.reset_mock()
+        called = bool(EngineCoreTest.get_data.called)
+        EngineCoreTest.get_data.reset_mock()
 
         assert hash_ == {'job_hash': '6342e10bd7dca3240c698aa79c98362e'}
         assert called
@@ -752,8 +737,8 @@ class TestEnginesCoresModelPost(object):
             'name': 'top_seller2',
             'configuration': {
                 'core_module': {
-                    'path': 'myreco.engines.cores.top_seller.core',
-                    'class_name': 'TopSellerEngineCore'
+                    'path': 'tests.integration.fixtures',
+                    'class_name': 'EngineCoreTest'
                 }
             }
         }]
@@ -767,12 +752,8 @@ class TestEnginesCoresModelPost(object):
             'name': 'top_seller2',
             'configuration': {
                 'core_module': {
-                    'path': 'myreco.engines.cores.top_seller.core',
-                    'class_name': 'TopSellerEngineCore'
-                },
-                'data_importer_module': {
                     'path': 'tests.integration.fixtures',
-                    'class_name': 'DataImporterTest'
+                    'class_name': 'EngineCoreTest'
                 }
             }
         }]
@@ -804,12 +785,8 @@ class TestEnginesCoresModelGet(object):
             'name': 'top_seller2',
             'configuration': {
                 'core_module': {
-                    'path': 'myreco.engines.cores.top_seller.core',
-                    'class_name': 'TopSellerEngineCore'
-                },
-                'data_importer_module': {
                     'path': 'tests.integration.fixtures',
-                    'class_name': 'DataImporterTest'
+                    'class_name': 'EngineCoreTest'
                 }
             }
         }]
@@ -852,14 +829,6 @@ class TestEnginesCoresModelUriTemplatePatch(object):
         body = [{
             'name': 'top_seller2',
             'configuration': {
-                'core_module': {
-                    'path': 'myreco.engines.cores.top_seller.core',
-                    'class_name': 'TopSellerEngineCore'
-                },
-                'data_importer_module': {
-                    'path': 'tests.integration.fixtures',
-                    'class_name': 'DataImporterTest'
-                }
             }
         }]
         client = await client
@@ -871,12 +840,11 @@ class TestEnginesCoresModelUriTemplatePatch(object):
         resp = await client.patch('/engines_cores/2/', headers=headers, data=ujson.dumps(body))
         assert resp.status == 400
         assert await resp.json() ==  {
-            'message': "'data_importer_module' is a required property",
+            'message': "'core_module' is a required property",
             'schema': {
                 'type': 'object',
-                'required': ['data_importer_module', 'core_module'],
+                'required': ['core_module'],
                 'properties': {
-                    'data_importer_module': {'$ref': '#/definitions/module'},
                     'core_module': {'$ref': '#/definitions/module'}
                 }
             }
@@ -895,12 +863,8 @@ class TestEnginesCoresModelUriTemplatePatch(object):
             'name': 'top_seller2',
             'configuration': {
                 'core_module': {
-                    'path': 'myreco.engines.cores.top_seller.core',
-                    'class_name': 'TopSellerEngineCore'
-                },
-                'data_importer_module': {
                     'path': 'tests.integration.fixtures',
-                    'class_name': 'DataImporterTest'
+                    'class_name': 'EngineCoreTest'
                 }
             }
         }]
@@ -931,12 +895,8 @@ class TestEnginesCoresModelUriTemplateDelete(object):
             'name': 'top_seller2',
             'configuration': {
                 'core_module': {
-                    'path': 'myreco.engines.cores.top_seller.core',
-                    'class_name': 'TopSellerEngineCore'
-                },
-                'data_importer_module': {
                     'path': 'tests.integration.fixtures',
-                    'class_name': 'DataImporterTest'
+                    'class_name': 'EngineCoreTest'
                 }
             }
         }]
@@ -970,12 +930,8 @@ class TestEnginesCoresModelUriTemplateGet(object):
             'name': 'top_seller2',
             'configuration': {
                 'core_module': {
-                    'path': 'myreco.engines.cores.top_seller.core',
-                    'class_name': 'TopSellerEngineCore'
-                },
-                'data_importer_module': {
                     'path': 'tests.integration.fixtures',
-                    'class_name': 'DataImporterTest'
+                    'class_name': 'EngineCoreTest'
                 }
             }
         }]
