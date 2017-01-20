@@ -126,7 +126,7 @@ class EngineCore(metaclass=EngineCoreMeta):
     async def export_objects(self, session, items_indices_map):
         pass
 
-    async def _build_csv_readers(self, pattern):
+    async def _build_csv_readers(self, pattern=''):
         path = build_engine_data_path(self.engine)
         readers = []
         for filename in glob(os.path.join(path, '{}*.gz'.format(pattern))):

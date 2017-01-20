@@ -36,7 +36,7 @@ class TopSellerEngineCore(EngineCore):
     async def export_objects(self, session, items_indices_map):
         self._logger.info("Started export objects")
 
-        readers = await self._build_csv_readers('top_seller')
+        readers = await self._build_csv_readers()
         items_indices_map_dict = await self._get_items_indices_map_dict(items_indices_map, session)
 
         top_seller = TopSellerRedisObject(self)
