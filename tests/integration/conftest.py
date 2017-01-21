@@ -47,8 +47,8 @@ def models(api):
 
 @pytest.fixture(scope='session')
 def loop():
-    # loop = uvloop.new_event_loop()
-    loop = asyncio.new_event_loop() # just for debugging
+    loop = uvloop.new_event_loop()
+    # loop = asyncio.new_event_loop() # just for debugging
     asyncio.set_event_loop(loop)
     return loop
 

@@ -24,6 +24,7 @@
 from myreco.engines.cores.top_seller.redis_object import TopSellerRedisObject
 from myreco.engines.cores.objects_exporter import EngineCoreObjectsExporter
 from myreco.engines.cores.recommender import EngineCoreRecommender
+import asyncio
 
 
 class TopSellerEngineCore(EngineCoreObjectsExporter, EngineCoreRecommender):
@@ -38,14 +39,23 @@ class TopSellerEngineCore(EngineCoreObjectsExporter, EngineCoreRecommender):
     async def _build_rec_vector(self, session, **variables):
         return await TopSellerRedisObject(self).get_numpy_array(session)
 
-    async def export_objects(self, session):
+    def export_objects(self, session):
         self._logger.info("Started export objects")
 
-        readers = await self._build_csv_readers()
-        items_indices_map_dict = await self._items_indices_map.get_all(session)
+        readers = self._build_csv_readers()
+        items_indices_map_dict = self._run_coro(
+            self._items_indices_map.get_all(session),
+            session.loop
+        )
 
         top_seller = TopSellerRedisObject(self)
-        ret = await top_seller.update(readers, session, items_indices_map_dict)
+        ret = self._run_coro(
+            top_seller.update(readers, session, items_indices_map_dict),
+            session.loop
+        )
 
         self._logger.info("Finished export objects")
         return ret
+
+    def _run_coro(self, coro, loop):
+        return asyncio.run_coroutine_threadsafe(coro, loop).result()

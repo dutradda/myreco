@@ -61,7 +61,7 @@ class TopSellerRedisObject(RedisObjectBase):
         self.numpy_array = vector
 
     async def _set_indices_values_map(self, indices_values_map, items_indices_map_dict, reader):
-        async for line in reader:
+        for line in reader:
             line = ujson.loads(line)
             index = items_indices_map_dict.get(line['item_key'])
             if index is not None:

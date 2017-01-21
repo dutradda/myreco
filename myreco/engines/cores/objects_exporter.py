@@ -24,7 +24,7 @@
 from myreco.engines.cores.base import EngineCoreBase
 from abc import abstractmethod
 from glob import glob
-from aiofiles import gzip_open
+import gzip
 import os.path
 
 
@@ -34,12 +34,12 @@ class EngineCoreObjectsExporter(EngineCoreBase):
     def export_objects(self, session):
         pass
 
-    async def _build_csv_readers(self, pattern):
+    def _build_csv_readers(self, pattern=''):
         readers = []
         pattern = os.path.join(self._data_path, '{}*.gz'.format(pattern))
 
         for filename in glob(pattern):
-            file_ = await gzip_open(filename, 'rt')
+            file_ = gzip.open(filename, 'rt')
             readers.append(file_)
 
         return readers

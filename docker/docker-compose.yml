@@ -1,12 +1,13 @@
 version: "2"
 services:
     mysql:
-        image: mariadb
+        image: mysql
         container_name: myreco-mysql
         environment:
             MYSQL_ROOT_PASSWORD: root
+            MYSQL_DATABASE: myreco_test
     redis:
-        image: redis:alpine
+        image: redis
         container_name: myreco-redis
     myreco:
         build: .

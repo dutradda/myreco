@@ -55,20 +55,14 @@ class EnginesModelExportObjectsBase(EnginesModelImportDataBase):
 
         if import_data:
             importer_result = engine.core_instance.get_data(session)
-            exporter_result = asyncio.run_coroutine_threadsafe(
-                engine.core_instance.export_objects(session),
-                session.loop
-            ).result()
+            exporter_result = engine.core_instance.export_objects(session)
 
             return {
                 'importer': importer_result,
                 'exporter': exporter_result
             }
         else:
-            return asyncio.run_coroutine_threadsafe(
-                engine.core_instance.export_objects(session),
-                session.loop
-            ).result()
+            return engine.core_instance.export_objects(session)
 
     @classmethod
     async def get_export_objects_job(cls, req, session):

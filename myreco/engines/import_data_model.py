@@ -26,6 +26,7 @@ from swaggerit.response import SwaggerResponse
 from myreco.engines.cores.utils import build_engine_key_prefix
 from myreco.engines.base_model import EnginesModelBase
 from copy import deepcopy
+import asyncio
 
 
 import_data_schema = get_model_schema(__file__, 'import_data_swagger_schema.json')

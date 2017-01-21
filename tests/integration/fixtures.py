@@ -42,10 +42,7 @@ def CoroMock():
 class EngineCoreTest(TopSellerEngineCore):
 
     def get_data(self, session):
-        asyncio.run_coroutine_threadsafe(
-            asyncio.sleep(0.5),
-            session.loop
-        )
+        asyncio.run_coroutine_threadsafe(asyncio.sleep(0.5), session.loop).result()
         data_path = build_engine_data_path(self.engine)
         if not os.path.isdir(data_path):
             makedirs(data_path)

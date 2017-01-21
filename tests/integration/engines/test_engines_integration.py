@@ -474,14 +474,11 @@ async def _post_products(client, headers, headers_without_content_type, products
 
 def set_readers_builders_patch(monkeypatch, values=None):
     if values is None:
-        values = ujson.dumps({'value': 1, 'item_key': 'test'}).encode()
+        values = [ujson.dumps({'value': 1, 'item_key': 'test'}).encode()]
 
-    s = asyncio.StreamReader()
-    s.feed_data(values)
-    s.feed_eof()
-    readers_builder = [s]
-    mock_ = CoroMock()
-    mock_.coro.return_value = readers_builder
+    readers_builder = [values]
+    mock_ = mock.MagicMock()
+    mock_.return_value = readers_builder
     monkeypatch.setattr('myreco.engines.cores.objects_exporter.'
                         'EngineCoreObjectsExporter._build_csv_readers', mock_)
 
@@ -503,7 +500,7 @@ class TestEnginesModelsObjectsExporter(object):
         set_patches(monkeypatch)
 
         prods = [ujson.dumps({'value': i, 'item_key': 'test{}'.format(i)}).encode() for i in range(100)]
-        set_readers_builders_patch(monkeypatch, b'\n'.join(prods))
+        set_readers_builders_patch(monkeypatch, prods)
 
         client = await client
         products = [{'sku': 'test{}'.format(i)} for i in range(10)]
