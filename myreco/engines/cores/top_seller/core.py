@@ -24,7 +24,6 @@
 from myreco.engines.cores.top_seller.redis_object import TopSellerRedisObject
 from myreco.engines.cores.objects_exporter import EngineCoreObjectsExporter
 from myreco.engines.cores.recommender import EngineCoreRecommender
-import asyncio
 
 
 class TopSellerEngineCore(EngineCoreObjectsExporter, EngineCoreRecommender):
@@ -56,6 +55,3 @@ class TopSellerEngineCore(EngineCoreObjectsExporter, EngineCoreRecommender):
 
         self._logger.info("Finished export objects")
         return ret
-
-    def _run_coro(self, coro, loop):
-        return asyncio.run_coroutine_threadsafe(coro, loop).result()

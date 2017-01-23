@@ -26,6 +26,7 @@ from abc import abstractmethod
 from glob import glob
 import gzip
 import os.path
+import asyncio
 
 
 class EngineCoreObjectsExporter(EngineCoreBase):
@@ -53,3 +54,6 @@ class EngineCoreObjectsExporter(EngineCoreBase):
                 .format(self.engine['item_type']['name']))
 
         return items_indices_map_dict
+
+    def _run_coro(self, coro, loop):
+        return asyncio.run_coroutine_threadsafe(coro, loop).result()
