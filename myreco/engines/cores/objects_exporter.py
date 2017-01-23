@@ -56,4 +56,7 @@ class EngineCoreObjectsExporter(EngineCoreBase):
         return items_indices_map_dict
 
     def _run_coro(self, coro, loop):
-        return asyncio.run_coroutine_threadsafe(coro, loop).result()
+        if loop.is_running():
+            return asyncio.run_coroutine_threadsafe(coro, loop).result()
+        else:
+            return loop.run_until_complete(coro)
