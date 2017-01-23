@@ -122,4 +122,5 @@ class ItemsIndicesMap(object):
             await session.redis_bind.hmget(self.key, *keys) if index is not None]
 
     async def get_length(self, session):
-        return await session.redis_bind.get(self.length_key)
+        len_ = await session.redis_bind.get(self.length_key)
+        return None if len_ is None else int(len_)
