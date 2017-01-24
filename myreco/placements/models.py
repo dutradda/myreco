@@ -122,16 +122,21 @@ class PlacementsModelBase(AbstractConcreteBase):
 
     @classmethod
     async def _get_recos_by_slot(cls, slot, input_variables, session, show_details, max_recos=None):
-        engine = slot['engine']
-        items_model = get_items_model(engine)
-        engine_vars, filters = \
-            cls._get_variables_and_filters(slot, items_model, input_variables)
-        core_config = engine['core']['configuration']['core_module']
-        core_instance = ModuleClassLoader.load(core_config)(engine, items_model)
-        max_recos = slot['max_recos'] if max_recos is None else max_recos
+        try:
+            engine = slot['engine']
+            items_model = get_items_model(engine)
+            engine_vars, filters = \
+                cls._get_variables_and_filters(slot, items_model, input_variables)
+            core_config = engine['core']['configuration']['core_module']
+            core_instance = ModuleClassLoader.load(core_config)(engine, items_model)
+            max_recos = slot['max_recos'] if max_recos is None else max_recos
 
-        return await core_instance.get_recommendations(
-            session, filters, max_recos, show_details, **engine_vars)
+            return await core_instance.get_recommendations(
+                session, filters, max_recos, show_details, **engine_vars)
+        except Exception as error:
+            cls._logger.debug('Slot:\n' + ujson.dumps(slot, indent=4))
+            cls._logger.debug('Input Variables:\n' + ujson.dumps(input_variables, indent=4))
+            raise error
 
     @classmethod
     def _get_variables_and_filters(cls, slot, items_model, input_variables):
