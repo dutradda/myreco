@@ -30,11 +30,12 @@ class ItemsModelBaseMeta(ModelRedisMeta):
         ModelRedisMeta.__init__(cls, name, bases, attrs)
         cls.index = None
 
-    def get(cls, session, ids=None, limit=None, offset=None, **kwargs):
+    async def get(cls, session, ids=None, limit=None, offset=None, **kwargs):
         items_per_page, page = kwargs.get('items_per_page', 1000), kwargs.get('page', 1)
         limit = items_per_page * page
         offset = items_per_page * (page-1)
-        return ModelRedisMeta.get(cls, session, ids=ids, limit=limit, offset=offset, **kwargs)
+        return await \
+            ModelRedisMeta.get(cls, session, ids=ids, limit=limit, offset=offset, **kwargs)
 
-    def get_all(cls, session, **kwargs):
-        return ModelRedisMeta.get(cls, session, **kwargs)
+    async def get_all(cls, session, **kwargs):
+        return await ModelRedisMeta.get(cls, session, **kwargs)

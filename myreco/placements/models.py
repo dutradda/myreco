@@ -25,7 +25,7 @@ from swaggerit.utils import get_model_schema
 from swaggerit.json_builder import JsonBuilder
 from swaggerit.exceptions import SwaggerItModelError
 from myreco.engines.cores.filters.factory import FiltersFactory
-from myreco.utils import ModuleClassLoader, get_items_model
+from myreco.utils import ModuleObjectLoader, get_items_model
 from sqlalchemy.ext.declarative import AbstractConcreteBase, declared_attr
 import random as random_
 import sqlalchemy as sa
@@ -128,7 +128,7 @@ class PlacementsModelBase(AbstractConcreteBase):
             engine_vars, filters = \
                 cls._get_variables_and_filters(slot, items_model, input_variables)
             core_config = engine['core']['configuration']['core_module']
-            core_instance = ModuleClassLoader.load(core_config)(engine, items_model)
+            core_instance = ModuleObjectLoader.load(core_config)(engine, items_model)
             max_recos = slot['max_recos'] if max_recos is None else max_recos
 
             return await core_instance.get_recommendations(

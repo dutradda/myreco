@@ -45,16 +45,29 @@ class ItemsTypesModelBase(AbstractConcreteBase):
     id = sa.Column(sa.Integer, primary_key=True)
     name = sa.Column(sa.String(255), unique=True, nullable=False)
     schema_json = sa.Column(sa.Text, nullable=False)
+    post_processing_import_json = sa.Column(sa.Text)
 
     @declared_attr
     def stores(cls):
         return sa.orm.relationship('StoresModel', uselist=True, secondary='items_types_stores')
+
+    @property
+    def post_processing_import(self):
+        if not hasattr(self, '_post_processing_import'):
+            self._post_processing_import = \
+                ujson.loads(self.post_processing_import_json) if self.post_processing_import_json \
+                    is not None else None
+        return self._post_processing_import
 
     async def _setattr(self, attr_name, value, session, input_):
         if attr_name == 'schema':
             self._validate_input(value)
             value = ujson.dumps(value)
             attr_name = 'schema_json'
+
+        if attr_name == 'post_processing_import':
+            value = ujson.dumps(value)
+            attr_name = 'post_processing_import_json'
 
         await super()._setattr(attr_name, value, session, input_)
 
@@ -77,6 +90,10 @@ class ItemsTypesModelBase(AbstractConcreteBase):
                 dict_inst['available_filters'] = \
                     [{'name': name, 'schema': schema_properties[name]} \
                         for name in schema_properties_names]
+
+        if todict_schema.get('post_processing_import') is not False:
+            dict_inst.pop('post_processing_import_json')
+            dict_inst['post_processing_import'] = self.post_processing_import
 
     @classmethod
     async def build_all_items_models_collections(cls, session):

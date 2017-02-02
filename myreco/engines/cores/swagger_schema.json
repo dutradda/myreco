@@ -84,10 +84,10 @@
         },
         "module": {
             "type": "object",
-            "required": ["path", "class_name"],
+            "required": ["path", "object_name"],
             "properties": {
                 "path": {"type": "string"},
-                "class_name": {"type": "string"}
+                "object_name": {"type": "string"}
             }
         }
     }

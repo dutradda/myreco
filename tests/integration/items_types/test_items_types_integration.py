@@ -78,7 +78,8 @@ class TestItemsTypesModelPost(object):
                 'properties': {
                     'name': {'type': 'string'},
                     'stores': {'$ref': '#/definitions/stores'},
-                    'schema': {'$ref': '#/definitions/items'}
+                    'schema': {'$ref': '#/definitions/items'},
+                    'post_processing_import': {'$ref': '#/definitions/post_processing_import'}
                 }
             }
         }
@@ -103,6 +104,7 @@ class TestItemsTypesModelPost(object):
             'id': 1,
             'name': 'test'
         }]
+        body[0]['post_processing_import'] = None
 
         assert resp.status == 201
         assert await resp.json() ==  body
@@ -208,6 +210,7 @@ class TestItemsTypesModelGet(object):
             'id': 1,
             'name': 'test'
         }]
+        body[0]['post_processing_import'] = None
 
         resp = await client.get('/items_types/?stores=id:1', headers=headers_without_content_type)
         assert resp.status == 200
@@ -235,7 +238,8 @@ class TestItemsTypesModelUriTemplatePatch(object):
                 'properties': {
                     'name': {'type': 'string'},
                     'stores': {'$ref': '#/definitions/stores'},
-                    'schema': {'$ref': '#/definitions/items'}
+                    'schema': {'$ref': '#/definitions/items'},
+                    'post_processing_import': {'$ref': '#/definitions/post_processing_import'}
                 }
             }
         }
@@ -328,6 +332,7 @@ class TestItemsTypesModelUriTemplateGet(object):
             'id': 1,
             'name': 'test'
         }]
+        body[0]['post_processing_import'] = None
 
         assert resp.status == 200
         assert await resp.json() == body[0]
@@ -654,7 +659,7 @@ def update_filters_init_db(models, session, api, monkeypatch):
         'configuration': {
             'core_module': {
                 'path': 'myreco.engines.cores.top_seller.core',
-                'class_name': 'TopSellerEngineCore'
+                'object_name': 'TopSellerEngineCore'
             }
         }
     }

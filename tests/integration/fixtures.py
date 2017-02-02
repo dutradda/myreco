@@ -100,3 +100,12 @@ class EngineCoreTestWithVars(EngineCoreTest):
         pass
 
     get_recommendations = CoroMock()
+
+
+class PostProcessingProduct(object):
+
+    def execute(prods):
+        for prod in prods:
+            v = prod.get('filter_integer')
+            if v is not None:
+                prod['filter_post_processing'] = v

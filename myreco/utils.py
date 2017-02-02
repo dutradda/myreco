@@ -27,29 +27,29 @@ from swaggerit.utils import get_model
 from importlib import import_module
 
 
-class ModuleClassLoader(object):
-    _classes = dict()
+class ModuleObjectLoader(object):
+    _objects = dict()
 
     @classmethod
     def load(cls, config):
-        key = '{}.{}'.format(config['path'], config['class_name'])
-        class_ = cls._classes.get(key)
+        key = '{}.{}'.format(config['path'], config['object_name'])
+        obj = cls._objects.get(key)
 
-        if class_ is None:
+        if obj is None:
             try:
                 module = import_module(config['path'])
-                class_ = getattr(module, config['class_name'])
-                cls._classes[key] = class_
+                obj = getattr(module, config['object_name'])
+                cls._objects[key] = obj
 
             except Exception as error:
                 raise SwaggerItModelError(
                     "Error loading module '{}.{}'.\nError Class: {}. Error Message: {}".format(
-                        config['path'], config['class_name'],
+                        config['path'], config['object_name'],
                         error.__class__.__name__, str(error)
                     )
                 )
 
-        return class_
+        return obj
 
 
 def build_item_key(name, sufix=None):

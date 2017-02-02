@@ -30,6 +30,9 @@ import pytest
 import ujson
 import random
 import asyncio
+import tempfile
+import zipfile
+import os
 
 
 @pytest.fixture
@@ -61,7 +64,7 @@ def init_db(models, session, api, temp_dir):
         'configuration': {
             'core_module': {
                 'path': 'tests.integration.fixtures',
-                'class_name': 'EngineCoreTestWithVars'
+                'object_name': 'EngineCoreTestWithVars'
             }
         }
     }
@@ -71,7 +74,7 @@ def init_db(models, session, api, temp_dir):
         'configuration': {
             'core_module': {
                 'path': 'tests.integration.fixtures',
-                'class_name': 'EngineCoreTest'
+                'object_name': 'EngineCoreTest'
             }
         }
     }
@@ -111,6 +114,10 @@ def init_db(models, session, api, temp_dir):
     item_type = {
         'name': 'products_new',
         'stores': [{'id': 1}],
+        'post_processing_import': {
+            'path': 'tests.integration.fixtures',
+            'object_name': 'PostProcessingProduct'
+        },
         'schema': {
             'type': 'object',
             'id_names': ['item_id', 'sku'],
@@ -118,6 +125,7 @@ def init_db(models, session, api, temp_dir):
                 'filter_string': {'type': 'string'},
                 'filter_integer': {'type': 'integer'},
                 'filter_boolean': {'type': 'boolean'},
+                'filter_post_processing': {'type': 'integer'},
                 'filter_array': {
                     'type': 'array',
                     'items': {'type': 'string'}
@@ -197,11 +205,13 @@ def init_db(models, session, api, temp_dir):
     session.loop.run_until_complete(models['variables'].insert(session, {'name': 'test3', 'store_id': 1}))
     session.loop.run_until_complete(models['variables'].insert(session, {'name': 'filter_string_inclusive', 'store_id': 1}))
     session.loop.run_until_complete(models['variables'].insert(session, {'name': 'filter_integer_inclusive', 'store_id': 1}))
+    session.loop.run_until_complete(models['variables'].insert(session, {'name': 'filter_post_processing_inclusive', 'store_id': 1}))
     session.loop.run_until_complete(models['variables'].insert(session, {'name': 'filter_boolean_inclusive', 'store_id': 1}))
     session.loop.run_until_complete(models['variables'].insert(session, {'name': 'filter_array_inclusive', 'store_id': 1}))
     session.loop.run_until_complete(models['variables'].insert(session, {'name': 'filter_object_inclusive', 'store_id': 1}))
     session.loop.run_until_complete(models['variables'].insert(session, {'name': 'filter_string_exclusive', 'store_id': 1}))
     session.loop.run_until_complete(models['variables'].insert(session, {'name': 'filter_integer_exclusive', 'store_id': 1}))
+    session.loop.run_until_complete(models['variables'].insert(session, {'name': 'filter_post_processing_exclusive', 'store_id': 1}))
     session.loop.run_until_complete(models['variables'].insert(session, {'name': 'filter_boolean_exclusive', 'store_id': 1}))
     session.loop.run_until_complete(models['variables'].insert(session, {'name': 'filter_array_exclusive', 'store_id': 1}))
     session.loop.run_until_complete(models['variables'].insert(session, {'name': 'filter_object_exclusive', 'store_id': 1}))
@@ -270,6 +280,14 @@ def init_db(models, session, api, temp_dir):
             'inside_engine_name': 'filter_integer'
         },{
             '_operation': 'insert',
+            'variable_name': 'filter_post_processing_inclusive',
+            'variable_store_id': 1,
+            'is_filter': True,
+            'is_inclusive_filter': True,
+            'filter_type': 'By Property',
+            'inside_engine_name': 'filter_post_processing'
+        },{
+            '_operation': 'insert',
             'variable_name': 'filter_boolean_inclusive',
             'variable_store_id': 1,
             'is_filter': True,
@@ -308,6 +326,14 @@ def init_db(models, session, api, temp_dir):
             'is_inclusive_filter': False,
             'filter_type': 'By Property',
             'inside_engine_name': 'filter_integer'
+        },{
+            '_operation': 'insert',
+            'variable_name': 'filter_post_processing_exclusive',
+            'variable_store_id': 1,
+            'is_filter': True,
+            'is_inclusive_filter': False,
+            'filter_type': 'By Property',
+            'inside_engine_name': 'filter_post_processing'
         },{
             '_operation': 'insert',
             'variable_name': 'filter_boolean_exclusive',
@@ -514,6 +540,7 @@ class TestPlacementsModelPost(object):
                         'id': 1,
                         'item_type': {
                             'id': 1,
+                            'post_processing_import': None,
                             'stores': [{
                                 'configuration': {'data_path': temp_dir.name},
                                 'country': 'test',
@@ -552,7 +579,7 @@ class TestPlacementsModelPost(object):
                             'configuration': {
                                 'core_module': {
                                     'path': 'tests.integration.fixtures',
-                                    'class_name': 'EngineCoreTestWithVars'
+                                    'object_name': 'EngineCoreTestWithVars'
                                 }
                             }
                         },
@@ -687,6 +714,7 @@ class TestPlacementsModelGet(object):
                         'id': 1,
                         'item_type': {
                             'id': 1,
+                            'post_processing_import': None,
                             'stores': [{
                                 'configuration': {'data_path': temp_dir.name},
                                 'country': 'test',
@@ -725,7 +753,7 @@ class TestPlacementsModelGet(object):
                             'configuration': {
                                 'core_module': {
                                     'path': 'tests.integration.fixtures',
-                                    'class_name': 'EngineCoreTestWithVars'
+                                    'object_name': 'EngineCoreTestWithVars'
                                 }
                             }
                         },
@@ -948,6 +976,7 @@ class TestPlacementsModelUriTemplateGet(object):
                         'id': 1,
                         'item_type': {
                             'id': 1,
+                            'post_processing_import': None,
                             'stores': [{
                                 'configuration': {'data_path': temp_dir.name},
                                 'country': 'test',
@@ -986,7 +1015,7 @@ class TestPlacementsModelUriTemplateGet(object):
                             'configuration': {
                                 'core_module': {
                                     'path': 'tests.integration.fixtures',
-                                    'class_name': 'EngineCoreTestWithVars'
+                                    'object_name': 'EngineCoreTestWithVars'
                                 }
                             }
                         },
@@ -1097,7 +1126,7 @@ class TestPlacementsGetRecomendations(object):
     async def test_get_recommendations_with_variable_valid(self, init_db, client, headers, monkeypatch, headers_without_content_type):
         client = await client
         class_loader = mock.MagicMock()
-        monkeypatch.setattr('myreco.placements.models.ModuleClassLoader', class_loader)
+        monkeypatch.setattr('myreco.placements.models.ModuleObjectLoader', class_loader)
 
         class_loader.load()().get_recommendations = CoroMock()
         class_loader.load()().get_recommendations.coro.return_value = [{'id': 1}, {'id': 2}, {'id': 3}]
@@ -1934,6 +1963,153 @@ class TestPlacementsGetRecomendationsFilters(object):
             {'sku': 'test3', 'item_id': 3},
             {'sku': 'test2', 'item_id': 2, 'filter_object': {'id': 2}}
         ]
+
+    async def test_get_recommendations_by_post_processing_inclusive(self, init_db, client, headers, monkeypatch, headers_without_content_type):
+        random_patch(monkeypatch)
+        client = await client
+        products = [{
+            'item_id': 1,
+            'sku': 'test1',
+            'filter_integer': 1
+        },{
+            'item_id': 2,
+            'sku': 'test2',
+            'filter_integer': 1
+        },{
+            'item_id': 3,
+            'sku': 'test3'
+        }]
+        data_file = tempfile.NamedTemporaryFile(delete=False)
+        data_file2 = tempfile.NamedTemporaryFile(delete=False)
+        data_file2.write('\n'.join([ujson.dumps(p) for p in products]).encode())
+        data_file2.close()
+        data_filez = zipfile.ZipFile(data_file.name, 'w')
+        data_filez.write(data_file2.name)
+        data_filez.close()
+        data_filez = open(data_file.name, 'rb')
+
+        headers_ = {}
+        headers_.update(headers)
+        headers_['Content-Type'] = 'application/zip'
+        resp = await client.post('/products_new/import_data_file?store_id=1&upload_file=false', headers=headers_, data=data_filez)
+        sleep(0.05)
+        while True:
+            resp = await client.get(
+                '/products_new/import_data_file?store_id=1&job_hash=6342e10bd7dca3240c698aa79c98362e',
+                headers=headers_without_content_type)
+            if (await resp.json())['status'] != 'running':
+                break
+
+        os.remove(data_file.name)
+
+        await client.post('/products_new/update_filters?store_id=1', headers=headers_without_content_type)
+        sleep(0.05)
+        while True:
+            resp = await client.get(
+                '/products_new/update_filters?store_id=1&job_hash=6342e10bd7dca3240c698aa79c98362e',
+                headers=headers_without_content_type)
+            if (await resp.json())['status'] != 'running':
+                break
+
+        await client.post('/engines/4/export_objects?import_data=true', headers=headers_without_content_type)
+        sleep(0.05)
+        while True:
+            resp = await client.get(
+                '/engines/4/export_objects?job_hash=6342e10bd7dca3240c698aa79c98362e',
+                headers=headers_without_content_type)
+            if (await resp.json())['status'] != 'running':
+                break
+
+        body = [{
+            'store_id': 1,
+            'name': 'Placement Test',
+            'variations': [{
+                '_operation': 'insert',
+                'slots': [{'id': 2}]
+            }]
+        }]
+        resp = await client.post('/placements/', headers=headers, data=ujson.dumps(body))
+        obj = (await resp.json())[0]
+
+        resp = await client.get('/placements/{}/recommendations?filter_post_processing_inclusive=1'.format(obj['small_hash']), headers=headers_without_content_type)
+        assert resp.status == 200
+        assert (await resp.json())['slots'][0]['recommendations'] == [
+            {'sku': 'test1', 'item_id': 1, 'filter_integer': 1, 'filter_post_processing': 1},
+            {'sku': 'test2', 'item_id': 2, 'filter_integer': 1, 'filter_post_processing': 1}
+        ]
+
+    async def test_get_recommendations_by_post_processing_exclusive(self, init_db, client, headers, monkeypatch, headers_without_content_type):
+        random_patch(monkeypatch)
+        client = await client
+        products = [{
+            'item_id': 1,
+            'sku': 'test1',
+            'filter_integer': 1
+        },{
+            'item_id': 2,
+            'sku': 'test2',
+            'filter_integer': 1
+        },{
+            'item_id': 3,
+            'sku': 'test3'
+        }]
+
+        data_file = tempfile.NamedTemporaryFile(delete=False)
+        data_file2 = tempfile.NamedTemporaryFile(delete=False)
+        data_file2.write('\n'.join([ujson.dumps(p) for p in products]).encode())
+        data_file2.close()
+        data_filez = zipfile.ZipFile(data_file.name, 'w')
+        data_filez.write(data_file2.name)
+        data_filez.close()
+        data_filez = open(data_file.name, 'rb')
+
+        headers_ = {}
+        headers_.update(headers)
+        headers_['Content-Type'] = 'application/zip'
+        resp = await client.post('/products_new/import_data_file?store_id=1&upload_file=false', headers=headers_, data=data_filez)
+        sleep(0.05)
+        while True:
+            resp = await client.get(
+                '/products_new/import_data_file?store_id=1&job_hash=6342e10bd7dca3240c698aa79c98362e',
+                headers=headers_without_content_type)
+            if (await resp.json())['status'] != 'running':
+                break
+
+        os.remove(data_file.name)
+
+        await client.post('/products_new/update_filters?store_id=1', headers=headers_without_content_type)
+        sleep(0.05)
+        while True:
+            resp = await client.get(
+                '/products_new/update_filters?store_id=1&job_hash=6342e10bd7dca3240c698aa79c98362e',
+                headers=headers_without_content_type)
+            if (await resp.json())['status'] != 'running':
+                break
+
+        await client.post('/engines/4/export_objects?import_data=true', headers=headers_without_content_type)
+        sleep(0.05)
+        while True:
+            resp = await client.get(
+                '/engines/4/export_objects?job_hash=6342e10bd7dca3240c698aa79c98362e',
+                headers=headers_without_content_type)
+            if (await resp.json())['status'] != 'running':
+                break
+
+        body = [{
+            'store_id': 1,
+            'name': 'Placement Test',
+            'variations': [{
+                '_operation': 'insert',
+                'slots': [{'id': 2}]
+            }]
+        }]
+        resp = await client.post('/placements/', headers=headers, data=ujson.dumps(body))
+        obj = (await resp.json())[0]
+
+        resp = await client.get('/placements/{}/recommendations?filter_post_processing_exclusive=1'.format(obj['small_hash']), headers=headers_without_content_type)
+        assert resp.status == 200
+        assert (await resp.json())['slots'][0]['recommendations'] == [{'sku': 'test3', 'item_id': 3}]
+
 
 
 class TestPlacementsGetRecomendationsFiltersOf(object):

@@ -23,6 +23,7 @@
 
 from myreco.items_types.items.models_collection import ItemsModelsCollection
 from myreco.items_types.base_model import ItemsTypesModelBase
+from myreco.utils import ModuleObjectLoader
 from swaggerit.exceptions import SwaggerItModelError
 from jsonschema import Draft4Validator
 from tempfile import NamedTemporaryFile
@@ -133,10 +134,12 @@ class ItemsModelsCollectionDataImporter(ItemsModelsCollection):
 
                 line = ujson.loads(line)
                 validator.validate(line)
+
             except:
                 errors_lines += 1
                 self._logger.warning(warning_message.format(line))
                 continue
+
             else:
                 success_lines += 1
                 new_keys.add(items_model.get_instance_key(line))
@@ -147,6 +150,7 @@ class ItemsModelsCollectionDataImporter(ItemsModelsCollection):
                 lines = []
 
         if lines:
+            self._post_processing_import(lines)
             await items_model.insert(session, lines)
 
         del lines
@@ -164,6 +168,12 @@ class ItemsModelsCollectionDataImporter(ItemsModelsCollection):
             'errors_lines': errors_lines,
             'empty_lines': empty_lines
         }
+
+    def _post_processing_import(cls, items):
+        post_processing_import = cls.__item_type__['post_processing_import']
+        if post_processing_import is not None:
+            post_processing_import = ModuleObjectLoader.load(post_processing_import)
+            post_processing_import.execute(items)
 
     async def get_import_data_file_job(self, req, session):
         jobs_id = self._get_model(req.query).__key__ + '_importer'

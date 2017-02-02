@@ -56,7 +56,7 @@ def init_db(models, session, api, monkeypatch):
         'configuration': {
             'core_module': {
                 'path': 'tests.integration.fixtures',
-                'class_name': 'EngineCoreTestWithVars'
+                'object_name': 'EngineCoreTestWithVars'
             }
         }
     }
@@ -66,7 +66,7 @@ def init_db(models, session, api, monkeypatch):
         'configuration': {
             'core_module': {
                 'path': 'tests.integration.fixtures',
-                'class_name': 'EngineCoreTest'
+                'object_name': 'EngineCoreTest'
             }
         }
     }
@@ -351,6 +351,7 @@ class TestSlotsModelPost(object):
             'engine': {
                 'item_type': {
                     'id': 1,
+                    'post_processing_import': None,
                     'stores': [{
                         'configuration': {'data_path': '/test'},
                         'country': 'test',
@@ -383,7 +384,7 @@ class TestSlotsModelPost(object):
                     'configuration': {
                         'core_module': {
                             'path': 'tests.integration.fixtures',
-                            'class_name': 'EngineCoreTestWithVars'
+                            'object_name': 'EngineCoreTestWithVars'
                         }
                     }
                 },
@@ -457,6 +458,7 @@ class TestSlotsModelPost(object):
             'engine': {
                 'item_type': {
                     'id': 1,
+                    'post_processing_import': None,
                     'stores': [{
                         'configuration': {'data_path': '/test'},
                         'country': 'test',
@@ -489,7 +491,7 @@ class TestSlotsModelPost(object):
                     'configuration': {
                         'core_module': {
                             'path': 'tests.integration.fixtures',
-                            'class_name': 'EngineCoreTestWithVars'
+                            'object_name': 'EngineCoreTestWithVars'
                         }
                     }
                 },
@@ -575,6 +577,7 @@ class TestSlotsModelPost(object):
                 'engine': {
                     'item_type': {
                         'id': 1,
+                        'post_processing_import': None,
                         'stores': [{
                             'configuration': {'data_path': '/test'},
                             'country': 'test',
@@ -607,7 +610,7 @@ class TestSlotsModelPost(object):
                         'configuration': {
                             'core_module': {
                                 'path': 'tests.integration.fixtures',
-                                'class_name': 'EngineCoreTestWithVars'
+                                'object_name': 'EngineCoreTestWithVars'
                             }
                         }
                     },
@@ -658,6 +661,7 @@ class TestSlotsModelPost(object):
             'engine': {
                 'item_type': {
                     'id': 1,
+                    'post_processing_import': None,
                     'stores': [{
                         'configuration': {'data_path': '/test'},
                         'country': 'test',
@@ -690,7 +694,7 @@ class TestSlotsModelPost(object):
                     'configuration': {
                         'core_module': {
                             'path': 'tests.integration.fixtures',
-                            'class_name': 'EngineCoreTestWithVars'
+                            'object_name': 'EngineCoreTestWithVars'
                         }
                     }
                 },
@@ -794,6 +798,7 @@ class TestSlotsModelGet(object):
             'engine': {
                 'item_type': {
                     'id': 1,
+                    'post_processing_import': None,
                     'stores': [{
                         'configuration': {'data_path': '/test'},
                         'country': 'test',
@@ -826,7 +831,7 @@ class TestSlotsModelGet(object):
                     'configuration': {
                         'core_module': {
                             'path': 'tests.integration.fixtures',
-                            'class_name': 'EngineCoreTestWithVars'
+                            'object_name': 'EngineCoreTestWithVars'
                         }
                     }
                 },
@@ -1066,6 +1071,7 @@ class TestSlotsModelUriTemplatePatch(object):
             'engine': {
                 'item_type': {
                     'id': 1,
+                    'post_processing_import': None,
                     'stores': [{
                         'configuration': {'data_path': '/test'},
                         'country': 'test',
@@ -1098,7 +1104,7 @@ class TestSlotsModelUriTemplatePatch(object):
                     'configuration': {
                         'core_module': {
                             'path': 'tests.integration.fixtures',
-                            'class_name': 'EngineCoreTestWithVars'
+                            'object_name': 'EngineCoreTestWithVars'
                         }
                     }
                 },
@@ -1218,6 +1224,7 @@ class TestSlotsModelUriTemplateGet(object):
             'engine': {
                 'item_type': {
                     'id': 1,
+                    'post_processing_import': None,
                     'stores': [{
                         'configuration': {'data_path': '/test'},
                         'country': 'test',
@@ -1250,7 +1257,7 @@ class TestSlotsModelUriTemplateGet(object):
                     'configuration': {
                         'core_module': {
                             'path': 'tests.integration.fixtures',
-                            'class_name': 'EngineCoreTestWithVars'
+                            'object_name': 'EngineCoreTestWithVars'
                         }
                     }
                 },

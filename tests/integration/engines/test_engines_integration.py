@@ -55,7 +55,7 @@ def init_db(models, session, api):
         'configuration': {
             'core_module': {
                 'path': 'tests.integration.fixtures',
-                'class_name': 'EngineCoreTest'
+                'object_name': 'EngineCoreTest'
             }
         }
     }
@@ -142,12 +142,13 @@ class TestEnginesModelPost(object):
             'configuration': {
                 'core_module': {
                     'path': 'tests.integration.fixtures',
-                    'class_name': 'EngineCoreTest'
+                    'object_name': 'EngineCoreTest'
                 }
             }
         }
         body[0]['item_type'] = {
             'id': 1,
+            'post_processing_import': None,
             'stores': [{
                 'configuration': {'data_path': init_db},
                 'country': 'test',
@@ -198,12 +199,13 @@ class TestEnginesModelGet(object):
             'configuration': {
                 'core_module': {
                     'path': 'tests.integration.fixtures',
-                    'class_name': 'EngineCoreTest'
+                    'object_name': 'EngineCoreTest'
                 }
             }
         }
         body[0]['item_type'] = {
             'id': 1,
+            'post_processing_import': None,
             'stores': [{
                 'configuration': {'data_path': init_db},
                 'country': 'test',
@@ -348,12 +350,13 @@ class TestEnginesModelUriTemplateGet(object):
             'configuration': {
                 'core_module': {
                     'path': 'tests.integration.fixtures',
-                    'class_name': 'EngineCoreTest'
+                    'object_name': 'EngineCoreTest'
                 }
             }
         }
         body[0]['item_type'] = {
             'id': 1,
+            'post_processing_import': None,
             'stores': [{
                 'configuration': {'data_path': init_db},
                 'country': 'test',
@@ -735,7 +738,7 @@ class TestEnginesCoresModelPost(object):
             'configuration': {
                 'core_module': {
                     'path': 'tests.integration.fixtures',
-                    'class_name': 'EngineCoreTest'
+                    'object_name': 'EngineCoreTest'
                 }
             }
         }]
@@ -750,7 +753,7 @@ class TestEnginesCoresModelPost(object):
             'configuration': {
                 'core_module': {
                     'path': 'tests.integration.fixtures',
-                    'class_name': 'EngineCoreTest'
+                    'object_name': 'EngineCoreTest'
                 }
             }
         }]
@@ -783,7 +786,7 @@ class TestEnginesCoresModelGet(object):
             'configuration': {
                 'core_module': {
                     'path': 'tests.integration.fixtures',
-                    'class_name': 'EngineCoreTest'
+                    'object_name': 'EngineCoreTest'
                 }
             }
         }]
@@ -861,7 +864,7 @@ class TestEnginesCoresModelUriTemplatePatch(object):
             'configuration': {
                 'core_module': {
                     'path': 'tests.integration.fixtures',
-                    'class_name': 'EngineCoreTest'
+                    'object_name': 'EngineCoreTest'
                 }
             }
         }]
@@ -893,7 +896,7 @@ class TestEnginesCoresModelUriTemplateDelete(object):
             'configuration': {
                 'core_module': {
                     'path': 'tests.integration.fixtures',
-                    'class_name': 'EngineCoreTest'
+                    'object_name': 'EngineCoreTest'
                 }
             }
         }]
@@ -928,7 +931,7 @@ class TestEnginesCoresModelUriTemplateGet(object):
             'configuration': {
                 'core_module': {
                     'path': 'tests.integration.fixtures',
-                    'class_name': 'EngineCoreTest'
+                    'object_name': 'EngineCoreTest'
                 }
             }
         }]

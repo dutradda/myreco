@@ -74,7 +74,8 @@
             "properties": {
                 "name": {"type": "string"},
                 "schema": {"$ref": "#/definitions/items"},
-                "stores": {"$ref": "#/definitions/stores"}
+                "stores": {"$ref": "#/definitions/stores"},
+                "post_processing_import": {"$ref": "#/definitions/post_processing_import"}
             }
         },
         "schema_array": {
@@ -87,7 +88,8 @@
                 "properties": {
                     "name": {"type": "string"},
                     "schema": {"$ref": "#/definitions/items"},
-                    "stores": {"$ref": "#/definitions/stores"}
+                    "stores": {"$ref": "#/definitions/stores"},
+                    "post_processing_import": {"$ref": "#/definitions/post_processing_import"}
                 }
             }
         },
@@ -112,6 +114,14 @@
                     "items": {"type": "string", "minLength": 1}
                 },
                 "properties": {"$ref": "items/items_metaschema.json#/definitions/baseObject/properties/properties"}
+            }
+        },
+        "post_processing_import": {
+            "type": "object",
+            "required": ["path", "object_name"],
+            "properties": {
+                "path": {"type": "string"},
+                "object_name": {"type": "string"}
             }
         }
     }

@@ -78,13 +78,6 @@ class ItemsModelsCollection(JobsModel):
         await self._set_stock_filter(session, items_model)
         return resp
 
-    def _update_path_params(self, items_models_collection, path_params):
-        new_path_params = dict()
-        id_names = items_models_collection.__item_type__['schema']['id_names']
-        self.set_instance_ids(new_path_params, path_params['item_id'], keys=sorted(id_names))
-        path_params.clear()
-        path_params.update(new_path_params)
-
     async def swagger_get(self, req, session):
         items_model = self._get_model(req.query)
         if items_model is None:

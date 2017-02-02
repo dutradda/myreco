@@ -22,7 +22,7 @@
 
 
 from swaggerit.utils import get_model_schema
-from myreco.utils import ModuleClassLoader, get_items_model
+from myreco.utils import ModuleObjectLoader, get_items_model
 from sqlalchemy.ext.declarative import AbstractConcreteBase, declared_attr
 import sqlalchemy as sa
 import ujson
@@ -81,7 +81,7 @@ class EnginesModelBase(AbstractConcreteBase):
         self._core_instance = core_class_(self_dict, items_model)
 
     def get_core_class(self):
-        return ModuleClassLoader.load(self.core.configuration['core_module'])
+        return ModuleObjectLoader.load(self.core.configuration['core_module'])
 
     def _build_self_dict(self):
         todict_schema = {'variables': False}
