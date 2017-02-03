@@ -37,11 +37,17 @@ class RedisObjectBase(object):
     def _set_redis_key(self):
         self._redis_key = build_engine_key_prefix(self._engine_core.engine)
 
-    def _pack_array(self, array):
-        return zlib.compress(array.tobytes())
+    def _pack_array(self, array, compress=True, level=-1):
+        if compress:
+            return zlib.compress(array.tobytes(), level)
+        else:
+            return array.tobytes()
 
-    def _unpack_array(self, array, dtype):
+    def _unpack_array(self, array, dtype, compress=True):
         if array is not None:
-            return np.fromstring(zlib.decompress(array), dtype=dtype)
+            if compress:
+                return np.fromstring(zlib.decompress(array), dtype=dtype)
+            else:
+                return np.fromstring(array, dtype=dtype)
         else:
             return None

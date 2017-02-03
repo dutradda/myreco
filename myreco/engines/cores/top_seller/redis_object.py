@@ -33,7 +33,7 @@ class TopSellerRedisObject(RedisObjectBase):
         await self._build_top_seller_vector(readers, session, items_indices_map_dict)
         await session.redis_bind.set(
             self._redis_key,
-            self._pack_array(self.numpy_array)
+            self._pack_array(self.numpy_array, compress=False)
         )
 
         return {
@@ -70,4 +70,4 @@ class TopSellerRedisObject(RedisObjectBase):
     async def get_numpy_array(self, session):
         rec_vector = await session.redis_bind.get(self._redis_key)
         if rec_vector is not None:
-            return self._unpack_array(rec_vector, np.int32)
+            return self._unpack_array(rec_vector, np.int32, compress=False)
