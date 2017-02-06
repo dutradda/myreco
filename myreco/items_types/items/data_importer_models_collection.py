@@ -146,6 +146,7 @@ class ItemsModelsCollectionDataImporter(ItemsModelsCollection):
                 lines.append(line)
 
             if len(lines) == 1000:
+                self._post_processing_import(lines)
                 await items_model.insert(session, lines)
                 lines = []
 
