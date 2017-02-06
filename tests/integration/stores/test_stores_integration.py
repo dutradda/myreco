@@ -55,7 +55,7 @@ class TestStoresModelPost(object):
                 'additionalProperties': False,
                 'required': ['name', 'country', 'configuration'],
                 'properties': {
-                    'configuration': {"$ref": "#/definitions/configuration"},
+                    'configuration': {"$ref": "#/definitions/StoresModel.configuration"},
                     'name': {'type': 'string'},
                     'country': {'type': 'string'}
                 }
@@ -133,7 +133,7 @@ class TestStoresModelUriTemplatePatch(object):
                 'additionalProperties': False,
                 'minProperties': 1,
                 'properties': {
-                    'configuration': {"$ref": "#/definitions/configuration"},
+                    'configuration': {"$ref": "#/definitions/StoresModel.configuration"},
                     'name': {'type': 'string'},
                     'country': {'type': 'string'}
                 }

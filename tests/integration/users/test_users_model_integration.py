@@ -213,7 +213,13 @@ class TestUsersModelPost(object):
         assert resp.status == 400
         result = (await resp.json())
         message = result.pop('message')
-        expected_schema = get_model_schema(root_path + '/../myreco/users/models.py')
+        expected_schema = ujson.dumps(get_model_schema(root_path + '/../myreco/users/models.py'),
+                                      escape_forward_slashes=False)
+        expected_schema = \
+            expected_schema.replace('#/definitions/grants', '#/definitions/UsersModel.grants')\
+            .replace('#/definitions/method', '#/definitions/UsersModel.method')\
+            .replace('#/definitions/uri', '#/definitions/UsersModel.uri')
+        expected_schema = ujson.loads(expected_schema)
 
         assert message == \
                 "{'method_id': 1, 'test': 1} is not valid under any of the given schemas" \

@@ -108,7 +108,7 @@ class TestEnginesModelPost(object):
                 'required': ['configuration', 'store_id', 'core_id', 'item_type_id'],
                 'properties': {
                     'name': {'type': 'string'},
-                    'configuration': {'$ref': 'http://json-schema.org/draft-04/schema#'},
+                    'configuration': {},
                     'store_id': {'type': 'integer'},
                     'core_id': {'type': 'integer'},
                     'item_type_id': {'type': 'integer'}
@@ -247,7 +247,7 @@ class TestEnginesModelUriTemplatePatch(object):
                 'minProperties': 1,
                 'properties': {
                     'name': {'type': 'string'},
-                    'configuration': {'$ref': 'http://json-schema.org/draft-04/schema#'},
+                    'configuration': {},
                     'store_id': {'type': 'integer'},
                     'core_id': {'type': 'integer'},
                     'item_type_id': {'type': 'integer'}
@@ -727,7 +727,7 @@ class TestEnginesCoresModelPost(object):
                 'required': ['configuration'],
                 'properties': {
                     'name': {'type': 'string'},
-                    'configuration': {'$ref': '#/definitions/configuration'}
+                    'configuration': {'$ref': '#/definitions/EnginesCoresModel.configuration'}
                 }
             }
         }
@@ -820,7 +820,7 @@ class TestEnginesCoresModelUriTemplatePatch(object):
                 'minProperties': 1,
                 'properties': {
                     'name': {'type': 'string'},
-                    'configuration': {'$ref': '#/definitions/configuration'}
+                    'configuration': {'$ref': '#/definitions/EnginesCoresModel.configuration'}
                 }
             }
         }
@@ -845,7 +845,7 @@ class TestEnginesCoresModelUriTemplatePatch(object):
                 'type': 'object',
                 'required': ['core_module'],
                 'properties': {
-                    'core_module': {'$ref': '#/definitions/module'}
+                    'core_module': {'$ref': '#/definitions/EnginesCoresModel.module'}
                 }
             }
         }

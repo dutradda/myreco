@@ -502,7 +502,7 @@ class TestPlacementsModelPost(object):
                     'distribute_recos': {'type': 'boolean'},
                     'name': {'type': 'string'},
                     'store_id': {'type': 'integer'},
-                    'variations': {'$ref': '#/definitions/variations'}
+                    'variations': {'$ref': '#/definitions/PlacementsModel.variations'}
                 }
             }
         }
@@ -848,7 +848,7 @@ class TestPlacementsModelUriTemplatePatch(object):
                     'distribute_recos': {'type': 'boolean'},
                     'name': {'type': 'string'},
                     'store_id': {'type': 'integer'},
-                    'variations': {'$ref': '#/definitions/variations'}
+                    'variations': {'$ref': '#/definitions/PlacementsModel.variations'}
                 },
                 'type': 'object'
             }

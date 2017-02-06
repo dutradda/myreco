@@ -77,9 +77,9 @@ class TestItemsTypesModelPost(object):
                 'required': ['name', 'schema', 'stores'],
                 'properties': {
                     'name': {'type': 'string'},
-                    'stores': {'$ref': '#/definitions/stores'},
-                    'schema': {'$ref': '#/definitions/items'},
-                    'post_processing_import': {'$ref': '#/definitions/post_processing_import'}
+                    'stores': {'$ref': '#/definitions/ItemsTypesModel.stores'},
+                    'schema': {'$ref': '#/definitions/ItemsTypesModel.items'},
+                    'post_processing_import': {'$ref': '#/definitions/ItemsTypesModel.post_processing_import'}
                 }
             }
         }
@@ -237,9 +237,9 @@ class TestItemsTypesModelUriTemplatePatch(object):
                 'minProperties': 1,
                 'properties': {
                     'name': {'type': 'string'},
-                    'stores': {'$ref': '#/definitions/stores'},
-                    'schema': {'$ref': '#/definitions/items'},
-                    'post_processing_import': {'$ref': '#/definitions/post_processing_import'}
+                    'stores': {'$ref': '#/definitions/ItemsTypesModel.stores'},
+                    'schema': {'$ref': '#/definitions/ItemsTypesModel.items'},
+                    'post_processing_import': {'$ref': '#/definitions/ItemsTypesModel.post_processing_import'}
                 }
             }
         }
@@ -349,7 +349,7 @@ class TestItemsModelSchema(object):
         }]
         resp = await client.post('/items_types/', headers=headers, data=ujson.dumps(body))
 
-        resp = await client.get('/swagger.json', headers=headers_without_content_type)
+        resp = await client.get('/doc/swagger.json', headers=headers_without_content_type)
         assert resp.status == 200
         paths = {
             '/test': (await resp.json())['paths'].get('/test'),

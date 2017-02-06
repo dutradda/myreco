@@ -26,6 +26,8 @@ from myreco.factory import ModelsFactory
 from swaggerit.constants import SWAGGER_VALIDATOR
 from swaggerit.aiohttp_api import AioHttpAPI
 from swaggerit.exceptions import SwaggerItAPIError
+from swaggerit.utils import get_model_schema
+from swaggerit.response import SwaggerResponse
 from copy import deepcopy
 import ujson
 
@@ -50,7 +52,36 @@ class MyrecoAPI(AioHttpAPI):
             get_swagger_req_auth=get_swagger_req_auth,
             loop=loop, debug=debug
         )
+        self._set_items_metaschema_route('/doc')
         self._set_items_models_routes(self.all_models['items_types'])
+
+    def _set_items_metaschema_route(self, swagger_doc_url):
+        self.items_metaschema = \
+            get_model_schema(__file__, 'items_types/items/items_metaschema.json')
+        path = '/doc/items_metaschema.json'
+        handler = self._set_handler_decorator(self._get_items_metaschema)
+        self._set_route(path, 'GET', handler)
+
+    async def _get_items_metaschema(self, req, session):
+        deny = await self._authorize(req, session)
+        if deny is not None:
+            return deny
+
+        headers = {'content-type': 'application/json'}
+        return SwaggerResponse(200, headers, ujson.dumps(self.items_metaschema))
+
+    def _set_swagger_doc(self, swagger_doc_url):
+        self._fix_items_metaschema_path(swagger_doc_url)
+        AioHttpAPI._set_swagger_doc(self, swagger_doc_url)
+
+    def _fix_items_metaschema_path(self, swagger_doc_url):
+        items_model_props = \
+            self.swagger_json['definitions']['ItemsTypesModel.items']['properties']['properties']
+        items_model_props['$ref'] = \
+            items_model_props['$ref'].replace(
+                'items/items_metaschema.json',
+                'doc/items_metaschema.json'
+            )
 
     def _set_items_models_routes(self, items_types_model):
         base_uri = '/{items_model_name}'
@@ -60,12 +91,6 @@ class MyrecoAPI(AioHttpAPI):
         self._set_route(base_uri, 'PATCH', handler)
         self._set_route(base_uri + '/{item_key}', 'GET', handler)
         self._set_route(base_uri + '/{item_key}', 'POST', handler)
-
-    def update_swagger_paths(self, model):
-        SWAGGER_VALIDATOR.validate(model.__schema__)
-        new_paths, definitions = self._get_model_paths_and_definitions(model)
-        self.swagger_json['paths'].update(new_paths)
-        self.swagger_json['definitions'].update(definitions)
 
     def remove_swagger_paths(self, model):
         new_swagger_json = deepcopy(self.swagger_json)
@@ -85,3 +110,12 @@ class MyrecoAPI(AioHttpAPI):
 
         [self.swagger_json['paths'].pop(path) for path in paths_to_remove]
         [self.swagger_json['definitions'].pop(path) for path in definitions_to_remove]
+
+    def update_swagger_paths(self, model):
+        SWAGGER_VALIDATOR.validate(model.__schema__)
+        model_paths = deepcopy(model.__schema__)
+        definitions = deepcopy(model.__schema__.get('definitions', {}))
+        model_paths.pop('definitions', None)
+        self.swagger_json['paths'].update(model_paths)
+        self.swagger_json['definitions'].update(definitions)
+        self["SWAGGER_DEF_CONTENT"] = ujson.dumps(self.swagger_json)

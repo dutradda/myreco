@@ -27,12 +27,22 @@ import ujson
 
 class MyrecoAuthorizer(object):
 
-    def __init__(self, users_model):
+    def __init__(self, users_model, realm='myreco'):
         self._users_model = users_model
+        self._realm = realm
 
     async def __call__(self, req, session):
-        response401 = SwaggerResponse(401, body=ujson.dumps({'message': 'Invalid authorization'}))
-        response403 = SwaggerResponse(403, body=ujson.dumps({'message': 'Access denied'}))
+        headers = {'www-authenticate': 'basic realm="{}"'.format(self._realm)}
+        response401 = SwaggerResponse(
+            401,
+            body=ujson.dumps({'message': 'Invalid authorization'}),
+            headers=headers
+        )
+        response403 = SwaggerResponse(
+            403,
+            body=ujson.dumps({'message': 'Access denied'}),
+            headers=headers
+        )
         authorization = req.headers.get('authorization', '')
 
         basic_str = 'Basic '

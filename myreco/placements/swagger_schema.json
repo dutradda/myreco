@@ -59,6 +59,12 @@
         }
     },
     "/placements/{small_hash}/recommendations": {
+        "parameters": [{
+            "name": "small_hash",
+            "in": "path",
+            "type": "string",
+            "required": true
+        }],
         "get": {
             "parameters": [{
                 "name": "explict_fallbacks",

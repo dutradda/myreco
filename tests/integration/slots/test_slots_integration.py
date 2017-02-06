@@ -176,8 +176,8 @@ class TestSlotsModelPost(object):
                     'name': {'type': 'string'},
                     'store_id': {'type': 'integer'},
                     'engine_id': {'type': 'integer'},
-                    'fallbacks': {'$ref': '#/definitions/fallbacks'},
-                    'slot_variables': {'$ref': '#/definitions/slot_variables'}
+                    'fallbacks': {'$ref': '#/definitions/SlotsModel.fallbacks'},
+                    'slot_variables': {'$ref': '#/definitions/SlotsModel.slot_variables'}
                 }
             }
         }
@@ -889,10 +889,10 @@ class TestSlotsModelUriTemplatePatch(object):
                         'type': 'integer'
                     },
                     'fallbacks': {
-                        '$ref': '#/definitions/fallbacks'
+                        '$ref': '#/definitions/SlotsModel.fallbacks'
                     },
                     'slot_variables': {
-                        '$ref': '#/definitions/slot_variables'
+                        '$ref': '#/definitions/SlotsModel.slot_variables'
                     }
                 },
                 'type': 'object'

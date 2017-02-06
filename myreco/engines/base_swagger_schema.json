@@ -65,7 +65,7 @@
             "additionalProperties": false,
             "properties": {
                 "name": {"type": "string"},
-                "configuration": {"$ref": "http://json-schema.org/draft-04/schema#"},
+                "configuration": {},
                 "store_id": {"type": "integer"},
                 "core_id": {"type": "integer"},
                 "item_type_id": {"type": "integer"}
@@ -80,7 +80,7 @@
                 "required": ["configuration", "store_id", "core_id", "item_type_id"],
                 "properties": {
                     "name": {"type": "string"},
-                    "configuration": {"$ref": "http://json-schema.org/draft-04/schema#"},
+                    "configuration": {},
                     "store_id": {"type": "integer"},
                     "core_id": {"type": "integer"},
                     "item_type_id": {"type": "integer"}
