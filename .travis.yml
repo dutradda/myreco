@@ -8,7 +8,7 @@ services:
 script: py.test -c pytest-travis.ini
 install: 
   - pip install cython
-  - pip install -r requirements.txt -r requirements-dev.txt
+  - pip install -r requirements.txt -r requirements-dev.txt --process-dependency-links
   - pip install coveralls
 after_success:
   - coveralls
