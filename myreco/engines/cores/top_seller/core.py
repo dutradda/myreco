@@ -41,7 +41,11 @@ class TopSellerEngineCore(EngineCoreObjectsExporter, EngineCoreRecommender):
     def export_objects(self, session):
         self._logger.info("Started export objects")
 
-        readers = self._build_csv_readers()
+        readers = self._run_coro(
+            self._build_csv_readers(),
+            session.loop
+        )
+
         items_indices_map_dict = self._run_coro(
             self._items_indices_map.get_all(session),
             session.loop
