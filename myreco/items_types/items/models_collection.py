@@ -106,11 +106,6 @@ def build_items_models_collection_schema_base(base_uri, schema, patch_schema, id
     return {
         base_uri: {
             'parameters': [{
-                'name': 'Authorization',
-                'in': 'header',
-                'required': True,
-                'type': 'string'
-            },{
                 'name': 'store_id',
                 'in': 'query',
                 'required': True,
@@ -118,6 +113,11 @@ def build_items_models_collection_schema_base(base_uri, schema, patch_schema, id
             }],
             'post': {
                 'parameters': [{
+                    'name': 'Authorization',
+                    'in': 'header',
+                    'required': True,
+                    'type': 'string'
+                },{
                     'name': 'body',
                     'in': 'body',
                     'required': True,
@@ -132,6 +132,11 @@ def build_items_models_collection_schema_base(base_uri, schema, patch_schema, id
             },
             'patch': {
                 'parameters': [{
+                    'name': 'Authorization',
+                    'in': 'header',
+                    'required': True,
+                    'type': 'string'
+                },{
                     'name': 'body',
                     'in': 'body',
                     'required': True,
@@ -146,6 +151,11 @@ def build_items_models_collection_schema_base(base_uri, schema, patch_schema, id
             },
             'get': {
                 'parameters': [{
+                    'name': 'Authorization',
+                    'in': 'header',
+                    'required': True,
+                    'type': 'string'
+                },{
                     'name': 'page',
                     'in': 'query',
                     'type': 'integer',
@@ -167,11 +177,6 @@ def build_items_models_collection_schema_base(base_uri, schema, patch_schema, id
         },
         id_names_uri: {
             'parameters': [{
-                'name': 'Authorization',
-                'in': 'header',
-                'required': True,
-                'type': 'string'
-            },{
                 'name': 'store_id',
                 'in': 'query',
                 'required': True,
@@ -183,6 +188,12 @@ def build_items_models_collection_schema_base(base_uri, schema, patch_schema, id
                 'type': 'string'
             }],
             'get': {
+                'parameters': [{
+                    'name': 'Authorization',
+                    'in': 'header',
+                    'required': True,
+                    'type': 'string'
+                }],
                 'operationId': 'swagger_get',
                 'responses': {'200': {'description': 'Got'}}
             }

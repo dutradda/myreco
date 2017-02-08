@@ -33,11 +33,6 @@ class ItemsTypesModelImportDataFileBase(ItemsTypesModelBase):
         schema = ItemsTypesModelBase._build_items_models_collection_schema(key, schema, id_names)
         schema[import_data_file_uri] = {
                 'parameters': [{
-                    'name': 'Authorization',
-                    'in': 'header',
-                    'required': True,
-                    'type': 'string'
-                },{
                     'name': 'store_id',
                     'in': 'query',
                     'required': True,
@@ -50,6 +45,11 @@ class ItemsTypesModelImportDataFileBase(ItemsTypesModelBase):
                 }],
                 'post': {
                     'parameters': [{
+                        'name': 'Authorization',
+                        'in': 'header',
+                        'required': True,
+                        'type': 'string'
+                    },{
                         'name': 'data_file',
                         'in': 'body',
                         'required': True,
@@ -61,6 +61,11 @@ class ItemsTypesModelImportDataFileBase(ItemsTypesModelBase):
                 },
                 'get': {
                     'parameters': [{
+                        'name': 'Authorization',
+                        'in': 'header',
+                        'required': True,
+                        'type': 'string'
+                    },{
                         'name': 'job_hash',
                         'in': 'query',
                         'type': 'string'

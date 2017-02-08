@@ -35,22 +35,28 @@ class ItemsTypesModelUpdateFiltersBase(ItemsTypesModelImportDataFileBase):
 
         schema[update_filters_uri] = {
             'parameters': [{
-                'name': 'Authorization',
-                'in': 'header',
-                'required': True,
-                'type': 'string'
-            },{
                 'name': 'store_id',
                 'in': 'query',
                 'required': True,
                 'type': 'integer'
             }],
             'post': {
+                'parameters': [{
+                    'name': 'Authorization',
+                    'in': 'header',
+                    'required': True,
+                    'type': 'string'
+                }],
                 'operationId': 'post_update_filters_job',
                 'responses': {'201': {'description': 'Executing'}}
             },
             'get': {
                 'parameters': [{
+                    'name': 'Authorization',
+                    'in': 'header',
+                    'required': True,
+                    'type': 'string'
+                },{
                     'name': 'job_hash',
                     'in': 'query',
                     'type': 'string'

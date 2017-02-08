@@ -1,14 +1,13 @@
 {
     "/placements/": {
-        "parameters": [{
-            "name": "Authorization",
-            "in": "header",
-            "required": true,
-            "type": "string"
-        }],
         "post": {
             "operationId": "swagger_insert",
             "parameters": [{
+                "name": "Authorization",
+                "in": "header",
+                "required": true,
+                "type": "string"
+            },{
                 "name": "body",
                 "in": "body",
                 "required": true,
@@ -18,6 +17,11 @@
         },
         "get": {
             "parameters": [{
+                "name": "Authorization",
+                "in": "header",
+                "required": true,
+                "type": "string"
+            },{
                 "name": "store_id",
                 "in": "query",
                 "required": true,
@@ -29,11 +33,6 @@
     },
     "/placements/{small_hash}/": {
         "parameters": [{
-            "name": "Authorization",
-            "in": "header",
-            "required": true,
-            "type": "string"
-        },{
             "name": "small_hash",
             "in": "path",
             "type": "string",
@@ -42,6 +41,11 @@
         "patch": {
             "operationId": "swagger_update",
             "parameters": [{
+                "name": "Authorization",
+                "in": "header",
+                "required": true,
+                "type": "string"
+            },{
                 "name": "body",
                 "in": "body",
                 "required": true,
@@ -50,10 +54,22 @@
             "responses": {"200": {"description": "Got"}}
         },
         "delete": {
+            "parameters": [{
+                "name": "Authorization",
+                "in": "header",
+                "required": true,
+                "type": "string"
+            }],
             "operationId": "swagger_delete",
             "responses": {"204": {"description": "Deleted"}}
         },
         "get": {
+            "parameters": [{
+                "name": "Authorization",
+                "in": "header",
+                "required": true,
+                "type": "string"
+            }],
             "operationId": "swagger_get",
             "responses": {"200": {"description": "Got"}}
         }

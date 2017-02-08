@@ -1,14 +1,13 @@
 {
     "/stores/": {
-        "parameters": [{
-            "name": "Authorization",
-            "in": "header",
-            "required": true,
-            "type": "string"
-        }],
         "post": {
             "operationId": "swagger_insert",
             "parameters": [{
+                "name": "Authorization",
+                "in": "header",
+                "required": true,
+                "type": "string"
+            },{
                 "name": "body",
                 "in": "body",
                 "required": true,
@@ -17,6 +16,12 @@
             "responses": {"201": {"description": "Created"}}
         },
         "get": {
+            "parameters": [{
+                "name": "Authorization",
+                "in": "header",
+                "required": true,
+                "type": "string"
+            }],
             "operationId": "swagger_get_all",
             "responses": {"200": {"description": "Got"}}
         }
@@ -36,6 +41,11 @@
         "patch": {
             "operationId": "swagger_update",
             "parameters": [{
+                "name": "Authorization",
+                "in": "header",
+                "required": true,
+                "type": "string"
+            },{
                 "name": "body",
                 "in": "body",
                 "required": true,
@@ -44,10 +54,22 @@
             "responses": {"200": {"description": "Got"}}
         },
         "delete": {
+            "parameters": [{
+                "name": "Authorization",
+                "in": "header",
+                "required": true,
+                "type": "string"
+            }],
             "operationId": "swagger_delete",
             "responses": {"204": {"description": "Deleted"}}
         },
         "get": {
+            "parameters": [{
+                "name": "Authorization",
+                "in": "header",
+                "required": true,
+                "type": "string"
+            }],
             "operationId": "swagger_get",
             "responses": {"200": {"description": "Got"}}
         }

@@ -358,11 +358,6 @@ class TestItemsModelSchema(object):
         assert paths == {
             '/test': {
                 'parameters': [{
-                    'name': 'Authorization',
-                    'in': 'header',
-                    'required': True,
-                    'type': 'string'
-                },{
                     'in': 'query',
                     'name': 'store_id',
                     'required': True,
@@ -370,6 +365,11 @@ class TestItemsModelSchema(object):
                 }],
                 'post': {
                     'parameters': [{
+                        'name': 'Authorization',
+                        'in': 'header',
+                        'required': True,
+                        'type': 'string'
+                    },{
                         'name': 'body',
                         'in': 'body',
                         'required': True,
@@ -388,6 +388,11 @@ class TestItemsModelSchema(object):
                 },
                 'patch': {
                     'parameters': [{
+                        'name': 'Authorization',
+                        'in': 'header',
+                        'required': True,
+                        'type': 'string'
+                    },{
                         'name': 'body',
                         'in': 'body',
                         'required': True,
@@ -409,6 +414,11 @@ class TestItemsModelSchema(object):
                 },
                 'get': {
                     'parameters': [{
+                        'name': 'Authorization',
+                        'in': 'header',
+                        'required': True,
+                        'type': 'string'
+                    },{
                         'name': 'page',
                         'in': 'query',
                         'type': 'integer',
@@ -440,11 +450,6 @@ class TestItemsModelSchema(object):
             },
             '/test/{item_key}': {
                 'parameters': [{
-                    'name': 'Authorization',
-                    'in': 'header',
-                    'required': True,
-                    'type': 'string'
-                },{
                     'in': 'query',
                     'name': 'store_id',
                     'required': True,
@@ -456,6 +461,12 @@ class TestItemsModelSchema(object):
                     'required': True
                 }],
                 'get': {
+                    'parameters': [{
+                        'name': 'Authorization',
+                        'in': 'header',
+                        'required': True,
+                        'type': 'string'
+                    }],
                     'operationId': 'ItemsModelsCollectionFiltersUpdater.swagger_get',
                     'responses': {'200': {'description': 'Got'}}
                 },

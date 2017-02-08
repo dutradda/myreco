@@ -1,11 +1,6 @@
 {
     "/engines/{id}/export_objects": {
         "parameters": [{
-            "name": "Authorization",
-            "in": "header",
-            "required": true,
-            "type": "string"
-        },{
             "name": "id",
             "in": "path",
             "type": "integer",
@@ -13,6 +8,11 @@
         }],
         "post": {
             "parameters": [{
+                "name": "Authorization",
+                "in": "header",
+                "required": true,
+                "type": "string"
+            },{
                 "name": "import_data",
                 "in": "query",
                 "type": "boolean",
@@ -23,6 +23,11 @@
         },
         "get": {
             "parameters": [{
+                "name": "Authorization",
+                "in": "header",
+                "required": true,
+                "type": "string"
+            },{
                 "name": "job_hash",
                 "in": "query",
                 "type": "string"

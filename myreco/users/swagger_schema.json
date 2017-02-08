@@ -1,14 +1,13 @@
 {
     "/users/": {
-        "parameters": [{
-            "name": "Authorization",
-            "in": "header",
-            "required": true,
-            "type": "string"
-        }],
         "post": {
             "operationId": "swagger_insert",
             "parameters": [{
+                "name": "Authorization",
+                "in": "header",
+                "required": true,
+                "type": "string"
+            },{
                 "name": "body",
                 "in": "body",
                 "required": true,
@@ -21,6 +20,11 @@
         "patch": {
             "operationId": "swagger_update_many",
             "parameters": [{
+                "name": "Authorization",
+                "in": "header",
+                "required": true,
+                "type": "string"
+            },{
                 "name": "body",
                 "in": "body",
                 "required": true,
@@ -33,6 +37,11 @@
         "delete": {
             "operationId": "swagger_delete_many",
             "parameters": [{
+                "name": "Authorization",
+                "in": "header",
+                "required": true,
+                "type": "string"
+            },{
                 "name": "body",
                 "in": "body",
                 "required": true,
@@ -45,6 +54,11 @@
         "get": {
             "operationId": "swagger_get_all",
             "parameters": [{
+                "name": "Authorization",
+                "in": "header",
+                "required": true,
+                "type": "string"
+            },{
                 "name": "body",
                 "in": "body",
                 "required": false,
@@ -70,11 +84,6 @@
     },
     "/users/{email}/": {
         "parameters": [{
-            "name": "Authorization",
-            "in": "header",
-            "required": true,
-            "type": "string"
-        },{
             "name": "email",
             "in": "path",
             "type": "string",
@@ -83,6 +92,11 @@
         "patch": {
             "operationId": "swagger_update",
             "parameters": [{
+                "name": "Authorization",
+                "in": "header",
+                "required": true,
+                "type": "string"
+            },{
                 "name": "body",
                 "in": "body",
                 "required": true,
@@ -93,12 +107,24 @@
             }
         },
         "delete": {
+            "parameters": [{
+                "name": "Authorization",
+                "in": "header",
+                "required": true,
+                "type": "string"
+            }],
             "operationId": "swagger_delete",
             "responses": {
                 "204": {"description": "Deleted"}
             }
         },
         "get": {
+            "parameters": [{
+                "name": "Authorization",
+                "in": "header",
+                "required": true,
+                "type": "string"
+            }],
             "operationId": "swagger_get",
             "responses": {
                 "200": {"description": "Got"}
