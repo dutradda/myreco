@@ -70,7 +70,8 @@ class TestItemsTypesModelPost(object):
         resp = await client.post('/items_types/', headers=headers, data='[{}]')
         assert resp.status == 400
         assert await resp.json() ==  {
-            'message': "'name' is a required property",
+            'message': "'name' is a required property. "\
+                       "Failed validating instance['0'] for schema['items']['required']",
             'schema': {
                 'type': 'object',
                 'additionalProperties': False,
@@ -137,7 +138,9 @@ class TestItemsTypesModelPost(object):
             'instance': {
                 'properties': {'id': {'type': 'string'}}
             },
-            'message': "'type' is a required property",
+            'message': "'type' is a required property. "\
+                       "Failed validating instance['0']['schema'] "\
+                       "for schema['items']['properties']['schema']['required']",
             'schema': {
                 'type': 'object',
                 'required': ['type', 'id_names', 'properties'],
@@ -230,7 +233,8 @@ class TestItemsTypesModelUriTemplatePatch(object):
         resp = await client.patch('/items_types/1/', headers=headers, data='{}')
         assert resp.status == 400
         assert await resp.json() ==  {
-            'message': '{} does not have enough properties',
+            'message': '{} does not have enough properties. '\
+                       "Failed validating instance for schema['minProperties']",
             'schema': {
                 'type': 'object',
                 'additionalProperties': False,
@@ -514,7 +518,9 @@ class TestItemsModelPost(object):
         assert resp.status == 400
         assert await resp.json() == {
             'instance': 1,
-            'message': "1 is not of type 'string'",
+            'message': "1 is not of type 'string'. "\
+                       "Failed validating instance['0']['id'] "\
+                       "for schema['items']['properties']['id']['type']",
             'schema': {'type': 'string'}
         }
 
@@ -595,7 +601,9 @@ class TestItemsModelPatch(object):
         assert resp.status == 400
         assert await resp.json() == {
             'instance': 1,
-            'message': "1 is not of type 'string'",
+            'message': "1 is not of type 'string'. "\
+                       "Failed validating instance['0']['id'] "\
+                       "for schema['items']['properties']['id']['type']",
             'schema': {'type': 'string'}
         }
 

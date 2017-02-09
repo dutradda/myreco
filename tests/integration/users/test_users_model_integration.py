@@ -221,10 +221,12 @@ class TestUsersModelPost(object):
             .replace('#/definitions/uri', '#/definitions/UsersModel.uri')
         expected_schema = ujson.loads(expected_schema)
 
+        fail_msg = "Failed validating instance['0']['grants']['0'] "\
+                   "for schema['items']['allOf']['1']['properties']['grants']['items']['oneOf']"
         assert message == \
-                "{'method_id': 1, 'test': 1} is not valid under any of the given schemas" \
+                "{'method_id': 1, 'test': 1} is not valid under any of the given schemas. " + fail_msg \
             or message == \
-                "{'test': 1, 'method_id': 1} is not valid under any of the given schemas"
+                "{'test': 1, 'method_id': 1} is not valid under any of the given schemas. " + fail_msg
         assert result == {
             'instance': {'method_id': 1, 'test': 1},
             'schema': expected_schema['definitions']['grants']

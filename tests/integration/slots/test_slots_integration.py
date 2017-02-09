@@ -166,7 +166,8 @@ class TestSlotsModelPost(object):
         resp = await client.post('/slots/', headers=headers, data='[{}]')
         assert resp.status == 400
         assert await resp.json() ==  {
-            'message': "'engine_id' is a required property",
+            'message': "'engine_id' is a required property. "\
+                       "Failed validating instance['0'] for schema['items']['required']",
             'schema': {
                 'type': 'object',
                 'additionalProperties': False,
@@ -897,7 +898,8 @@ class TestSlotsModelUriTemplatePatch(object):
                 },
                 'type': 'object'
             },
-            'message': '{} does not have enough properties'
+            'message': '{} does not have enough properties. '\
+                       "Failed validating instance for schema['minProperties']"
         }
 
    async def test_patch_with_invalid_engine_variable(self, init_db, client, headers, headers_without_content_type):

@@ -491,7 +491,8 @@ class TestPlacementsModelPost(object):
         resp = await client.post('/placements/', headers=headers, data='[{}]')
         assert resp.status == 400
         assert (await resp.json()) ==  {
-            'message': "'name' is a required property",
+            'message': "'name' is a required property. "\
+                       "Failed validating instance['0'] for schema['items']['required']",
             'schema': {
                 'type': 'object',
                 'additionalProperties': False,
@@ -838,7 +839,8 @@ class TestPlacementsModelUriTemplatePatch(object):
         resp = await client.patch('/placements/1/', headers=headers, data='{}')
         assert resp.status == 400
         assert (await resp.json()) == {
-            'message': '{} does not have enough properties',
+            'message': '{} does not have enough properties. '\
+                       "Failed validating instance for schema['minProperties']",
             'schema': {
                 'additionalProperties': False,
                 'minProperties': 1,

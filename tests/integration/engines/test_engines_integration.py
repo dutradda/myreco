@@ -101,7 +101,8 @@ class TestEnginesModelPost(object):
         resp = await client.post('/engines/', headers=headers, data='[{}]')
         assert resp.status == 400
         assert await resp.json() ==  {
-            'message': "'configuration' is a required property",
+            'message': "'configuration' is a required property. Failed validating "\
+                       "instance['0'] for schema['items']['required']",
             'schema': {
                 'type': 'object',
                 'additionalProperties': False,
@@ -240,7 +241,8 @@ class TestEnginesModelUriTemplatePatch(object):
         resp = await client.patch('/engines/1/', headers=headers, data='{}')
         assert resp.status == 400
         assert await resp.json() ==  {
-            'message': '{} does not have enough properties',
+            'message': "{} does not have enough properties. "\
+                       "Failed validating instance for schema['minProperties']",
             'schema': {
                 'type': 'object',
                 'additionalProperties': False,
@@ -263,7 +265,8 @@ class TestEnginesModelUriTemplatePatch(object):
         resp = await client.patch('/engines/1/', headers=headers, data=ujson.dumps(body))
         assert resp.status == 400
         assert await resp.json() ==  {
-            'message': "'days_interval' is a required property",
+            'message': "'days_interval' is a required property. "\
+                       "Failed validating instance for schema['required']",
             'schema': {
                 'type': 'object',
                 'required': ['days_interval'],
@@ -724,7 +727,8 @@ class TestEnginesCoresModelPost(object):
         resp = await client.post('/engines_cores/', headers=headers, data='[{}]')
         assert resp.status == 400
         assert await resp.json() ==  {
-            'message': "'configuration' is a required property",
+            'message': "'configuration' is a required property. "\
+                       "Failed validating instance['0'] for schema['items']['required']",
             'schema': {
                 'type': 'object',
                 'additionalProperties': False,
@@ -817,7 +821,8 @@ class TestEnginesCoresModelUriTemplatePatch(object):
         resp = await client.patch('/engines_cores/1/', headers=headers, data='{}')
         assert resp.status == 400
         assert await resp.json() ==  {
-            'message': '{} does not have enough properties',
+            'message': "{} does not have enough properties. "\
+                       "Failed validating instance for schema['minProperties']",
             'schema': {
                 'type': 'object',
                 'additionalProperties': False,
@@ -844,7 +849,9 @@ class TestEnginesCoresModelUriTemplatePatch(object):
         resp = await client.patch('/engines_cores/2/', headers=headers, data=ujson.dumps(body))
         assert resp.status == 400
         assert await resp.json() ==  {
-            'message': "'core_module' is a required property",
+            'message': "'core_module' is a required property. "\
+                       "Failed validating instance['configuration'] "\
+                       "for schema['properties']['configuration']['required']",
             'schema': {
                 'type': 'object',
                 'required': ['core_module'],
