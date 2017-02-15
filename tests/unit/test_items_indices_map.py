@@ -88,8 +88,8 @@ class TestItemsIndicesMapFirstUpdate(object):
 @pytest.fixture
 def session(session_first_update):
     session_first_update.redis_bind.hgetall.coro.side_effect = [
-        OrderedDict([(b'a', 0), (b'b', 1), (b'c', 2), (b'd', 3)]),
-        OrderedDict([(0, b'a'), (1, b'b'), (2, b'c'), (3, b'd')]),
+        OrderedDict([(b'a', b'0'), (b'b', b'1'), (b'c', b'2'), (b'd', b'3')]),
+        OrderedDict([(b'0', b'a'), (b'1', b'b'), (b'2', b'c'), (b'3', b'd')]),
         {}
     ]
     return session_first_update
@@ -105,7 +105,7 @@ class TestItemsIndicesMapWithSameItems(object):
     async def test_if_update_builds_indices_items_map_correctly(self, indices_map, session):
         await indices_map.update(session)
         assert session.redis_bind.hmset_dict.coro.call_args_list[1] == \
-            mock.call('test_items_map', {0: b'a', 1: b'b', 2: b'c', 3: b'd'})
+            mock.call('test_items_map', {0: 'a', 1: 'b', 2: 'c', 3: 'd'})
 
     async def test_if_update_builds_length_correctly(self, indices_map, session):
         await indices_map.update(session)
@@ -124,6 +124,7 @@ def indices_map_new_item(indices_map):
     return indices_map
 
 
+@mock.patch('myreco.engines.cores.items_indices_map.dict', new=OrderedDict)
 class TestItemsIndicesMapWithNewItem(object):
 
     async def test_if_update_builds_items_indices_map_correctly(self, indices_map_new_item, session):
@@ -134,7 +135,7 @@ class TestItemsIndicesMapWithNewItem(object):
     async def test_if_update_builds_indices_items_map_correctly(self, indices_map_new_item, session):
         await indices_map_new_item.update(session)
         assert session.redis_bind.hmset_dict.coro.call_args_list[1] == \
-            mock.call('test_items_map', {0: b'a', 1: b'b', 2: b'c', 3: b'd', 4: b'e'})
+            mock.call('test_items_map', {0: 'a', 1: 'b', 2: 'c', 3: 'd', 4: b'e'})
 
     async def test_if_update_builds_length_correctly(self, indices_map_new_item, session):
         await indices_map_new_item.update(session)
@@ -153,6 +154,7 @@ def indices_map_removed_item(indices_map):
     return indices_map
 
 
+@mock.patch('myreco.engines.cores.items_indices_map.dict', new=OrderedDict)
 class TestItemsIndicesMapWithItemRemoved(object):
 
     async def test_if_update_builds_items_indices_map_correctly(self, indices_map_removed_item, session):
@@ -163,7 +165,7 @@ class TestItemsIndicesMapWithItemRemoved(object):
     async def test_if_update_builds_indices_items_map_correctly(self, indices_map_removed_item, session):
         await indices_map_removed_item.update(session)
         assert session.redis_bind.hmset_dict.coro.call_args_list[1] == \
-            mock.call('test_items_map', {1: b'b', 2: b'c', 3: b'd'})
+            mock.call('test_items_map', {1: 'b', 2: 'c', 3: 'd'})
 
     async def test_if_update_builds_length_correctly(self, indices_map_removed_item, session):
         await indices_map_removed_item.update(session)
@@ -185,6 +187,7 @@ def indices_map_removed_and_added_item_in_freed_index(indices_map):
     return indices_map
 
 
+@mock.patch('myreco.engines.cores.items_indices_map.dict', new=OrderedDict)
 class TestItemsIndicesMapWithItemRemovedAndAddedInFreedIndex(object):
 
     async def test_if_update_builds_items_indices_map_correctly(self, indices_map_removed_and_added_item_in_freed_index, session):
@@ -195,7 +198,7 @@ class TestItemsIndicesMapWithItemRemovedAndAddedInFreedIndex(object):
     async def test_if_update_builds_indices_items_map_correctly(self, indices_map_removed_and_added_item_in_freed_index, session):
         await indices_map_removed_and_added_item_in_freed_index.update(session)
         assert session.redis_bind.hmset_dict.coro.call_args_list[1] == \
-            mock.call('test_items_map', {0: b'e', 1: b'b', 2: b'c', 3: b'd'})
+            mock.call('test_items_map', {0: b'e', 1: 'b', 2: 'c', 3: 'd'})
 
     async def test_if_update_builds_length_correctly(self, indices_map_removed_and_added_item_in_freed_index, session):
         await indices_map_removed_and_added_item_in_freed_index.update(session)
@@ -218,6 +221,7 @@ def indices_map_removed_and_added_two_items(indices_map):
     return indices_map
 
 
+@mock.patch('myreco.engines.cores.items_indices_map.dict', new=OrderedDict)
 class TestItemsIndicesMapWithItemRemovedAndAddedTwoItems(object):
 
     async def test_if_update_builds_items_indices_map_correctly(self, indices_map_removed_and_added_two_items, session):
@@ -228,7 +232,7 @@ class TestItemsIndicesMapWithItemRemovedAndAddedTwoItems(object):
     async def test_if_update_builds_indices_items_map_correctly(self, indices_map_removed_and_added_two_items, session):
         await indices_map_removed_and_added_two_items.update(session)
         assert session.redis_bind.hmset_dict.coro.call_args_list[1] == \
-            mock.call('test_items_map', {0: b'e', 1: b'b', 2: b'c', 3: b'd', 4: b'f'})
+            mock.call('test_items_map', {0: b'e', 1: 'b', 2: 'c', 3: 'd', 4: b'f'})
 
     async def test_if_update_builds_length_correctly(self, indices_map_removed_and_added_two_items, session):
         await indices_map_removed_and_added_two_items.update(session)
@@ -256,6 +260,7 @@ def indices_map_free_indices(indices_map):
     return indices_map
 
 
+@mock.patch('myreco.engines.cores.items_indices_map.dict', new=OrderedDict)
 class TestItemsIndicesMapFreeIndices(object):
 
     async def test_if_update_builds_items_indices_map_correctly(self, indices_map_free_indices, session):
@@ -266,7 +271,7 @@ class TestItemsIndicesMapFreeIndices(object):
     async def test_if_update_builds_indices_items_map_correctly(self, indices_map_free_indices, session):
         await indices_map_free_indices.update(session)
         assert session.redis_bind.hmset_dict.coro.call_args_list[1] == \
-            mock.call('test_items_map', {0: b'e', 1: b'b', 2: b'f', 3: b'g', 4: b'h', 5: b'i'})
+            mock.call('test_items_map', {0: b'e', 1: 'b', 2: b'f', 3: b'g', 4: b'h', 5: b'i'})
 
     async def test_if_update_builds_length_correctly(self, indices_map_free_indices, session):
         await indices_map_free_indices.update(session)

@@ -30,7 +30,7 @@ class ItemsIndicesDict(dict):
     def __len__(self):
         values = self.values()
         if values:
-            return max(self.values())
+            return max(self.values())+1
         else:
             return 0
 
@@ -51,7 +51,7 @@ class ItemsIndicesMap(object):
 
     async def get_all(self, session):
         items_indices_map = await session.redis_bind.hgetall(self.key)
-        items_indices_map = {k: int(v.decode()) for k, v in items_indices_map.items()}
+        items_indices_map = dict([(k, int(v.decode())) for k, v in items_indices_map.items()])
         return ItemsIndicesDict(items_indices_map, self.items_model)
 
     async def get_indices_items_map(self, session):
@@ -59,8 +59,8 @@ class ItemsIndicesMap(object):
         return {int(k): v.decode() for k, v in map_.items()}
 
     async def update(self, session):
-        items_indices_map = await session.redis_bind.hgetall(self.key)
-        indices_items_map = await session.redis_bind.hgetall(self.indices_items_key)
+        items_indices_map = await self.get_all(session)
+        indices_items_map = await self.get_indices_items_map(session)
 
         items = await self.items_model.get_all(session)
         items_keys = self._build_keys(items)
@@ -79,11 +79,7 @@ class ItemsIndicesMap(object):
             items_indices_map[key] = index
             indices_items_map[index] = key
 
-        if indices_items_map:
-            iterable = (int(v) for v in items_indices_map.values())
-            counter = max(iterable)+1
-        else:
-            counter = 0
+        counter = len(items_indices_map)
 
         for key in new_keys[free_indices_length:]:
             items_indices_map[key] = counter
@@ -97,8 +93,7 @@ class ItemsIndicesMap(object):
         if items_indices_map:
             await session.redis_bind.hmset_dict(self.key, items_indices_map)
             await session.redis_bind.hmset_dict(self.indices_items_key, indices_items_map)
-            length = max([int(i) for i in items_indices_map.values()])+1
-            await session.redis_bind.set(self.length_key, length)
+            await session.redis_bind.set(self.length_key, len(items_indices_map))
 
         return self._format_output(await self.get_all(session))
 

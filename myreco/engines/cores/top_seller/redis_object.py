@@ -55,7 +55,7 @@ class TopSellerRedisObject(RedisObjectBase):
         if not indices_values_map:
             raise EngineError(error_message)
 
-        vector = np.zeros(max(indices_values_map.keys())+1, dtype=np.int32)
+        vector = np.zeros(len(items_indices_map_dict), dtype=np.int32)
         indices = np.array(list(indices_values_map.keys()), dtype=np.int32)
         vector[indices] = np.array(list(indices_values_map.values()), dtype=np.int32)
         self.numpy_array = vector
@@ -65,7 +65,7 @@ class TopSellerRedisObject(RedisObjectBase):
             line = ujson.loads(line)
             index = items_indices_map_dict.get(line['item_key'])
             if index is not None:
-                indices_values_map[int(index)] = int(line['value'])
+                indices_values_map[index] = int(line['value'])
 
     async def get_numpy_array(self, session):
         rec_vector = await session.redis_bind.get(self._redis_key)

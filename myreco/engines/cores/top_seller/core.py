@@ -47,7 +47,7 @@ class TopSellerEngineCore(EngineCoreObjectsExporter, EngineCoreRecommender):
         )
 
         items_indices_map_dict = self._run_coro(
-            self._items_indices_map.get_all(session),
+            self._get_items_indices_map_dict(session),
             session.loop
         )
 

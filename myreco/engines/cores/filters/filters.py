@@ -207,6 +207,9 @@ class IndexFilterOf(FilterBaseBy):
             self._filter_by_indices(rec_vector, indices)
 
     def _filter_by_indices(self, rec_vector, indices):
+        if max(indices) >= len(rec_vector):
+            indices = np.where(indices < len(rec_vector))
+
         if not self.is_inclusive:
             rec_vector[indices] = 0
         else:
