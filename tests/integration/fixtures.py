@@ -103,16 +103,16 @@ class EngineCoreTestWithVars(EngineCoreTest):
 
 
 class ProductsImportProcessor(object):
-    test = 1
 
-    @classmethod
-    def pre_execute(cls, prod):
+    def __init__(self):
+        self.test = 1
+
+    def pre_execute(self, prod):
         v = prod.get('filter_integer')
         if v is not None:
-            prod['filter_pre_processing'] = v + cls.test
+            prod['filter_pre_processing'] = v + self.test
 
-    @classmethod
-    def execute(cls, prods, status):
+    def execute(self, prods, status):
         for prod in prods:
             v = prod.get('filter_integer')
             if v is not None:

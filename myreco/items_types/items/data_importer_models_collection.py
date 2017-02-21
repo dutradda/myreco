@@ -158,7 +158,7 @@ class ItemsModelsCollectionDataImporter(ItemsModelsCollection):
     def _get_import_processor(self):
         import_processor = self.__item_type__['import_processor']
         if import_processor is not None:
-            return ModuleObjectLoader.load(import_processor)
+            return ModuleObjectLoader.load(import_processor)()
 
     async def _pre_processing_import(self, feed, items_model, import_processor):
         warning_message = "Invalid line for model '{}': ".format(items_model.__key__) + '{}'
