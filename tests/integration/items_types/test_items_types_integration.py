@@ -80,7 +80,7 @@ class TestItemsTypesModelPost(object):
                     'name': {'type': 'string'},
                     'stores': {'$ref': '#/definitions/ItemsTypesModel.stores'},
                     'schema': {'$ref': '#/definitions/ItemsTypesModel.items'},
-                    'post_processing_import': {'$ref': '#/definitions/ItemsTypesModel.post_processing_import'}
+                    'import_processor': {'$ref': '#/definitions/ItemsTypesModel.import_processor'}
                 }
             }
         }
@@ -105,7 +105,7 @@ class TestItemsTypesModelPost(object):
             'id': 1,
             'name': 'test'
         }]
-        body[0]['post_processing_import'] = None
+        body[0]['import_processor'] = None
 
         assert resp.status == 201
         assert await resp.json() ==  body
@@ -213,7 +213,7 @@ class TestItemsTypesModelGet(object):
             'id': 1,
             'name': 'test'
         }]
-        body[0]['post_processing_import'] = None
+        body[0]['import_processor'] = None
 
         resp = await client.get('/items_types/?stores=id:1', headers=headers_without_content_type)
         assert resp.status == 200
@@ -243,7 +243,7 @@ class TestItemsTypesModelUriTemplatePatch(object):
                     'name': {'type': 'string'},
                     'stores': {'$ref': '#/definitions/ItemsTypesModel.stores'},
                     'schema': {'$ref': '#/definitions/ItemsTypesModel.items'},
-                    'post_processing_import': {'$ref': '#/definitions/ItemsTypesModel.post_processing_import'}
+                    'import_processor': {'$ref': '#/definitions/ItemsTypesModel.import_processor'}
                 }
             }
         }
@@ -336,7 +336,7 @@ class TestItemsTypesModelUriTemplateGet(object):
             'id': 1,
             'name': 'test'
         }]
-        body[0]['post_processing_import'] = None
+        body[0]['import_processor'] = None
 
         assert resp.status == 200
         assert await resp.json() == body[0]

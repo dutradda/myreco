@@ -114,9 +114,9 @@ def init_db(models, session, api, temp_dir):
     item_type = {
         'name': 'products_new',
         'stores': [{'id': 1}],
-        'post_processing_import': {
+        'import_processor': {
             'path': 'tests.integration.fixtures',
-            'object_name': 'PostProcessingProduct'
+            'object_name': 'ProductsImportProcessor'
         },
         'schema': {
             'type': 'object',
@@ -125,6 +125,7 @@ def init_db(models, session, api, temp_dir):
                 'filter_string': {'type': 'string'},
                 'filter_integer': {'type': 'integer'},
                 'filter_boolean': {'type': 'boolean'},
+                'filter_pre_processing': {'type': 'integer'},
                 'filter_post_processing': {'type': 'integer'},
                 'filter_array': {
                     'type': 'array',
@@ -541,7 +542,7 @@ class TestPlacementsModelPost(object):
                         'id': 1,
                         'item_type': {
                             'id': 1,
-                            'post_processing_import': None,
+                            'import_processor': None,
                             'stores': [{
                                 'configuration': {'data_path': temp_dir.name},
                                 'country': 'test',
@@ -715,7 +716,7 @@ class TestPlacementsModelGet(object):
                         'id': 1,
                         'item_type': {
                             'id': 1,
-                            'post_processing_import': None,
+                            'import_processor': None,
                             'stores': [{
                                 'configuration': {'data_path': temp_dir.name},
                                 'country': 'test',
@@ -978,7 +979,7 @@ class TestPlacementsModelUriTemplateGet(object):
                         'id': 1,
                         'item_type': {
                             'id': 1,
-                            'post_processing_import': None,
+                            'import_processor': None,
                             'stores': [{
                                 'configuration': {'data_path': temp_dir.name},
                                 'country': 'test',
@@ -2037,8 +2038,8 @@ class TestPlacementsGetRecomendationsFilters(object):
         resp = await client.get('/placements/{}/recommendations?filter_post_processing_inclusive=1'.format(obj['small_hash']), headers=headers_without_content_type)
         assert resp.status == 200
         assert (await resp.json())['slots'][0]['recommendations'] == [
-            {'sku': 'test1', 'item_id': 1, 'filter_integer': 1, 'filter_post_processing': 1},
-            {'sku': 'test2', 'item_id': 2, 'filter_integer': 1, 'filter_post_processing': 1}
+            {'sku': 'test1', 'item_id': 1, 'filter_integer': 1, 'filter_post_processing': 1, 'filter_pre_processing': 2},
+            {'sku': 'test2', 'item_id': 2, 'filter_integer': 1, 'filter_post_processing': 1, 'filter_pre_processing': 2}
         ]
 
     async def test_get_recommendations_by_post_processing_exclusive(self, init_db, client, headers, monkeypatch, headers_without_content_type):

@@ -91,7 +91,7 @@
                 "name": {"type": "string"},
                 "schema": {"$ref": "#/definitions/items"},
                 "stores": {"$ref": "#/definitions/stores"},
-                "post_processing_import": {"$ref": "#/definitions/post_processing_import"}
+                "import_processor": {"$ref": "#/definitions/import_processor"}
             }
         },
         "schema_array": {
@@ -105,7 +105,7 @@
                     "name": {"type": "string"},
                     "schema": {"$ref": "#/definitions/items"},
                     "stores": {"$ref": "#/definitions/stores"},
-                    "post_processing_import": {"$ref": "#/definitions/post_processing_import"}
+                    "import_processor": {"$ref": "#/definitions/import_processor"}
                 }
             }
         },
@@ -132,7 +132,7 @@
                 "properties": {"$ref": "items/items_metaschema.json#/definitions/baseObject/properties/properties"}
             }
         },
-        "post_processing_import": {
+        "import_processor": {
             "type": "object",
             "required": ["path", "object_name"],
             "properties": {

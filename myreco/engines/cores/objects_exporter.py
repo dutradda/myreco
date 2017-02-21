@@ -22,6 +22,7 @@
 
 
 from myreco.engines.cores.base import EngineCoreBase
+from myreco.engines.exceptions import EngineError
 from abc import abstractmethod
 from glob import glob
 from aiofiles import gzip_open

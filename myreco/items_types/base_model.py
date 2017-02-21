@@ -45,19 +45,19 @@ class ItemsTypesModelBase(AbstractConcreteBase):
     id = sa.Column(sa.Integer, primary_key=True)
     name = sa.Column(sa.String(255), unique=True, nullable=False)
     schema_json = sa.Column(sa.Text, nullable=False)
-    post_processing_import_json = sa.Column(sa.Text)
+    import_processor_json = sa.Column(sa.Text)
 
     @declared_attr
     def stores(cls):
         return sa.orm.relationship('StoresModel', uselist=True, secondary='items_types_stores')
 
     @property
-    def post_processing_import(self):
-        if not hasattr(self, '_post_processing_import'):
-            self._post_processing_import = \
-                ujson.loads(self.post_processing_import_json) if self.post_processing_import_json \
+    def import_processor(self):
+        if not hasattr(self, '_import_processor'):
+            self._import_processor = \
+                ujson.loads(self.import_processor_json) if self.import_processor_json \
                     is not None else None
-        return self._post_processing_import
+        return self._import_processor
 
     async def _setattr(self, attr_name, value, session, input_):
         if attr_name == 'schema':
@@ -65,9 +65,9 @@ class ItemsTypesModelBase(AbstractConcreteBase):
             value = ujson.dumps(value)
             attr_name = 'schema_json'
 
-        if attr_name == 'post_processing_import':
+        if attr_name == 'import_processor':
             value = ujson.dumps(value)
-            attr_name = 'post_processing_import_json'
+            attr_name = 'import_processor_json'
 
         await super()._setattr(attr_name, value, session, input_)
 
@@ -91,9 +91,9 @@ class ItemsTypesModelBase(AbstractConcreteBase):
                     [{'name': name, 'schema': schema_properties[name]} \
                         for name in schema_properties_names]
 
-        if todict_schema.get('post_processing_import') is not False:
-            dict_inst.pop('post_processing_import_json')
-            dict_inst['post_processing_import'] = self.post_processing_import
+        if todict_schema.get('import_processor') is not False:
+            dict_inst.pop('import_processor_json')
+            dict_inst['import_processor'] = self.import_processor
 
     @classmethod
     async def build_all_items_models_collections(cls, session):

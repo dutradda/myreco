@@ -149,7 +149,7 @@ class TestEnginesModelPost(object):
         }
         body[0]['item_type'] = {
             'id': 1,
-            'post_processing_import': None,
+            'import_processor': None,
             'stores': [{
                 'configuration': {'data_path': init_db},
                 'country': 'test',
@@ -206,7 +206,7 @@ class TestEnginesModelGet(object):
         }
         body[0]['item_type'] = {
             'id': 1,
-            'post_processing_import': None,
+            'import_processor': None,
             'stores': [{
                 'configuration': {'data_path': init_db},
                 'country': 'test',
@@ -359,7 +359,7 @@ class TestEnginesModelUriTemplateGet(object):
         }
         body[0]['item_type'] = {
             'id': 1,
-            'post_processing_import': None,
+            'import_processor': None,
             'stores': [{
                 'configuration': {'data_path': init_db},
                 'country': 'test',
