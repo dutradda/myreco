@@ -47,26 +47,28 @@ class ItemsModelsCollection(JobsModel):
         return self.get_model(build_item_key(self.__item_type__['name'], store_id))
 
     async def _set_stock_filter(self, session, items_model):
-        items_indices_map = await ItemsIndicesMap(items_model).get_all(session)
+        items_indices_map = ItemsIndicesMap(items_model)
+        items_indices_map_dict = await items_indices_map.get_all(session)
+        items_indices_map_len = await items_indices_map.get_length(session)
 
-        if items_indices_map.values():
+        if items_indices_map_dict.values():
             items_keys = set(await session.redis_bind.hkeys(items_model.__key__))
-            items_indices_keys = set(items_indices_map.keys())
+            items_indices_keys = set(items_indices_map_dict.keys())
             remaining_keys = items_indices_keys.intersection(items_keys)
             old_keys = items_indices_keys.difference(items_keys)
 
             items = []
-            self._set_stock_item(remaining_keys, items_model, items_indices_map, True, items)
-            self._set_stock_item(old_keys, items_model, items_indices_map, False, items)
+            self._set_stock_item(remaining_keys, items_model, items_indices_map_dict, True, items)
+            self._set_stock_item(old_keys, items_model, items_indices_map_dict, False, items)
 
             stock_filter = BooleanFilterBy(items_model, 'stock')
-            await stock_filter.update(session, items)
+            await stock_filter.update(session, items, items_indices_map_len)
 
-    def _set_stock_item(self, keys, items_model, items_indices_map, value, items):
+    def _set_stock_item(self, keys, items_model, items_indices_map_dict, value, items):
         for key in keys:
             item = {}
             items_model.set_instance_ids(item, key)
-            item.update({'stock': value, 'index': int(items_indices_map[key])})
+            item.update({'stock': value, 'index': int(items_indices_map_dict[key])})
             items.append(item)
 
     async def swagger_update_many(self, req, session):

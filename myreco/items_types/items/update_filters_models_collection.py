@@ -37,6 +37,7 @@ class ItemsModelsCollectionFiltersUpdater(ItemsModelsCollectionDataImporter):
 
         items_indices_map = ItemsIndicesMap(items_model)
         items_indices_map_ret = await items_indices_map.update(session)
+        items_indices_map_len = await items_indices_map.get_length(session)
 
         filters_factory = FiltersFactory()
         enabled_filters = await self._get_enabled_filters(session, store_id)
@@ -46,11 +47,11 @@ class ItemsModelsCollectionFiltersUpdater(ItemsModelsCollectionDataImporter):
             session, items_model, items_indices_map_dict)
 
         stock_filter = BooleanFilterBy(items_model, 'stock')
-        await stock_filter.update(session, items)
+        await stock_filter.update(session, items, items_indices_map_len)
 
         for slot_var, schema in enabled_filters:
             filter_ = filters_factory.make(items_model, slot_var, schema, slot_var['skip_values'])
-            filters_ret[filter_.name] = await filter_.update(session, items)
+            filters_ret[filter_.name] = await filter_.update(session, items, items_indices_map_len)
 
         self._logger.info("Finished update filters for '{}'".format(items_model.__key__))
         return {'items_indices_map': items_indices_map_ret, 'filters': filters_ret}
