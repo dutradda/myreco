@@ -87,7 +87,7 @@ class ItemsModelsCollection(JobsModel):
 
         req = SwaggerRequest(
             req.url, req.method,
-            path_params=list(req.path_params.values())[0],
+            path_params=req.path_params['item_key'],
             query=req.query,
             headers=req.headers,
             body=req.body,
