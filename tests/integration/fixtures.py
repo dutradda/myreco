@@ -96,10 +96,10 @@ class EngineCoreTestWithVars(EngineCoreTest):
             raise ValidationError(message.format('aggregators_ids_name'),
                 instance=self.engine['configuration'], schema=item_type_schema_props)
 
-    async def _build_rec_vector(self):
+    async def _build_items_vector(self):
         pass
 
-    get_recommendations = CoroMock()
+    get_items = CoroMock()
 
 
 class ProductsImportProcessor(object):

@@ -171,9 +171,9 @@ class TestSlotsModelPost(object):
             'schema': {
                 'type': 'object',
                 'additionalProperties': False,
-                'required': ['engine_id', 'store_id', 'slot_variables', 'max_recos', 'name'],
+                'required': ['engine_id', 'store_id', 'slot_variables', 'max_items', 'name'],
                 'properties': {
-                    'max_recos': {'type': 'integer'},
+                    'max_items': {'type': 'integer'},
                     'name': {'type': 'string'},
                     'store_id': {'type': 'integer'},
                     'engine_id': {'type': 'integer'},
@@ -186,7 +186,7 @@ class TestSlotsModelPost(object):
    async def test_post_with_invalid_variable_engine(self, init_db, client, headers, headers_without_content_type):
         client = await client
         body = [{
-            'max_recos': 10,
+            'max_items': 10,
             'name': 'test',
             'store_id': 1,
             'engine_id': 1,
@@ -202,7 +202,7 @@ class TestSlotsModelPost(object):
         assert await resp.json() ==  {
             'message': "Invalid engine variable with 'inside_engine_name' value 'test'",
             'instance': [{
-                'max_recos': 10,
+                'max_items': 10,
                 'name': 'test',
                 'engine_id': 1,
                 'store_id': 1,
@@ -227,7 +227,7 @@ class TestSlotsModelPost(object):
    async def test_post_with_invalid_filter(self, init_db, client, headers, headers_without_content_type):
         client = await client
         body = [{
-            'max_recos': 10,
+            'max_items': 10,
             'name': 'test',
             'store_id': 1,
             'engine_id': 1,
@@ -246,7 +246,7 @@ class TestSlotsModelPost(object):
         assert await resp.json() ==  {
             'message': "Invalid filter with 'inside_engine_name' value 'test'",
             'instance': [{
-                'max_recos': 10,
+                'max_items': 10,
                 'name': 'test',
                 'engine_id': 1,
                 'store_id': 1,
@@ -274,7 +274,7 @@ class TestSlotsModelPost(object):
    async def test_post_with_invalid_filter_missing_properties(self, init_db, client, headers, headers_without_content_type):
         client = await client
         body = [{
-            'max_recos': 10,
+            'max_items': 10,
             'name': 'test',
             'store_id': 1,
             'engine_id': 1,
@@ -293,7 +293,7 @@ class TestSlotsModelPost(object):
             'message': "When 'is_filter' is 'true' the properties "\
             "'is_inclusive_filter' and 'filter_type' must be setted",
             'instance': [{
-                'max_recos': 10,
+                'max_items': 10,
                 'name': 'test',
                 'engine_id': 1,
                 'store_id': 1,
@@ -311,7 +311,7 @@ class TestSlotsModelPost(object):
    async def test_post_with_insert_engine_variable_engine_var(self, init_db, client, headers, headers_without_content_type):
         client = await client
         body = [{
-            'max_recos': 10,
+            'max_items': 10,
             'name': 'test',
             'store_id': 1,
             'engine_id': 1,
@@ -326,7 +326,7 @@ class TestSlotsModelPost(object):
 
         assert resp.status == 201
         assert await resp.json() == [{
-            'max_recos': 10,
+            'max_items': 10,
             'name': 'test',
             'fallbacks': [],
             'id': 1,
@@ -415,7 +415,7 @@ class TestSlotsModelPost(object):
    async def test_post_with_insert_engine_variable_engine_filter(self, init_db, client, headers, headers_without_content_type):
         client = await client
         body = [{
-            'max_recos': 10,
+            'max_items': 10,
             'name': 'test',
             'store_id': 1,
             'engine_id': 1,
@@ -435,7 +435,7 @@ class TestSlotsModelPost(object):
         assert await resp.json() == [{
             'fallbacks': [],
             'id': 1,
-            'max_recos': 10,
+            'max_items': 10,
             'name': 'test',
             'slot_variables': [
                 {
@@ -522,7 +522,7 @@ class TestSlotsModelPost(object):
    async def test_post_with_fallback(self, init_db, client, headers, headers_without_content_type):
         client = await client
         body = [{
-            'max_recos': 10,
+            'max_items': 10,
             'name': 'test',
             'store_id': 1,
             'engine_id': 1,
@@ -536,7 +536,7 @@ class TestSlotsModelPost(object):
         await client.post('/slots/', headers=headers, data=ujson.dumps(body))
 
         body = [{
-            'max_recos': 10,
+            'max_items': 10,
             'name': 'test',
             'store_id': 1,
             'engine_id': 1,
@@ -553,7 +553,7 @@ class TestSlotsModelPost(object):
         assert resp.status == 201
         assert await resp.json() == [{
             'fallbacks': [{
-                'max_recos': 10,
+                'max_items': 10,
                 'name': 'test',
                 'id': 1,
                 'slot_variables': [
@@ -638,7 +638,7 @@ class TestSlotsModelPost(object):
                 'engine_id': 1
             }],
             'id': 2,
-            'max_recos': 10,
+            'max_items': 10,
             'name': 'test',
             'slot_variables': [
                 {
@@ -725,7 +725,7 @@ class TestSlotsModelPost(object):
    async def test_post_with_invalid_grant(self, client):
         client = await client
         body = [{
-            'max_recos': 10,
+            'max_items': 10,
             'name': 'test',
             'store_id': 1,
             'engine_id': 1,
@@ -757,7 +757,7 @@ class TestSlotsModelGet(object):
    async def test_get(self, init_db, client, headers, headers_without_content_type):
         client = await client
         body = [{
-            'max_recos': 10,
+            'max_items': 10,
             'name': 'test',
             'store_id': 1,
             'engine_id': 1,
@@ -775,7 +775,7 @@ class TestSlotsModelGet(object):
         assert await resp.json() ==  [{
             'fallbacks': [],
             'id': 1,
-            'max_recos': 10,
+            'max_items': 10,
             'name': 'test',
             'slot_variables': [
                 {
@@ -877,7 +877,7 @@ class TestSlotsModelUriTemplatePatch(object):
                 'additionalProperties': False,
                 'minProperties': 1,
                 'properties': {
-                    'max_recos': {
+                    'max_items': {
                         'type': 'integer'
                     },
                     'name': {
@@ -905,7 +905,7 @@ class TestSlotsModelUriTemplatePatch(object):
    async def test_patch_with_invalid_engine_variable(self, init_db, client, headers, headers_without_content_type):
         client = await client
         body = [{
-            'max_recos': 10,
+            'max_items': 10,
             'name': 'test',
             'store_id': 1,
             'engine_id': 1,
@@ -950,7 +950,7 @@ class TestSlotsModelUriTemplatePatch(object):
    async def test_patch_with_invalid_fallback_id(self, init_db, client, headers, headers_without_content_type):
         client = await client
         body = [{
-            'max_recos': 10,
+            'max_items': 10,
             'name': 'test',
             'store_id': 1,
             'engine_id': 1,
@@ -976,7 +976,7 @@ class TestSlotsModelUriTemplatePatch(object):
    async def test_patch_with_invalid_fallback_item_type(self, init_db, client, headers, headers_without_content_type):
         client = await client
         body = [{
-            'max_recos': 10,
+            'max_items': 10,
             'name': 'test',
             'store_id': 1,
             'engine_id': 1,
@@ -987,7 +987,7 @@ class TestSlotsModelUriTemplatePatch(object):
                 'inside_engine_name': 'filter_test'
             }]
         },{
-            'max_recos': 10,
+            'max_items': 10,
             'name': 'test',
             'store_id': 1,
             'engine_id': 2,
@@ -1022,7 +1022,7 @@ class TestSlotsModelUriTemplatePatch(object):
    async def test_patch_valid(self, init_db, client, headers, headers_without_content_type):
         client = await client
         body = [{
-            'max_recos': 10,
+            'max_items': 10,
             'name': 'test',
             'store_id': 1,
             'engine_id': 1,
@@ -1049,7 +1049,7 @@ class TestSlotsModelUriTemplatePatch(object):
         assert await resp.json() ==  {
             'fallbacks': [],
             'id': 1,
-            'max_recos': 10,
+            'max_items': 10,
             'name': 'test',
             'slot_variables': [
                 {
@@ -1145,7 +1145,7 @@ class TestSlotsModelUriTemplateDelete(object):
    async def test_delete(self, init_db, client, headers, headers_without_content_type):
         client = await client
         body = [{
-            'max_recos': 10,
+            'max_items': 10,
             'name': 'test',
             'store_id': 1,
             'engine_id': 1,
@@ -1183,7 +1183,7 @@ class TestSlotsModelUriTemplateGet(object):
    async def test_get(self, init_db, client, headers, headers_without_content_type):
         client = await client
         body = [{
-            'max_recos': 10,
+            'max_items': 10,
             'name': 'test',
             'store_id': 1,
             'engine_id': 1,
@@ -1202,7 +1202,7 @@ class TestSlotsModelUriTemplateGet(object):
         assert await resp.json() == {
             'fallbacks': [],
             'id': 1,
-            'max_recos': 10,
+            'max_items': 10,
             'name': 'test',
             'slot_variables': [
                 {

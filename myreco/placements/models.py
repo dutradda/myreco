@@ -42,7 +42,7 @@ class PlacementsModelBase(AbstractConcreteBase):
     name = sa.Column(sa.String(255), nullable=False)
     ab_testing = sa.Column(sa.Boolean, default=False)
     show_details = sa.Column(sa.Boolean, default=True)
-    distribute_recos = sa.Column(sa.Boolean, default=False)
+    distribute_items = sa.Column(sa.Boolean, default=False)
 
     @declared_attr
     def store_id(cls):
@@ -69,7 +69,7 @@ class PlacementsModelBase(AbstractConcreteBase):
         super().__setattr__(name, value)
 
     @classmethod
-    async def get_recommendations(cls, req, session):
+    async def get_items(cls, req, session):
         placement = await cls._get_placement(req, session)
         if placement is None:
             return cls._build_recos_response(None)
@@ -77,7 +77,7 @@ class PlacementsModelBase(AbstractConcreteBase):
         explict_fallbacks = req.query.pop('explict_fallbacks', False)
         input_variables = req.query
         show_details = req.query.pop('show_details', placement.get('show_details'))
-        distribute_recos = placement.get('distribute_recos')
+        distribute_items = placement.get('distribute_items')
         recos = slots = []
         recos_key = 'slots'
 
@@ -89,7 +89,7 @@ class PlacementsModelBase(AbstractConcreteBase):
             await cls._get_fallbacks_recos(slot_recos, slot, input_variables, session, show_details)
 
             slot = {'name': slot['name'], 'item_type': slot['engine']['item_type']['name']}
-            slot['recommendations'] = slot_recos
+            slot['items'] = slot_recos
             if slot_recos['main'] or slot_recos['fallbacks']:
                 slots.append(slot)
 
@@ -98,12 +98,12 @@ class PlacementsModelBase(AbstractConcreteBase):
 
         if not explict_fallbacks:
             for slot in slots:
-                slot['recommendations'] = cls._get_all_slot_recos(slot['recommendations'])
+                slot['items'] = cls._get_all_slot_recos(slot['items'])
 
-            if distribute_recos:
-                recos_key = 'distributed_recommendations'
+            if distribute_items:
+                recos_key = 'distributed_items'
                 recos = cls._get_all_recos_from_slots(slots)
-                recos = cls._distribute_recos(recos)
+                recos = cls._distribute_items(recos)
 
         placement = {'name': placement['name'], 'small_hash': placement['small_hash']}
         placement[recos_key] = recos
@@ -121,7 +121,7 @@ class PlacementsModelBase(AbstractConcreteBase):
         return placements[0]
 
     @classmethod
-    async def _get_recos_by_slot(cls, slot, input_variables, session, show_details, max_recos=None):
+    async def _get_recos_by_slot(cls, slot, input_variables, session, show_details, max_items=None):
         try:
             engine = slot['engine']
             items_model = get_items_model(engine)
@@ -129,10 +129,10 @@ class PlacementsModelBase(AbstractConcreteBase):
                 cls._get_variables_and_filters(slot, items_model, input_variables)
             core_config = engine['core']['configuration']['core_module']
             core_instance = ModuleObjectLoader.load(core_config)(engine, items_model)
-            max_recos = slot['max_recos'] if max_recos is None else max_recos
+            max_items = slot['max_items'] if max_items is None else max_items
 
-            return await core_instance.get_recommendations(
-                session, filters, max_recos, show_details, **engine_vars)
+            return await core_instance.get_items(
+                session, filters, max_items, show_details, **engine_vars)
         except Exception as error:
             cls._logger.debug('Slot:\n' + ujson.dumps(slot, indent=4))
             cls._logger.debug('Input Variables:\n' + ujson.dumps(input_variables, indent=4))
@@ -192,16 +192,16 @@ class PlacementsModelBase(AbstractConcreteBase):
 
     @classmethod
     async def _get_fallbacks_recos(cls, slot_recos, slot, input_variables, session, show_details):
-        if len(slot_recos['main']) != slot['max_recos']:
+        if len(slot_recos['main']) != slot['max_items']:
             for fallback in slot['fallbacks']:
                 fallbacks_recos_size = \
                     sum([len(fallback) for fallback in slot_recos['fallbacks']])
-                max_recos = slot['max_recos'] - len(slot_recos['main']) - fallbacks_recos_size
-                if max_recos == 0:
+                max_items = slot['max_items'] - len(slot_recos['main']) - fallbacks_recos_size
+                if max_items == 0:
                     break
 
                 fallback_recos = await cls._get_recos_by_slot(
-                    fallback, input_variables, session, show_details, max_recos)
+                    fallback, input_variables, session, show_details, max_items)
                 all_recos = cls._get_all_slot_recos(slot_recos)
                 fallback_recos = cls._unique_recos(fallback_recos, all_recos)
                 slot_recos['fallbacks'].append(fallback_recos)
@@ -216,14 +216,14 @@ class PlacementsModelBase(AbstractConcreteBase):
     def _get_all_recos_from_slots(cls, slots):
         recos = []
         for slot in slots:
-            for reco in slot['recommendations']:
+            for reco in slot['items']:
                 reco['type'] = slot['item_type']
 
-            recos.append(slot['recommendations'])
+            recos.append(slot['items'])
         return recos
 
     @classmethod
-    def _distribute_recos(cls, recos_list, random=True):
+    def _distribute_items(cls, recos_list, random=True):
         total_length = sum([len(recos) for recos in recos_list])
         total_items = []
         initial_pos = 0

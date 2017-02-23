@@ -33,23 +33,23 @@ class EngineCoreRecommender(EngineCoreBase):
     def get_variables(self):
         return []
 
-    async def get_recommendations(self, session, filters, max_recos, show_details, **variables):
-        rec_vector = await self._build_rec_vector(session, **variables)
+    async def get_items(self, session, filters, max_items, show_details, **variables):
+        items_vector = await self._build_items_vector(session, **variables)
 
-        if rec_vector is not None:
+        if items_vector is not None:
             for filter_, ids in filters.items():
-                await filter_.filter(session, rec_vector, ids)
+                await filter_.filter(session, items_vector, ids)
 
-            return await self._build_rec_list(session, rec_vector, max_recos, show_details)
+            return await self._build_rec_list(session, items_vector, max_items, show_details)
 
         return []
 
     @abstractmethod
-    async def _build_rec_vector(self, session, **variables):
+    async def _build_items_vector(self, session, **variables):
         pass
 
-    async def _build_rec_list(self, session, rec_vector, max_recos, show_details):
-        best_indices = self._get_best_indices(rec_vector, max_recos)
+    async def _build_rec_list(self, session, items_vector, max_items, show_details):
+        best_indices = self._get_best_indices(items_vector, max_items)
         best_items_keys = await self._items_indices_map.get_items(best_indices, session)
 
         if show_details and best_items_keys:
@@ -65,12 +65,12 @@ class EngineCoreRecommender(EngineCoreBase):
 
             return items_ids
 
-    def _get_best_indices(self, rec_vector, max_recos):
-        if max_recos > rec_vector.size:
-            max_recos = rec_vector.size
+    def _get_best_indices(self, items_vector, max_items):
+        if max_items > items_vector.size:
+            max_items = items_vector.size
 
-        best_indices = argpartition(-rec_vector, max_recos-1)[:max_recos]
-        best_values = rec_vector[best_indices]
+        best_indices = argpartition(-items_vector, max_items-1)[:max_items]
+        best_values = items_vector[best_indices]
         return [int(i) for i, v in
             sorted(zip(best_indices, best_values), key=lambda x: x[1], reverse=True) if v > 0.0]
 

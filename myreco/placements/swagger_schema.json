@@ -74,7 +74,7 @@
             "responses": {"200": {"description": "Got"}}
         }
     },
-    "/placements/{small_hash}/recommendations": {
+    "/placements/{small_hash}/items": {
         "parameters": [{
             "name": "small_hash",
             "in": "path",
@@ -91,7 +91,7 @@
                 "in": "query",
                 "type": "boolean"
             }],
-            "operationId": "get_recommendations",
+            "operationId": "get_items",
             "responses": {"200": {"description": "Got"}}
         }
     },
@@ -105,7 +105,7 @@
                 "name": {"type": "string"},
                 "ab_testing": {"type": "boolean"},
                 "show_details": {"type": "boolean"},
-                "distribute_recos": {"type": "boolean"},
+                "distribute_items": {"type": "boolean"},
                 "variations": {"$ref": "#/definitions/variations"}
             }
         },
@@ -121,7 +121,7 @@
                     "name": {"type": "string"},
                     "ab_testing": {"type": "boolean"},
                     "show_details": {"type": "boolean"},
-                    "distribute_recos": {"type": "boolean"},
+                    "distribute_items": {"type": "boolean"},
                     "variations": {"$ref": "#/definitions/variations"}
                 }
             }

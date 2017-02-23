@@ -699,7 +699,7 @@ def update_filters_init_db(models, session, api, monkeypatch):
     session.loop.run_until_complete(models['variables'].insert(session, {'name': 'test', 'store_id': 1}))
 
     slot = {
-        'max_recos': 10,
+        'max_items': 10,
         'name': 'test',
         'store_id': 1,
         'engine_id': 1,

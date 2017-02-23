@@ -35,7 +35,7 @@ class TopSellerEngineCore(EngineCoreObjectsExporter, EngineCoreRecommender):
         }
     }
 
-    async def _build_rec_vector(self, session, **variables):
+    async def _build_items_vector(self, session, **variables):
         return await TopSellerRedisObject(self).get_numpy_array(session)
 
     def export_objects(self, session):

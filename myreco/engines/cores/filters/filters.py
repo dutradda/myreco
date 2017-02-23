@@ -50,11 +50,11 @@ class FilterBaseBy(object):
         if vector.size != new_size:
             vector.resize(new_size, refcheck=False)
 
-    def _filter(self, filter_, rec_vector):
+    def _filter(self, filter_, items_vector):
         if not self.is_inclusive:
             filter_ = np.invert(filter_)
 
-        rec_vector *= filter_
+        items_vector *= filter_
 
     def _pack_filter(self, filter_):
         return filter_.tobytes()
@@ -86,28 +86,28 @@ class BooleanFilterBy(FilterBaseBy):
         await session.redis_bind.set(self.key, self._pack_filter(filter_))
         return {'true_values': np.nonzero(filter_)[0].size}
 
-    async def filter(self, session, rec_vector, *args, **kwargs):
+    async def filter(self, session, items_vector, *args, **kwargs):
         filter_ = await session.redis_bind.get(self.key)
         if filter_ is not None:
-            filter_ = self._unpack_filter(filter_, rec_vector.size)
-            self._filter(filter_, rec_vector)
+            filter_ = self._unpack_filter(filter_, items_vector.size)
+            self._filter(filter_, items_vector)
 
 
 class MultipleFilterBy(FilterBaseBy):
 
-    async def filter(self, session, rec_vector, ids):
+    async def filter(self, session, items_vector, ids):
         ids = self._list_cast(ids)
 
         if ids:
             filters = await session.redis_bind.hmget(self.key, *ids)
-            filters = [self._unpack_filter(filter_, rec_vector.size)
+            filters = [self._unpack_filter(filter_, items_vector.size)
                         for filter_ in filters if filter_ is not None]
-            final_filter = np.zeros(rec_vector.size, dtype=np.bool)
+            final_filter = np.zeros(items_vector.size, dtype=np.bool)
 
             for filter_ in filters:
                 final_filter += filter_
 
-            self._filter(final_filter, rec_vector)
+            self._filter(final_filter, items_vector)
 
     async def update(self, session, items, array_size):
         filter_map = defaultdict(list)
@@ -152,10 +152,10 @@ class ObjectFilterBy(MultipleFilterBy):
             ids = [property_obj[id_name] for id_name in self.id_names]
             return repr(tuple([id_ for _, id_ in sorted(zip(self.id_names, ids), key=lambda x: x[0])]))
 
-    async def filter(self, session, rec_vector, properties):
+    async def filter(self, session, items_vector, properties):
         properties = self._list_cast(properties)
         ids = [self._get_id_from_property({self.name: prop}) for prop in properties]
-        await MultipleFilterBy.filter(self, session, rec_vector, ids)
+        await MultipleFilterBy.filter(self, session, items_vector, ids)
 
 
 class ArrayFilterBy(SimpleFilterBy):
@@ -168,27 +168,27 @@ class ArrayFilterBy(SimpleFilterBy):
 
 class SimpleFilterOf(SimpleFilterBy):
 
-    async def filter(self, session, rec_vector, items_keys):
+    async def filter(self, session, items_vector, items_keys):
         items = await self.items_model.get(session, items_keys)
         filter_ids = [item.get(self.name) for item in items]
-        await SimpleFilterBy.filter(self, session, rec_vector, filter_ids)
+        await SimpleFilterBy.filter(self, session, items_vector, filter_ids)
 
 
 class ObjectFilterOf(ObjectFilterBy):
 
-    async def filter(self, session, rec_vector, items_keys):
+    async def filter(self, session, items_vector, items_keys):
         items = await self.items_model.get(session, items_keys)
         filter_ids = [item.get(self.name) for item in items]
-        await ObjectFilterBy.filter(self, session, rec_vector, filter_ids)
+        await ObjectFilterBy.filter(self, session, items_vector, filter_ids)
 
 
 class ArrayFilterOf(ArrayFilterBy):
 
-    async def filter(self, session, rec_vector, items_keys):
+    async def filter(self, session, items_vector, items_keys):
         items = await self.items_model.get(session, items_keys)
         filter_ids = []
         [filter_ids.extend(item[self.name]) for item in items]
-        await ArrayFilterBy.filter(self, session, rec_vector, filter_ids)
+        await ArrayFilterBy.filter(self, session, items_vector, filter_ids)
 
 
 class IndexFilterOf(FilterBaseBy):
@@ -196,22 +196,22 @@ class IndexFilterOf(FilterBaseBy):
     async def update(self, *args, **kwargs):
         return 'OK'
 
-    async def filter(self, session, rec_vector, items_keys):
+    async def filter(self, session, items_vector, items_keys):
         items_indices_map = ItemsIndicesMap(self.items_model)
         indices = await items_indices_map.get_indices(items_keys, session)
         if indices:
             indices = np.array(indices, dtype=np.int32)
-            self._filter_by_indices(rec_vector, indices)
+            self._filter_by_indices(items_vector, indices)
 
-    def _filter_by_indices(self, rec_vector, indices):
-        if max(indices) >= len(rec_vector):
-            indices = np.where(indices < len(rec_vector))
+    def _filter_by_indices(self, items_vector, indices):
+        if max(indices) >= len(items_vector):
+            indices = np.where(indices < len(items_vector))
 
         if not self.is_inclusive:
-            rec_vector[indices] = 0
+            items_vector[indices] = 0
         else:
-            rec_vector[:] = 0
-            rec_vector[indices] = 1
+            items_vector[:] = 0
+            items_vector[indices] = 1
 
 
 class IndexFilterByPropertyOf(SimpleFilterOf, IndexFilterOf):
@@ -220,7 +220,7 @@ class IndexFilterByPropertyOf(SimpleFilterOf, IndexFilterOf):
     def _build_filter_array(self, items_indices, size):
         return np.array(items_indices, dtype=np.int32)
 
-    async def filter(self, session, rec_vector, items_keys):
+    async def filter(self, session, items_vector, items_keys):
         items = await self.items_model.get(session, items_keys)
         filter_ids = [item[self.name] for item in items]
         if filter_ids:
@@ -229,4 +229,4 @@ class IndexFilterByPropertyOf(SimpleFilterOf, IndexFilterOf):
 
             if filters:
                 indices = np.concatenate(filters)
-                self._filter_by_indices(rec_vector, indices)
+                self._filter_by_indices(items_vector, indices)

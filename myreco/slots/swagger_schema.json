@@ -80,7 +80,7 @@
             "minProperties": 1,
             "additionalProperties": false,
             "properties": {
-                "max_recos": {"type": "integer"},
+                "max_items": {"type": "integer"},
                 "name": {"type": "string"},
                 "store_id": {"type": "integer"},
                 "engine_id": {"type": "integer"},
@@ -94,9 +94,9 @@
             "items": {
                 "type": "object",
                 "additionalProperties": false,
-                "required": ["engine_id", "store_id", "slot_variables", "max_recos", "name"],
+                "required": ["engine_id", "store_id", "slot_variables", "max_items", "name"],
                 "properties": {
-                    "max_recos": {"type": "integer"},
+                    "max_items": {"type": "integer"},
                     "name": {"type": "string"},
                     "store_id": {"type": "integer"},
                     "engine_id": {"type": "integer"},

@@ -68,6 +68,6 @@ class TopSellerRedisObject(RedisObjectBase):
                 indices_values_map[index] = int(line['value'])
 
     async def get_numpy_array(self, session):
-        rec_vector = await session.redis_bind.get(self._redis_key)
-        if rec_vector is not None:
-            return self._unpack_array(rec_vector, np.int32, compress=False)
+        items_vector = await session.redis_bind.get(self._redis_key)
+        if items_vector is not None:
+            return self._unpack_array(items_vector, np.int32, compress=False)
