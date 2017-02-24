@@ -233,12 +233,6 @@ def build_items_models_collection_schema_base(
                 'default': 100
             }],
             'get': {
-                'parameters': [{
-                    'name': 'Authorization',
-                    'in': 'header',
-                    'required': True,
-                    'type': 'string'
-                }],
                 'operationId': 'swagger_search',
                 'responses': {'200': {'description': 'Got'}}
             }
