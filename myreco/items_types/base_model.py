@@ -143,8 +143,11 @@ class ItemsTypesModelBase(AbstractConcreteBase):
         class_name = cls._build_class_name(item_type['name'], store['name'])
         key = build_item_key(item_type['name'], store['id'])
         id_names = item_type['schema']['id_names']
-        items_model = \
-            FactoryOrmModels.make_redis(class_name, id_names, key, metaclass=ItemsModelBaseMeta)
+        items_model = FactoryOrmModels.make_redis_elsearch(
+            class_name, id_names, key,
+            metaclass=ItemsModelBaseMeta,
+            use_elsearch=True
+        )
         items_model.__item_type__ = item_type
         return items_model
 
@@ -155,6 +158,7 @@ class ItemsTypesModelBase(AbstractConcreteBase):
     @classmethod
     def _build_items_models_collection_schema(cls, base_uri, schema, id_names):
         id_names_uri = base_uri + '/{item_key}'
+        search_uri = base_uri + '/search'
         patch_schema = deepcopy(schema)
         required = patch_schema.get('required') # why it?
         if required:
@@ -164,7 +168,10 @@ class ItemsTypesModelBase(AbstractConcreteBase):
             properties['_operation'] = {'enum': ['delete', 'update']}
 
         swagger_schema = \
-            build_items_models_collection_schema_base(base_uri, schema, patch_schema, id_names_uri)
+            build_items_models_collection_schema_base(
+                base_uri, schema, patch_schema,
+                id_names_uri, search_uri
+            )
 
         return swagger_schema
 
@@ -182,6 +189,8 @@ class ItemsTypesModelBase(AbstractConcreteBase):
             key = 'import_data_file'
         elif path.endswith('update_filters'):
             key = 'update_filters'
+        elif path.endswith('search'):
+            key = 'search'
         else:
             key = 'id'
 
@@ -254,7 +263,7 @@ class ItemsTypesModelBase(AbstractConcreteBase):
             methods = None
         else:
             key = cls._get_items_model_colletion_method_key(
-                req.url, (not 'item_key' in req.path_params))
+                req.url, (not 'item_key' in req.path_params and not req.url.endswith('search')))
             methods = items_models_collection.__methods__.get(key)
 
         if methods is None:

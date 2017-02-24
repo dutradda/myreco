@@ -103,8 +103,18 @@ class ItemsModelsCollection(JobsModel):
 
         return await items_model.swagger_get_all(req, session)
 
+    async def swagger_search(self, req, session):
+        items_model = self._get_model(req.query)
+        if items_model is None:
+            return SwaggerResponse(404)
 
-def build_items_models_collection_schema_base(base_uri, schema, patch_schema, id_names_uri):
+        return await items_model.swagger_search(req, session)
+
+
+def build_items_models_collection_schema_base(
+        base_uri, schema, patch_schema,
+        id_names_uri, search_uri
+    ):
     return {
         base_uri: {
             'parameters': [{
@@ -197,6 +207,39 @@ def build_items_models_collection_schema_base(base_uri, schema, patch_schema, id
                     'type': 'string'
                 }],
                 'operationId': 'swagger_get',
+                'responses': {'200': {'description': 'Got'}}
+            }
+        },
+        search_uri: {
+            'parameters': [{
+                'name': 'store_id',
+                'in': 'query',
+                'required': True,
+                'type': 'integer'
+            },{
+                'name': 'pattern',
+                'in': 'query',
+                'required': True,
+                'type': 'string'
+            },{
+                'name': 'page',
+                'in': 'query',
+                'type': 'integer',
+                'default': 1
+            },{
+                'name': 'size',
+                'in': 'query',
+                'type': 'integer',
+                'default': 100
+            }],
+            'get': {
+                'parameters': [{
+                    'name': 'Authorization',
+                    'in': 'header',
+                    'required': True,
+                    'type': 'string'
+                }],
+                'operationId': 'swagger_search',
                 'responses': {'200': {'description': 'Got'}}
             }
         }

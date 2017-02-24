@@ -5,6 +5,7 @@ python:
 services:
   - mysql
   - redis-server
+  - elasticsearch
 script: py.test -c pytest-travis.ini
 install: 
   - pip install cython

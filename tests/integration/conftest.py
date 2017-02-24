@@ -24,6 +24,7 @@
 from myreco.factory import ModelsFactory
 from myreco.api import MyrecoAPI
 from swaggerit.models.orm.session import Session
+from swaggerit.models.orm.binds import ElSearchBind
 from unittest import mock
 from sqlalchemy import create_engine
 from aioredis import create_redis
@@ -96,10 +97,17 @@ def engine(variables, pymysql_conn):
 
 
 @pytest.fixture(scope='session')
-def api(engine, redis, loop):
+def elsearch(variables, loop):
+    es = ElSearchBind(**variables['elsearch'])
+    loop.run_until_complete(es.create_index())
+    return es
+
+
+@pytest.fixture(scope='session')
+def api(engine, redis, elsearch, loop):
     api = MyrecoAPI(sqlalchemy_bind=engine, redis_bind=redis,
-                     title='Myreco API', loop=loop, debug=True,
-                     type_='objects_exporter')
+                    elsearch_bind=elsearch, title='Myreco API',
+                    loop=loop, debug=True, type_='objects_exporter')
 
     class ModelTest(api.models_factory.base_model):
         __tablename__ = 'test'
@@ -152,7 +160,7 @@ def client(api, test_client):
 
 
 @pytest.fixture
-def session(variables, redis, engine, pymysql_conn, base_model, loop):
+def session(variables, redis, engine, pymysql_conn, base_model, loop, elsearch):
     base_model.metadata.bind = engine
     base_model.metadata.create_all()
 
@@ -168,7 +176,8 @@ def session(variables, redis, engine, pymysql_conn, base_model, loop):
         cursor.execute('SET FOREIGN_KEY_CHECKS = 1;')
     pymysql_conn.commit()
     loop.run_until_complete(redis.flushdb())
-    session = Session(bind=engine, redis_bind=redis, loop=loop)
+    loop.run_until_complete(elsearch.flush_index())
+    session = Session(bind=engine, redis_bind=redis, elsearch_bind=elsearch, loop=loop)
     yield session
     session.close()
 

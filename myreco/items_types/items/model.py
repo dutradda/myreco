@@ -21,13 +21,13 @@
 # SOFTWARE.
 
 
-from swaggerit.models.orm.redis import ModelRedisMeta
+from swaggerit.models.orm.redis_elsearch import ModelRedisElSearchMeta
 
 
-class ItemsModelBaseMeta(ModelRedisMeta):
+class ItemsModelBaseMeta(ModelRedisElSearchMeta):
 
     def __init__(cls, name, bases, attrs):
-        ModelRedisMeta.__init__(cls, name, bases, attrs)
+        ModelRedisElSearchMeta.__init__(cls, name, bases, attrs)
         cls.index = None
 
     async def get(cls, session, ids=None, limit=None, offset=None, **kwargs):
@@ -35,7 +35,13 @@ class ItemsModelBaseMeta(ModelRedisMeta):
         limit = items_per_page * page
         offset = items_per_page * (page-1)
         return await \
-            ModelRedisMeta.get(cls, session, ids=ids, limit=limit, offset=offset, **kwargs)
+            ModelRedisElSearchMeta.get(cls, session, ids=ids, limit=limit, offset=offset, **kwargs)
 
     async def get_all(cls, session, **kwargs):
-        return await ModelRedisMeta.get(cls, session, **kwargs)
+        return await ModelRedisElSearchMeta.get(cls, session, **kwargs)
+
+    async def search(cls, session, pattern, page=1, size=100):
+        if page < 1:
+            return []
+
+        return await ModelRedisElSearchMeta.search(cls, session, pattern, page-1, size)

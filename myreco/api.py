@@ -34,9 +34,8 @@ import ujson
 
 class MyrecoAPI(AioHttpAPI):
     def __init__(self, *, type_='recommender', sqlalchemy_bind=None, redis_bind=None,
-                 swagger_json_template=None, title=None, version='1.0.0',
-                 get_swagger_req_auth=True, loop=None, debug=False,
-                 factory_class=ModelsFactory):
+                 elsearch_bind=None, swagger_json_template=None, title=None, version='1.0.0',
+                 get_swagger_req_auth=True, loop=None, debug=False, factory_class=ModelsFactory):
         self.models_factory = factory_class()
         self.all_models = self.models_factory.make_all_models(type_)
         authorizer = MyrecoAuthorizer(self.all_models['users'])
@@ -46,6 +45,7 @@ class MyrecoAPI(AioHttpAPI):
             self, models,
             sqlalchemy_bind=sqlalchemy_bind,
             redis_bind=redis_bind,
+            elsearch_bind=elsearch_bind,
             swagger_json_template=swagger_json_template,
             title=title, version=version,
             authorizer=authorizer,
@@ -89,6 +89,7 @@ class MyrecoAPI(AioHttpAPI):
         self._set_route(base_uri, 'GET', handler)
         self._set_route(base_uri, 'POST', handler)
         self._set_route(base_uri, 'PATCH', handler)
+        self._set_route(base_uri + '/search', 'GET', handler)
         self._set_route(base_uri + '/{item_key}', 'GET', handler)
         self._set_route(base_uri + '/{item_key}', 'POST', handler)
 
