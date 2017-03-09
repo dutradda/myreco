@@ -21,7 +21,8 @@
 # SOFTWARE.
 
 
-from swaggerit.utils import get_model_schema
+from swaggerit.utils import get_swagger_json
+from swaggerit.exceptions import SwaggerItModelError
 from myreco.utils import ModuleObjectLoader, get_items_model
 from sqlalchemy.ext.declarative import AbstractConcreteBase, declared_attr
 import sqlalchemy as sa
@@ -30,7 +31,7 @@ import ujson
 
 class EnginesModelBase(AbstractConcreteBase):
     __tablename__ = 'engines'
-    __schema__ = get_model_schema(__file__, 'base_swagger_schema.json')
+    __swagger_json__ = get_swagger_json(__file__)
     _jobs = dict()
 
     id = sa.Column(sa.Integer, primary_key=True, autoincrement=True)
@@ -77,8 +78,8 @@ class EnginesModelBase(AbstractConcreteBase):
     def _set_core_instance(self):
         core_class_ = self.get_core_class()
         self_dict = self._build_self_dict()
-        items_model = get_items_model(self_dict)
-        self._core_instance = core_class_(self_dict, items_model)
+        store_items_model = get_items_model(self_dict)
+        self._core_instance = core_class_(self_dict, store_items_model)
 
     def get_core_class(self):
         return ModuleObjectLoader.load(self.core.configuration['core_module'])

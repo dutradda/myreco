@@ -145,12 +145,9 @@ def init_db(models, session, api, monkeypatch):
 
     yield None
 
-    _all_models.pop('products_1')
-    api.remove_swagger_paths(_all_models.pop('products_collection'))
-    _all_models.pop('categories_1')
-    api.remove_swagger_paths(_all_models.pop('categories_collection'))
-    _all_models.pop('invalid_1')
-    api.remove_swagger_paths(_all_models.pop('invalid_collection'))
+    _all_models.pop('store_items_products_1')
+    _all_models.pop('store_items_categories_1')
+    _all_models.pop('store_items_invalid_1')
 
 
 class TestSlotsModelPost(object):

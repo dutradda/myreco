@@ -21,54 +21,57 @@
 # SOFTWARE.
 
 
-from swaggerit.utils import get_model_schema
-from swaggerit.response import SwaggerResponse
-from myreco.engines.import_data_model import EnginesModelImportDataBase
+from myreco.engines.cores.utils import build_engine_key_prefix
+from myreco.engines.base_model import EnginesModelBase
+from myreco.utils import extend_swagger_json
 from copy import deepcopy
 import asyncio
 
 
-export_objects_schema = get_model_schema(__file__, 'export_objects_swagger_schema.json')
-export_objects_schema.update(deepcopy(EnginesModelImportDataBase.__schema__))
-
-
-class EnginesModelExportObjectsBase(EnginesModelImportDataBase):
-    __schema__ = export_objects_schema
+class EnginesModelDataImporterBase(EnginesModelBase):
+    __swagger_json__ = extend_swagger_json(
+        EnginesModelBase.__swagger_json__,
+        __file__
+    )
 
     @classmethod
-    async def post_export_objects_job(cls, req, session):
+    async def post_import_data_job(cls, req, session):
         session = cls._copy_session(session)
         engine = await cls._get_engine(req, session)
         if engine is None:
-            return SwaggerResponse(404)
+            return cls._build_response(404)
 
-        jobs_id = cls._get_jobs_id_exporter(engine)
-        return cls._create_job(cls._run_export_objects_job, jobs_id, req, session, engine)
-
-    @classmethod
-    def _get_jobs_id_exporter(cls, engine):
-        return cls._get_jobs_id(engine) + '_exporter'
+        jobs_id = cls._get_jobs_id_importer(engine)
+        response = cls._create_job(cls._run_import_data_job, jobs_id, req, session, engine)
+        return response
 
     @classmethod
-    def _run_export_objects_job(cls, req, session, engine):
-        import_data = req.query.get('import_data')
+    async def _get_engine(cls, req, session):
+        id_ = req.path_params['id']
+        engines = await cls.get(session, {'id': id_}, todict=False)
 
-        if import_data:
-            importer_result = engine.core_instance.get_data(session)
-            exporter_result = engine.core_instance.export_objects(session)
+        if not engines:
+            return None
 
-            return {
-                'importer': importer_result,
-                'exporter': exporter_result
-            }
-        else:
-            return engine.core_instance.export_objects(session)
+        return engines[0]
 
     @classmethod
-    async def get_export_objects_job(cls, req, session):
+    def _get_jobs_id_importer(cls, engine):
+        return cls._get_jobs_id(engine) + '_importer'
+
+    @classmethod
+    def _get_jobs_id(cls, engine):
+        return build_engine_key_prefix({'id': engine.id, 'core': {'name': engine.core.name}})
+
+    @classmethod
+    def _run_import_data_job(cls, req, session, engine):
+        return engine.core_instance.get_data(session)
+
+    @classmethod
+    async def get_import_data_job(cls, req, session):
         engine = await cls._get_engine(req, session)
         if engine is None:
-            return SwaggerResponse(404)
+            return cls._build_response(404)
 
-        jobs_id = cls._get_jobs_id_exporter(engine)
+        jobs_id = cls._get_jobs_id_importer(engine)
         return await cls._get_job(jobs_id, req, session)

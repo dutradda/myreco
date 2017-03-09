@@ -21,14 +21,14 @@
 # SOFTWARE.
 
 
-from swaggerit.utils import get_model_schema
+from swaggerit.utils import get_swagger_json
 from sqlalchemy.ext.declarative import AbstractConcreteBase, declared_attr
 import sqlalchemy as sa
 
 
 class VariablesModelBase(AbstractConcreteBase):
     __tablename__ = 'variables'
-    __schema__ = get_model_schema(__file__)
+    __swagger_json__ = get_swagger_json(__file__)
 
     name = sa.Column(sa.String(255), primary_key=True, nullable=False)
 

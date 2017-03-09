@@ -21,7 +21,7 @@
 # SOFTWARE.
 
 
-from swaggerit.utils import get_model_schema
+from swaggerit.utils import get_swagger_json
 from swaggerit.json_builder import JsonBuilder
 from swaggerit.exceptions import SwaggerItModelError
 from myreco.engines.cores.filters.factory import FiltersFactory
@@ -35,7 +35,7 @@ import ujson
 
 class PlacementsModelBase(AbstractConcreteBase):
     __tablename__ = 'placements'
-    __schema__ = get_model_schema(__file__)
+    __swagger_json__ = get_swagger_json(__file__)
 
     hash = sa.Column(sa.String(255), unique=True, nullable=False)
     small_hash = sa.Column(sa.String(255), primary_key=True)

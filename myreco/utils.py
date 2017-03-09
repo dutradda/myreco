@@ -23,8 +23,9 @@
 
 from swaggerit.exceptions import SwaggerItModelError
 from swaggerit.models.orm.factory import FactoryOrmModels
-from swaggerit.utils import get_model
+from swaggerit.utils import get_model, get_swagger_json
 from importlib import import_module
+from copy import deepcopy
 
 
 class ModuleObjectLoader(object):
@@ -52,13 +53,40 @@ class ModuleObjectLoader(object):
         return obj
 
 
-def build_item_key(name, sufix=None):
+def build_item_key(name, *args):
     name = name.lower().replace(' ', '_')
-    if sufix:
-        return '{}_{}'.format(name, sufix)
+    for arg in args:
+        name += '_{}'.format(arg)
     return name
 
 
 def get_items_model(engine):
-    items_types_model_key = build_item_key(engine['item_type']['name'], engine['store_id'])
-    return get_model(items_types_model_key)
+    items_types_model = get_model('items_types')
+    return items_types_model.get_store_items_model(engine['item_type'], engine['store_id'])
+
+
+def build_class_name(*names):
+    final_name = ''
+    for name in names:
+        name = name.split(' ')
+        for in_name in name:
+            final_name += in_name.capitalize()
+
+    return final_name + 'Model'
+
+
+def extend_swagger_json(original, current_filename, swagger_json_name=None):
+    swagger_json = deepcopy(original)
+    additional_swagger = get_swagger_json(current_filename, swagger_json_name)
+    swagger_json['paths'].update(additional_swagger['paths'])
+
+    definitions = swagger_json.get('definitions')
+    additional_definitions = additional_swagger.get('definitions')
+
+    if additional_definitions:
+        if definitions:
+            definitions.update(additional_definitions)
+        else:
+            swagger_json['definitions'] = additional_definitions
+
+    return swagger_json

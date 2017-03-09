@@ -1,77 +1,79 @@
 {
-    "/slots/": {
-        "post": {
-            "operationId": "swagger_insert",
-            "parameters": [{
-                "name": "Authorization",
-                "in": "header",
-                "required": true,
-                "type": "string"
-            },{
-                "name": "body",
-                "in": "body",
-                "required": true,
-                "schema": {"$ref": "#/definitions/schema_array"}
-            }],
-            "responses": {"201": {"description": "Created"}}
+    "paths": {
+        "/slots/": {
+            "post": {
+                "operationId": "swagger_insert",
+                "parameters": [{
+                    "name": "Authorization",
+                    "in": "header",
+                    "required": true,
+                    "type": "string"
+                },{
+                    "name": "body",
+                    "in": "body",
+                    "required": true,
+                    "schema": {"$ref": "#/definitions/schema_array"}
+                }],
+                "responses": {"201": {"description": "Created"}}
+            },
+            "get": {
+                "parameters": [{
+                    "name": "Authorization",
+                    "in": "header",
+                    "required": true,
+                    "type": "string"
+                },{
+                    "name": "store_id",
+                    "in": "query",
+                    "required": true,
+                    "type": "integer"
+                }],
+                "operationId": "swagger_get_all",
+                "responses": {"200": {"description": "Got"}}
+            }
         },
-        "get": {
+        "/slots/{id}/": {
             "parameters": [{
-                "name": "Authorization",
-                "in": "header",
-                "required": true,
-                "type": "string"
-            },{
-                "name": "store_id",
-                "in": "query",
-                "required": true,
-                "type": "integer"
+                "name": "id",
+                "in": "path",
+                "type": "integer",
+                "required": true
             }],
-            "operationId": "swagger_get_all",
-            "responses": {"200": {"description": "Got"}}
-        }
-    },
-    "/slots/{id}/": {
-        "parameters": [{
-            "name": "id",
-            "in": "path",
-            "type": "integer",
-            "required": true
-        }],
-        "patch": {
-            "operationId": "swagger_update",
-            "parameters": [{
-                "name": "Authorization",
-                "in": "header",
-                "required": true,
-                "type": "string"
-            },{
-                "name": "body",
-                "in": "body",
-                "required": true,
-                "schema": {"$ref": "#/definitions/schema_without_required"}
-            }],
-            "responses": {"200": {"description": "Got"}}
-        },
-        "delete": {
-            "parameters": [{
-                "name": "Authorization",
-                "in": "header",
-                "required": true,
-                "type": "string"
-            }],
-            "operationId": "swagger_delete",
-            "responses": {"204": {"description": "Deleted"}}
-        },
-        "get": {
-            "parameters": [{
-                "name": "Authorization",
-                "in": "header",
-                "required": true,
-                "type": "string"
-            }],
-            "operationId": "swagger_get",
-            "responses": {"200": {"description": "Got"}}
+            "patch": {
+                "operationId": "swagger_update",
+                "parameters": [{
+                    "name": "Authorization",
+                    "in": "header",
+                    "required": true,
+                    "type": "string"
+                },{
+                    "name": "body",
+                    "in": "body",
+                    "required": true,
+                    "schema": {"$ref": "#/definitions/schema_without_required"}
+                }],
+                "responses": {"200": {"description": "Got"}}
+            },
+            "delete": {
+                "parameters": [{
+                    "name": "Authorization",
+                    "in": "header",
+                    "required": true,
+                    "type": "string"
+                }],
+                "operationId": "swagger_delete",
+                "responses": {"204": {"description": "Deleted"}}
+            },
+            "get": {
+                "parameters": [{
+                    "name": "Authorization",
+                    "in": "header",
+                    "required": true,
+                    "type": "string"
+                }],
+                "operationId": "swagger_get",
+                "responses": {"200": {"description": "Got"}}
+            }
         }
     },
     "definitions": {

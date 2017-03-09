@@ -1,0 +1,41 @@
+{
+    "paths": {
+        "/engines/{id}/export_objects": {
+            "parameters": [{
+                "name": "id",
+                "in": "path",
+                "type": "integer",
+                "required": true
+            }],
+            "post": {
+                "parameters": [{
+                    "name": "Authorization",
+                    "in": "header",
+                    "required": true,
+                    "type": "string"
+                },{
+                    "name": "import_data",
+                    "in": "query",
+                    "type": "boolean",
+                    "default": false
+                }],
+                "operationId": "post_export_objects_job",
+                "responses": {"201": {"description": "Executing"}}
+            },
+            "get": {
+                "parameters": [{
+                    "name": "Authorization",
+                    "in": "header",
+                    "required": true,
+                    "type": "string"
+                },{
+                    "name": "job_hash",
+                    "in": "query",
+                    "type": "string"
+                }],
+                "operationId": "get_export_objects_job",
+                "responses": {"200": {"description": "Got"}}
+            }
+        }
+    }
+}

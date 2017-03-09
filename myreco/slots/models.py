@@ -21,7 +21,7 @@
 # SOFTWARE.
 
 
-from swaggerit.utils import get_model_schema
+from swaggerit.utils import get_swagger_json
 from swaggerit.exceptions import SwaggerItModelError
 from jsonschema import ValidationError
 from sqlalchemy.ext.declarative import AbstractConcreteBase, declared_attr
@@ -98,7 +98,7 @@ class SlotsVariablesModelBase(AbstractConcreteBase):
 
 class SlotsModelBase(AbstractConcreteBase):
     __tablename__ = 'slots'
-    __schema__ = get_model_schema(__file__)
+    __swagger_json__ = get_swagger_json(__file__)
 
     id = sa.Column(sa.Integer, primary_key=True)
     max_items = sa.Column(sa.Integer, nullable=False)

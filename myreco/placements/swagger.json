@@ -1,0 +1,159 @@
+{
+    "paths": {
+        "/placements/": {
+            "post": {
+                "operationId": "swagger_insert",
+                "parameters": [{
+                    "name": "Authorization",
+                    "in": "header",
+                    "required": true,
+                    "type": "string"
+                },{
+                    "name": "body",
+                    "in": "body",
+                    "required": true,
+                    "schema": {"$ref": "#/definitions/schema_array"}
+                }],
+                "responses": {"201": {"description": "Created"}}
+            },
+            "get": {
+                "parameters": [{
+                    "name": "Authorization",
+                    "in": "header",
+                    "required": true,
+                    "type": "string"
+                },{
+                    "name": "store_id",
+                    "in": "query",
+                    "required": true,
+                    "type": "integer"
+                }],
+                "operationId": "swagger_get_all",
+                "responses": {"200": {"description": "Got"}}
+            }
+        },
+        "/placements/{small_hash}/": {
+            "parameters": [{
+                "name": "small_hash",
+                "in": "path",
+                "type": "string",
+                "required": true
+            }],
+            "patch": {
+                "operationId": "swagger_update",
+                "parameters": [{
+                    "name": "Authorization",
+                    "in": "header",
+                    "required": true,
+                    "type": "string"
+                },{
+                    "name": "body",
+                    "in": "body",
+                    "required": true,
+                    "schema": {"$ref": "#/definitions/schema_without_required"}
+                }],
+                "responses": {"200": {"description": "Got"}}
+            },
+            "delete": {
+                "parameters": [{
+                    "name": "Authorization",
+                    "in": "header",
+                    "required": true,
+                    "type": "string"
+                }],
+                "operationId": "swagger_delete",
+                "responses": {"204": {"description": "Deleted"}}
+            },
+            "get": {
+                "parameters": [{
+                    "name": "Authorization",
+                    "in": "header",
+                    "required": true,
+                    "type": "string"
+                }],
+                "operationId": "swagger_get",
+                "responses": {"200": {"description": "Got"}}
+            }
+        },
+        "/placements/{small_hash}/items": {
+            "parameters": [{
+                "name": "small_hash",
+                "in": "path",
+                "type": "string",
+                "required": true
+            }],
+            "get": {
+                "parameters": [{
+                    "name": "explict_fallbacks",
+                    "in": "query",
+                    "type": "boolean"
+                },{
+                    "name": "show_details",
+                    "in": "query",
+                    "type": "boolean"
+                }],
+                "operationId": "get_items",
+                "responses": {"200": {"description": "Got"}}
+            }
+        }
+    },
+    "definitions": {
+        "schema_without_required": {
+            "type": "object",
+            "minProperties": 1,
+            "additionalProperties": false,
+            "properties": {
+                "store_id": {"type": "integer"},
+                "name": {"type": "string"},
+                "ab_testing": {"type": "boolean"},
+                "show_details": {"type": "boolean"},
+                "distribute_items": {"type": "boolean"},
+                "variations": {"$ref": "#/definitions/variations"}
+            }
+        },
+        "schema_array": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["name", "variations", "store_id"],
+                "properties": {
+                    "store_id": {"type": "integer"},
+                    "name": {"type": "string"},
+                    "ab_testing": {"type": "boolean"},
+                    "show_details": {"type": "boolean"},
+                    "distribute_items": {"type": "boolean"},
+                    "variations": {"$ref": "#/definitions/variations"}
+                }
+            }
+        },
+        "variations": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "minProperties": 2,
+                "properties": {
+                    "id": {"type": "integer"},
+                    "weight": {"oneOf": [{"type": "number"}, {"type": "null"}]},
+                    "_operation": {"enum": ["insert", "delete", "update"]},
+                    "slots": {
+                        "type": "array",
+                        "minItems": 1,
+                        "items": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": ["id"],
+                            "properties": {
+                                "id": {"type": "integer"},
+                                "_operation": {"enum": ["remove", "get"]}
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

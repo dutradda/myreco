@@ -21,7 +21,7 @@
 # SOFTWARE.
 
 
-from swaggerit.utils import get_model_schema
+from swaggerit.utils import get_swagger_json
 from sqlalchemy.ext.declarative import AbstractConcreteBase
 import sqlalchemy as sa
 import ujson
@@ -29,7 +29,7 @@ import ujson
 
 class EnginesCoresModelBase(AbstractConcreteBase):
     __tablename__ = 'engines_cores'
-    __schema__ = get_model_schema(__file__)
+    __swagger_json__ = get_swagger_json(__file__)
 
     id = sa.Column(sa.Integer, primary_key=True)
     name = sa.Column(sa.String(255), unique=True, nullable=False)

@@ -1,0 +1,36 @@
+{
+    "paths": {
+        "/items_types/{id}/update_filters": {
+            "parameters": [{
+                "name": "store_id",
+                "in": "query",
+                "required": true,
+                "type": "integer"
+            }],
+            "post": {
+                "parameters": [{
+                    "name": "Authorization",
+                    "in": "header",
+                    "required": true,
+                    "type": "string"
+                }],
+                "operationId": "post_update_filters_job",
+                "responses": {"201": {"description": "Executing"}}
+            },
+            "get": {
+                "parameters": [{
+                    "name": "Authorization",
+                    "in": "header",
+                    "required": true,
+                    "type": "string"
+                },{
+                    "name": "job_hash",
+                    "in": "query",
+                    "type": "string"
+                }],
+                "operationId": "get_update_filters_job",
+                "responses": {"200": {"description": "Got"}}
+            }
+        }
+    }
+}

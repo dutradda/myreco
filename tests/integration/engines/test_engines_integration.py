@@ -84,8 +84,7 @@ def init_db(models, session, api):
     yield tmp.name
 
     tmp.cleanup()
-    _all_models.pop('products_1')
-    api.remove_swagger_paths(_all_models.pop('products_collection'))
+    _all_models.pop('store_items_products_1')
 
 
 class TestEnginesModelPost(object):
@@ -410,6 +409,7 @@ class TestEnginesModelsDataImporter(object):
         client = await client
         resp = await client.post('/engines/1/import_data', headers=headers_without_content_type)
 
+        assert resp.status == 201
         assert await resp.json() == {'job_hash': '6342e10bd7dca3240c698aa79c98362e'}
         await _wait_job_finish(client, headers_without_content_type, 'import_data')
 
@@ -462,15 +462,15 @@ class TestEnginesModelsDataImporter(object):
 
 
 async def _post_products(client, headers, headers_without_content_type, products=[{'sku': 'test'}]):
-    resp = await client.post('/products?store_id=1',
+    resp = await client.post('/items_types/1/items?store_id=1',
                         data=ujson.dumps(products), headers=headers)
-    resp = await client.post('/products/update_filters?store_id=1',
+    resp = await client.post('/items_types/1/update_filters?store_id=1',
                         headers=headers_without_content_type)
 
     sleep(0.05)
     while True:
         resp = await client.get(
-            '/products/update_filters?store_id=1&job_hash=6342e10bd7dca3240c698aa79c98362e',
+            '/items_types/1/update_filters?store_id=1&job_hash=6342e10bd7dca3240c698aa79c98362e',
             headers=headers_without_content_type)
         if (await resp.json())['status'] != 'running':
             break

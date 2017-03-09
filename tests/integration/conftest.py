@@ -117,34 +117,36 @@ def api(engine, redis, elsearch, loop):
         async def do_nothing(cls, req, resp, **kwargs):
             return cls._build_response(200)
 
-        __schema__ = {
-            '/testing': {
-                'parameters': [{
-                    'name': 'Authorization',
-                    'in': 'header',
-                    'required': True,
-                    'type': 'string'
-                }],
-                'post': {
-                    'operationId': 'do_nothing',
-                    'responses': {'201': {'description': 'Created'}}
-                }
-            },
-            '/testing/{id}': {
-                'parameters': [{
-                    'name': 'id',
-                    'in': 'path',
-                    'required': True,
-                    'type': 'integer'
-                },{
-                    'name': 'Authorization',
-                    'in': 'header',
-                    'required': True,
-                    'type': 'string'
-                }],
-                'post': {
-                    'operationId': 'do_nothing',
-                    'responses': {'201': {'description': 'Created'}}
+        __swagger_json__ = {
+            'paths': {
+                '/testing': {
+                    'parameters': [{
+                        'name': 'Authorization',
+                        'in': 'header',
+                        'required': True,
+                        'type': 'string'
+                    }],
+                    'post': {
+                        'operationId': 'do_nothing',
+                        'responses': {'201': {'description': 'Created'}}
+                    }
+                },
+                '/testing/{id}': {
+                    'parameters': [{
+                        'name': 'id',
+                        'in': 'path',
+                        'required': True,
+                        'type': 'integer'
+                    },{
+                        'name': 'Authorization',
+                        'in': 'header',
+                        'required': True,
+                        'type': 'string'
+                    }],
+                    'post': {
+                        'operationId': 'do_nothing',
+                        'responses': {'201': {'description': 'Created'}}
+                    }
                 }
             }
         }

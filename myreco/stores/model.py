@@ -21,7 +21,7 @@
 # SOFTWARE.
 
 
-from swaggerit.utils import get_model_schema
+from swaggerit.utils import get_swagger_json
 from sqlalchemy.ext.declarative import AbstractConcreteBase
 from jsonschema import Draft4Validator
 import sqlalchemy as sa
@@ -30,8 +30,8 @@ import ujson
 
 class StoresModelBase(AbstractConcreteBase):
     __tablename__ = 'stores'
-    __schema__ = get_model_schema(__file__)
-    __config_validator__ = Draft4Validator(__schema__['definitions']['configuration'])
+    __swagger_json__ = get_swagger_json(__file__)
+    __config_validator__ = Draft4Validator(__swagger_json__['definitions']['configuration'])
 
     id = sa.Column(sa.Integer, primary_key=True)
     name = sa.Column(sa.String(255), nullable=False)

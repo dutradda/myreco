@@ -1,0 +1,47 @@
+{
+    "paths": {
+        "/items_types/{id}/import_data_file": {
+            "parameters": [{
+                "name": "store_id",
+                "in": "query",
+                "required": true,
+                "type": "integer"
+            },{
+                "name": "upload_file",
+                "in": "query",
+                "default": true,
+                "type": "boolean"
+            }],
+            "post": {
+                "parameters": [{
+                    "name": "Authorization",
+                    "in": "header",
+                    "required": true,
+                    "type": "string"
+                },{
+                    "name": "data_file",
+                    "in": "body",
+                    "required": true,
+                    "schema": {}
+                }],
+                "consumes": ["application/zip"],
+                "operationId": "post_import_data_file_job",
+                "responses": {"200": {"description": "Posted"}}
+            },
+            "get": {
+                "parameters": [{
+                    "name": "Authorization",
+                    "in": "header",
+                    "required": true,
+                    "type": "string"
+                },{
+                    "name": "job_hash",
+                    "in": "query",
+                    "type": "string"
+                }],
+                "operationId": "get_import_data_file_job",
+                "responses": {"200": {"description": "Got"}}
+            }
+        }
+    }
+}

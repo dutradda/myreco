@@ -1,133 +1,135 @@
 {
-    "/users/": {
-        "post": {
-            "operationId": "swagger_insert",
-            "parameters": [{
-                "name": "Authorization",
-                "in": "header",
-                "required": true,
-                "type": "string"
-            },{
-                "name": "body",
-                "in": "body",
-                "required": true,
-                "schema": {"$ref": "#/definitions/schema_with_grants_array"}
-            }],
-            "responses": {
-                "201": {"description": "Created"}
-            }
-        },
-        "patch": {
-            "operationId": "swagger_update_many",
-            "parameters": [{
-                "name": "Authorization",
-                "in": "header",
-                "required": true,
-                "type": "string"
-            },{
-                "name": "body",
-                "in": "body",
-                "required": true,
-                "schema": {"$ref": "#/definitions/schema_at_least_id_array"}
-            }],
-            "responses": {
-                "200": {"description": "Updated"}
-            }
-        },
-        "delete": {
-            "operationId": "swagger_delete_many",
-            "parameters": [{
-                "name": "Authorization",
-                "in": "header",
-                "required": true,
-                "type": "string"
-            },{
-                "name": "body",
-                "in": "body",
-                "required": true,
-                "schema": {"$ref": "#/definitions/email_schema_array"}
-            }],
-            "responses": {
-                "204": {"description": "Deleted"}
-            }
-        },
-        "get": {
-            "operationId": "swagger_get_all",
-            "parameters": [{
-                "name": "Authorization",
-                "in": "header",
-                "required": true,
-                "type": "string"
-            },{
-                "name": "body",
-                "in": "body",
-                "required": false,
-                "schema": {"$ref": "#/definitions/email_schema_array"}
-            },{
-                "name": "stores",
-                "in": "query",
-                "required": true,
-                "type": "array",
-                "items": {
-                    "type": "object",
-                    "additionalProperties": false,
-                    "required": ["id"],
-                    "properties": {
-                        "id": {"type": "integer"}
-                    }
+    "paths": {
+        "/users/": {
+            "post": {
+                "operationId": "swagger_insert",
+                "parameters": [{
+                    "name": "Authorization",
+                    "in": "header",
+                    "required": true,
+                    "type": "string"
+                },{
+                    "name": "body",
+                    "in": "body",
+                    "required": true,
+                    "schema": {"$ref": "#/definitions/schema_with_grants_array"}
+                }],
+                "responses": {
+                    "201": {"description": "Created"}
                 }
-            }],
-            "responses": {
-                "200": {"description": "Got"}
-            }
-        }
-    },
-    "/users/{email}/": {
-        "parameters": [{
-            "name": "email",
-            "in": "path",
-            "type": "string",
-            "required": true
-        }],
-        "patch": {
-            "operationId": "swagger_update",
-            "parameters": [{
-                "name": "Authorization",
-                "in": "header",
-                "required": true,
-                "type": "string"
-            },{
-                "name": "body",
-                "in": "body",
-                "required": true,
-                "schema": {"$ref": "#/definitions/base_schema"}
-            }],
-            "responses": {
-                "201": {"description": "Created"}
+            },
+            "patch": {
+                "operationId": "swagger_update_many",
+                "parameters": [{
+                    "name": "Authorization",
+                    "in": "header",
+                    "required": true,
+                    "type": "string"
+                },{
+                    "name": "body",
+                    "in": "body",
+                    "required": true,
+                    "schema": {"$ref": "#/definitions/schema_at_least_id_array"}
+                }],
+                "responses": {
+                    "200": {"description": "Updated"}
+                }
+            },
+            "delete": {
+                "operationId": "swagger_delete_many",
+                "parameters": [{
+                    "name": "Authorization",
+                    "in": "header",
+                    "required": true,
+                    "type": "string"
+                },{
+                    "name": "body",
+                    "in": "body",
+                    "required": true,
+                    "schema": {"$ref": "#/definitions/email_schema_array"}
+                }],
+                "responses": {
+                    "204": {"description": "Deleted"}
+                }
+            },
+            "get": {
+                "operationId": "swagger_get_all",
+                "parameters": [{
+                    "name": "Authorization",
+                    "in": "header",
+                    "required": true,
+                    "type": "string"
+                },{
+                    "name": "body",
+                    "in": "body",
+                    "required": false,
+                    "schema": {"$ref": "#/definitions/email_schema_array"}
+                },{
+                    "name": "stores",
+                    "in": "query",
+                    "required": true,
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": ["id"],
+                        "properties": {
+                            "id": {"type": "integer"}
+                        }
+                    }
+                }],
+                "responses": {
+                    "200": {"description": "Got"}
+                }
             }
         },
-        "delete": {
+        "/users/{email}/": {
             "parameters": [{
-                "name": "Authorization",
-                "in": "header",
-                "required": true,
-                "type": "string"
+                "name": "email",
+                "in": "path",
+                "type": "string",
+                "required": true
             }],
-            "operationId": "swagger_delete",
-            "responses": {
-                "204": {"description": "Deleted"}
-            }
-        },
-        "get": {
-            "parameters": [{
-                "name": "Authorization",
-                "in": "header",
-                "required": true,
-                "type": "string"
-            }],
-            "operationId": "swagger_get",
-            "responses": {
-                "200": {"description": "Got"}
+            "patch": {
+                "operationId": "swagger_update",
+                "parameters": [{
+                    "name": "Authorization",
+                    "in": "header",
+                    "required": true,
+                    "type": "string"
+                },{
+                    "name": "body",
+                    "in": "body",
+                    "required": true,
+                    "schema": {"$ref": "#/definitions/base_schema"}
+                }],
+                "responses": {
+                    "201": {"description": "Created"}
+                }
+            },
+            "delete": {
+                "parameters": [{
+                    "name": "Authorization",
+                    "in": "header",
+                    "required": true,
+                    "type": "string"
+                }],
+                "operationId": "swagger_delete",
+                "responses": {
+                    "204": {"description": "Deleted"}
+                }
+            },
+            "get": {
+                "parameters": [{
+                    "name": "Authorization",
+                    "in": "header",
+                    "required": true,
+                    "type": "string"
+                }],
+                "operationId": "swagger_get",
+                "responses": {
+                    "200": {"description": "Got"}
+                }
             }
         }
     },

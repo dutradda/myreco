@@ -21,7 +21,7 @@
 # SOFTWARE.
 
 
-from swaggerit.utils import get_model_schema
+from swaggerit.utils import get_swagger_json
 from unittest import mock
 import pytest
 import ujson
@@ -213,7 +213,7 @@ class TestUsersModelPost(object):
         assert resp.status == 400
         result = (await resp.json())
         message = result.pop('message')
-        expected_schema = ujson.dumps(get_model_schema(root_path + '/../myreco/users/models.py'),
+        expected_schema = ujson.dumps(get_swagger_json(root_path + '/../myreco/users/models.py'),
                                       escape_forward_slashes=False)
         expected_schema = \
             expected_schema.replace('#/definitions/grants', '#/definitions/UsersModel.grants')\

@@ -21,7 +21,7 @@
 # SOFTWARE.
 
 
-from swaggerit.utils import get_model_schema
+from swaggerit.utils import get_swagger_json
 from sqlalchemy.ext.declarative import AbstractConcreteBase, declared_attr
 from base64 import b64decode
 import sqlalchemy as sa
@@ -68,7 +68,7 @@ class MethodsModelBase(AbstractConcreteBase):
 
 class UsersModelBase(AbstractConcreteBase):
     __tablename__ = 'users'
-    __schema__ = get_model_schema(__file__)
+    __swagger_json__ = get_swagger_json(__file__)
 
     id = sa.Column(sa.String(255), primary_key=True)
     name = sa.Column(sa.String(255), unique=True, nullable=False)
