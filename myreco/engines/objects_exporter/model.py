@@ -22,14 +22,14 @@
 
 
 from myreco.utils import extend_swagger_json
-from myreco.engines.data_importer.model import EnginesModelDataImporterBase
+from myreco.engines.data_importer.model import EnginesDataImporterModelBase
 from copy import deepcopy
 import asyncio
 
 
-class EnginesModelObjectsExporterBase(EnginesModelDataImporterBase):
+class EnginesObjectsExporterModelBase(EnginesDataImporterModelBase):
     __swagger_json__ = extend_swagger_json(
-        EnginesModelDataImporterBase.__swagger_json__,
+        EnginesDataImporterModelBase.__swagger_json__,
         __file__
     )
 

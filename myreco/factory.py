@@ -30,8 +30,8 @@ from myreco.placements.models import (PlacementsModelBase, VariationsModelBase,
 from myreco.slots.models import (SlotsVariablesModelBase,
     SlotsModelBase, build_slots_fallbacks_table)
 from myreco.engines.base_model import EnginesModelBase
-from myreco.engines.data_importer.model import EnginesModelDataImporterBase
-from myreco.engines.objects_exporter.model import EnginesModelObjectsExporterBase
+from myreco.engines.data_importer.model import EnginesDataImporterModelBase
+from myreco.engines.objects_exporter.model import EnginesObjectsExporterModelBase
 from myreco.engines.cores.model import EnginesCoresModelBase
 from myreco.items_types.model import ItemsTypesModelBase, build_items_types_stores_table
 from myreco.items_types.data_file_importer.model import ItemsTypesDataFileImporterModelBase
@@ -61,7 +61,25 @@ class ModelsFactory(object):
             attrs.update(update)
         return attrs
 
-    def make_all_models(self, app_type='recommender'):
+    def make_all_models(self, app_type='recommender',
+                        engines_recommender_base=EnginesModelBase,
+                        engines_data_importer_base=EnginesDataImporterModelBase,
+                        engines_objects_exporter_base=EnginesObjectsExporterModelBase,
+                        engines_core_base=EnginesCoresModelBase,
+                        slots_base=SlotsModelBase,
+                        slots_variables_base=SlotsVariablesModelBase,
+                        items_types_recommender_base=ItemsTypesModelBase,
+                        items_types_data_importer_base=ItemsTypesDataFileImporterModelBase,
+                        items_types_objects_exporter_base=ItemsTypesFiltersUpdaterModelBase,
+                        placements_base=PlacementsModelBase,
+                        variations_base=VariationsModelBase,
+                        ab_test_users_base=ABTestUsersModelBase,
+                        stores_base=StoresModelBase,
+                        uris_base=URIsModelBase,
+                        users_base=UsersModelBase,
+                        methods_base=MethodsModelBase,
+                        grants_base=GrantsModelBase,
+                        variables_base=VariablesModelBase):
         self.make_all_tables()
         app_types = {'recommender', 'data_importer', 'objects_exporter'}
         if (app_type not in app_types):
@@ -70,20 +88,30 @@ class ModelsFactory(object):
                     app_type, ', '.join(app_types)))
 
         return {
-            'engines': self.make_engines_model(app_type),
-            'engines_cores': self.make_engines_cores_model(),
-            'slots': self.make_slots_model(),
-            'slots_variables': self.make_slots_variables_model(),
-            'items_types': self.make_items_types_model(app_type),
-            'placements': self.make_placements_model(),
-            'variations': self.make_variations_model(),
-            'ab_test_users': self.make_ab_test_users_model(),
-            'stores': self.make_stores_model(),
-            'uris': self.make_uris_model(),
-            'users': self.make_users_model(),
-            'methods': self.make_methods_model(),
-            'grants': self.make_grants_model(),
-            'variables': self.make_variables_model()
+            'engines': self.make_engines_model(
+                app_type,
+                recommender_base=engines_recommender_base,
+                data_importer_base=engines_data_importer_base,
+                objects_exporter_base=engines_objects_exporter_base
+            ),
+            'engines_cores': self.make_engines_cores_model(engines_core_base),
+            'slots': self.make_slots_model(slots_base),
+            'slots_variables': self.make_slots_variables_model(slots_variables_base),
+            'items_types': self.make_items_types_model(
+                app_type,
+                recommender_base=items_types_recommender_base,
+                data_importer_base=items_types_data_importer_base,
+                objects_exporter_base=items_types_objects_exporter_base
+            ),
+            'placements': self.make_placements_model(placements_base),
+            'variations': self.make_variations_model(variations_base),
+            'ab_test_users': self.make_ab_test_users_model(ab_test_users_base),
+            'stores': self.make_stores_model(stores_base),
+            'uris': self.make_uris_model(uris_base),
+            'users': self.make_users_model(users_base),
+            'methods': self.make_methods_model(methods_base),
+            'grants': self.make_grants_model(grants_base),
+            'variables': self.make_variables_model(variables_base)
         }
 
     def make_all_tables(self):
@@ -115,87 +143,95 @@ class ModelsFactory(object):
         attributes = self._init_attributes(attributes, self._commons_tables_attrs)
         return build_items_types_stores_table(self.base_model.metadata, **attributes)
 
-    def make_engines_model(self, app_type, attributes=None):
+    def make_engines_model(self, app_type,
+                           recommender_base=EnginesModelBase,
+                           data_importer_base=EnginesDataImporterModelBase,
+                           objects_exporter_base=EnginesObjectsExporterModelBase,
+                           attributes=None):
         attributes = self._init_attributes(attributes, self._commons_models_attrs)
 
         if app_type == 'recommender':
-            bases_classes = (EnginesModelBase, self.base_model)
+            bases_classes = (recommender_base, self.base_model)
         elif app_type == 'data_importer':
-            bases_classes = (EnginesModelDataImporterBase, self.base_model)
+            bases_classes = (data_importer_base, self.base_model)
         elif app_type == 'objects_exporter':
-            bases_classes = (EnginesModelObjectsExporterBase, self.base_model)
+            bases_classes = (objects_exporter_base, self.base_model)
 
         return self.meta_class('EnginesModel', bases_classes, attributes)
 
-    def make_engines_cores_model(self, attributes=None):
+    def make_engines_cores_model(self, base=EnginesCoresModelBase, attributes=None):
         attributes = self._init_attributes(attributes, self._commons_models_attrs)
         return self.meta_class(
-            'EnginesCoresModel', (EnginesCoresModelBase, self.base_model), attributes)
+            'EnginesCoresModel', (base, self.base_model), attributes)
 
-    def make_slots_model(self, attributes=None):
+    def make_slots_model(self, base=SlotsModelBase, attributes=None):
         attributes = self._init_attributes(attributes, self._commons_models_attrs)
         return self.meta_class(
-            'SlotsModel', (SlotsModelBase, self.base_model), attributes)
+            'SlotsModel', (base, self.base_model), attributes)
 
-    def make_slots_variables_model(self, attributes=None):
+    def make_slots_variables_model(self, base=SlotsVariablesModelBase, attributes=None):
         attributes = self._init_attributes(attributes, self._commons_models_attrs)
         return self.meta_class(
             'SlotsVariablesModel',
-            (SlotsVariablesModelBase, self.base_model), attributes)
+            (base, self.base_model), attributes)
 
-    def make_items_types_model(self, app_type, attributes=None):
+    def make_items_types_model(self, app_type,
+                               recommender_base=ItemsTypesModelBase,
+                               data_importer_base=ItemsTypesDataFileImporterModelBase,
+                               objects_exporter_base=ItemsTypesFiltersUpdaterModelBase,
+                               attributes=None):
         attributes = self._init_attributes(attributes, self._commons_models_attrs)
 
         if app_type == 'recommender':
-            bases_classes = (ItemsTypesModelBase, self.base_model)
+            bases_classes = (recommender_base, self.base_model)
         elif app_type == 'data_importer':
-            bases_classes = (ItemsTypesDataFileImporterModelBase, self.base_model)
+            bases_classes = (data_importer_base, self.base_model)
         elif app_type == 'objects_exporter':
-            bases_classes = (ItemsTypesFiltersUpdaterModelBase, self.base_model)
+            bases_classes = (objects_exporter_base, self.base_model)
 
         return self.meta_class('ItemsTypesModel', bases_classes, attributes)
 
-    def make_placements_model(self, attributes=None):
+    def make_placements_model(self, base=PlacementsModelBase, attributes=None):
         attributes = self._init_attributes(attributes, self._commons_models_attrs)
         return self.meta_class(
-            'PlacementsModel', (PlacementsModelBase, self.base_model), attributes)
+            'PlacementsModel', (base, self.base_model), attributes)
 
-    def make_variations_model(self, attributes=None):
+    def make_variations_model(self, base=VariationsModelBase, attributes=None):
         attributes = self._init_attributes(attributes, self._commons_models_attrs)
         return self.meta_class(
-            'VariationsModel', (VariationsModelBase, self.base_model), attributes)
+            'VariationsModel', (base, self.base_model), attributes)
 
-    def make_ab_test_users_model(self, attributes=None):
+    def make_ab_test_users_model(self, base=ABTestUsersModelBase, attributes=None):
         attributes = self._init_attributes(attributes, self._commons_models_attrs)
         return self.meta_class(
-            'ABTestUsersModel', (ABTestUsersModelBase, self.base_model), attributes)
+            'ABTestUsersModel', (base, self.base_model), attributes)
 
-    def make_stores_model(self, attributes=None):
+    def make_stores_model(self, base=StoresModelBase, attributes=None):
         attributes = self._init_attributes(attributes, self._commons_models_attrs)
         return self.meta_class(
-            'StoresModel', (StoresModelBase, self.base_model), attributes)
+            'StoresModel', (base, self.base_model), attributes)
 
-    def make_uris_model(self, attributes=None):
+    def make_uris_model(self, base=URIsModelBase, attributes=None):
         attributes = self._init_attributes(attributes, self._commons_models_attrs)
         return self.meta_class(
-            'URIsModel', (URIsModelBase, self.base_model), attributes)
+            'URIsModel', (base, self.base_model), attributes)
 
-    def make_users_model(self, attributes=None):
+    def make_users_model(self, base=UsersModelBase, attributes=None):
         attributes = self._init_attributes(attributes, self._commons_models_attrs)
         return self.meta_class(
-            'UsersModel', (UsersModelBase, self.base_model), attributes)
+            'UsersModel', (base, self.base_model), attributes)
 
-    def make_methods_model(self, attributes=None):
+    def make_methods_model(self, base=MethodsModelBase, attributes=None):
         attributes = self._init_attributes(attributes, self._commons_models_attrs)
         return self.meta_class(
-            'MethodsModel', (MethodsModelBase, self.base_model), attributes)
+            'MethodsModel', (base, self.base_model), attributes)
 
-    def make_grants_model(self, attributes=None):
+    def make_grants_model(self, base=GrantsModelBase, attributes=None):
         attributes = self._init_attributes(attributes, self._commons_models_attrs)
         return self.meta_class(
-            'GrantsModel', (GrantsModelBase, self.base_model), attributes)
+            'GrantsModel', (base, self.base_model), attributes)
 
-    def make_variables_model(self, attributes=None):
+    def make_variables_model(self, base=VariablesModelBase, attributes=None):
         attributes = self._init_attributes(attributes, self._commons_models_attrs)
         return self.meta_class(
-            'VariablesModel', (VariablesModelBase, self.base_model), attributes)
+            'VariablesModel', (base, self.base_model), attributes)

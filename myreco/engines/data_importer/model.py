@@ -28,7 +28,7 @@ from copy import deepcopy
 import asyncio
 
 
-class EnginesModelDataImporterBase(EnginesModelBase):
+class EnginesDataImporterModelBase(EnginesModelBase):
     __swagger_json__ = extend_swagger_json(
         EnginesModelBase.__swagger_json__,
         __file__
