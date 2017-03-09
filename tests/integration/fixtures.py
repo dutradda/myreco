@@ -102,18 +102,14 @@ class EngineCoreTestWithVars(EngineCoreTest):
     get_items = CoroMock()
 
 
-class ProductsImportProcessor(object):
+class MyProducts(object):
+    test = 1
 
-    def __init__(self):
-        self.test = 1
-
-    def pre_execute(self, prod):
-        v = prod.get('filter_integer')
-        if v is not None:
-            prod['filter_pre_processing'] = v + self.test
-
-    def execute(self, prods, status):
+    @classmethod
+    def insert(cls, session, prods):
         for prod in prods:
             v = prod.get('filter_integer')
             if v is not None:
-                prod['filter_post_processing'] = v
+                prod['base_prop'] = v + cls.test
+
+        return type(cls).insert(cls, session, prods)

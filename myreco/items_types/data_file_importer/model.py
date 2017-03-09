@@ -22,7 +22,7 @@
 
 
 from myreco.items_types.model import ItemsTypesModelBase
-from myreco.utils import ModuleObjectLoader, extend_swagger_json
+from myreco.utils import extend_swagger_json
 from swaggerit.exceptions import SwaggerItModelError
 from jsonschema import Draft4Validator
 from tempfile import NamedTemporaryFile
@@ -137,28 +137,49 @@ class ItemsTypesDataFileImporterModelBase(ItemsTypesModelBase):
         cls._logger.info(
             "Started update items from file for '{}'".format(store_items_model.__key__)
         )
-
-
+        warning_message = "Invalid line for model '{}': ".format(store_items_model.__key__) + '{}'
+        validator = Draft4Validator(store_items_model.item_type['schema'])
+        new_keys = set()
+        success_lines = 0
+        errors_lines = 0
+        new_keys = set()
+        success_lines = 0
+        errors_lines = 0
+        empty_lines = 0
+        validator = Draft4Validator(store_items_model.item_type['schema'])
+        new_keys = set()
+        success_lines = 0
+        errors_lines = 0
+        empty_lines = 0
         old_keys = set(await session.redis_bind.hkeys(store_items_model.__key__))
-        import_processor = cls._get_import_processor(store_items_model)
-        new_keys, status, new_feed = \
-            await cls._pre_processing_import(feed, store_items_model, import_processor)
         lines = []
 
-        async for line in new_feed:
-            lines.append(eval(line))
+        async for line in feed:
+            try:
+                line = cls._try_to_process_line(line, validator)
+                if line is None:
+                    empty_lines += 1
+                    continue
+                else:
+                    success_lines += 1
+                    new_keys.add(store_items_model.get_instance_key(line))
+                    lines.append(line)
 
-            if len(lines) == 1000:
-                cls._post_processing_import(lines, status, import_processor)
-                await store_items_model.insert(session, lines)
-                lines = []
+                    if len(lines) == 1000:
+                        await store_items_model.insert(session, lines)
+                        lines = []
+
+            except Exception as error:
+                errors_lines += 1
+                cls._logger.warning(warning_message.format(line))
+                cls._logger.warning(error)
+                continue
 
         if lines:
-            cls._post_processing_import(lines, status, import_processor)
             await store_items_model.insert(session, lines)
 
         del lines
-        await new_feed.close()
+        await feed.close()
         old_keys.difference_update(new_keys)
 
         if old_keys:
@@ -170,48 +191,11 @@ class ItemsTypesDataFileImporterModelBase(ItemsTypesModelBase):
             "Finished update items from file for '{}'".format(store_items_model.__key__)
         )
 
-        return status
-
-    @classmethod
-    def _get_import_processor(cls, store_items_model):
-        import_processor = store_items_model.item_type['import_processor']
-        if import_processor is not None:
-            return ModuleObjectLoader.load(import_processor)()
-
-    @classmethod
-    async def _pre_processing_import(cls, feed, store_items_model, import_processor):
-        warning_message = "Invalid line for model '{}': ".format(store_items_model.__key__) + '{}'
-        validator = Draft4Validator(store_items_model.item_type['schema'])
-        new_keys = set()
-        success_lines = 0
-        errors_lines = 0
-        empty_lines = 0
-        new_feed = await cls._build_async_file(aiopen, mode='w')
-
-        async for line in feed:
-            try:
-                line = cls._try_to_process_line(line, validator)
-                if line is None:
-                    empty_lines += 1
-                    continue
-                else:
-                    success_lines += 1
-                    new_keys.add(store_items_model.get_instance_key(line))
-                    await cls._write_new_feed(new_feed, line, import_processor)
-
-            except Exception as error:
-                errors_lines += 1
-                cls._logger.warning(warning_message.format(line))
-                cls._logger.warning(error)
-                continue
-
-        await new_feed.close()
-        status = {
+        return {
             'success_lines': success_lines,
             'errors_lines': errors_lines,
             'empty_lines': empty_lines
         }
-        return new_keys, status, await aiopen(new_feed.name)
 
     @classmethod
     def _try_to_process_line(cls, line, validator):
@@ -223,18 +207,6 @@ class ItemsTypesDataFileImporterModelBase(ItemsTypesModelBase):
         validator.validate(line)
 
         return line
-
-    @classmethod
-    async def _write_new_feed(cls, new_feed, line, import_processor):
-        if import_processor is not None and hasattr(import_processor, 'pre_execute'):
-            import_processor.pre_execute(line)
-
-        await new_feed.write(repr(line) + '\n')
-
-    @classmethod
-    def _post_processing_import(cls, lines, status, import_processor):
-        if import_processor is not None:
-            import_processor.execute(lines, status)
 
     @classmethod
     async def get_import_data_file_job(cls, req, session):

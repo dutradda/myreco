@@ -22,7 +22,7 @@
 
 
 from myreco.items_types._store_items_model_meta import _StoreItemsModelBaseMeta
-from myreco.utils import build_item_key, build_class_name
+from myreco.utils import build_item_key, build_class_name, ModuleObjectLoader
 from myreco.engines.cores.filters.filters import BooleanFilterBy
 from swaggerit.utils import get_swagger_json, get_dir_path
 from swaggerit.method import SwaggerMethod
@@ -42,19 +42,19 @@ class _ItemsTypesModelBase(AbstractConcreteBase):
     id = sa.Column(sa.Integer, primary_key=True)
     name = sa.Column(sa.String(255), unique=True, nullable=False)
     schema_json = sa.Column(sa.Text, nullable=False)
-    import_processor_json = sa.Column(sa.Text)
+    store_items_base_class_json = sa.Column(sa.Text)
 
     @declared_attr
     def stores(cls):
         return sa.orm.relationship('StoresModel', uselist=True, secondary='items_types_stores')
 
     @property
-    def import_processor(self):
-        if not hasattr(self, '_import_processor'):
-            self._import_processor = \
-                ujson.loads(self.import_processor_json) if self.import_processor_json \
+    def store_items_base_class(self):
+        if not hasattr(self, '_store_items_base_class'):
+            self._store_items_base_class = \
+                ujson.loads(self.store_items_base_class_json) if self.store_items_base_class_json \
                     is not None else None
-        return self._import_processor
+        return self._store_items_base_class
 
     async def _setattr(self, attr_name, value, session, input_):
         if attr_name == 'schema':
@@ -62,9 +62,9 @@ class _ItemsTypesModelBase(AbstractConcreteBase):
             value = ujson.dumps(value)
             attr_name = 'schema_json'
 
-        if attr_name == 'import_processor':
+        if attr_name == 'store_items_base_class':
             value = ujson.dumps(value)
-            attr_name = 'import_processor_json'
+            attr_name = 'store_items_base_class_json'
 
         await super()._setattr(attr_name, value, session, input_)
 
@@ -88,9 +88,9 @@ class _ItemsTypesModelBase(AbstractConcreteBase):
                     [{'name': name, 'schema': schema_properties[name]} \
                         for name in schema_properties_names]
 
-        if todict_schema.get('import_processor') is not False:
-            dict_inst.pop('import_processor_json')
-            dict_inst['import_processor'] = self.import_processor
+        if todict_schema.get('store_items_base_class') is not False:
+            dict_inst.pop('store_items_base_class_json')
+            dict_inst['store_items_base_class'] = self.store_items_base_class
 
 
 class _StoreItemsOperationsMixin(object):
@@ -137,17 +137,20 @@ class _StoreItemsOperationsMixin(object):
         store_items_model = cls.get_model(store_items_model_key)
 
         if store_items_model is None:
-            store_items_model = cls._set_store_items_model(item_type, store_items_model_key, store_id)
+            store_items_model = \
+                cls._set_store_items_model(item_type, store_items_model_key, store_id)
 
         return store_items_model
 
     @classmethod
     def _set_store_items_model(cls, item_type, store_items_model_key, store_id):
         class_name = build_class_name(item_type['name'], str(store_id))
+        base_class = cls._get_store_items_base_class(item_type)
         store_items_model = FactoryOrmModels.make_redis_elsearch(
             class_name, item_type['schema']['id_names'],
             store_items_model_key, use_elsearch=True,
             metaclass=_StoreItemsModelBaseMeta,
+            base=base_class,
             extra_attributes={
                 'insert_validator': cls._build_insert_validator(item_type),
                 'update_validator': cls._build_update_validator(item_type),
@@ -155,6 +158,13 @@ class _StoreItemsOperationsMixin(object):
             }
         )
         return store_items_model
+
+    @classmethod
+    def _get_store_items_base_class(cls, item_type):
+        return ModuleObjectLoader.load({
+            'path': item_type['store_items_base_class']['module'],
+            'object_name': item_type['store_items_base_class']['class_name']
+        }) if item_type['store_items_base_class'] else object
 
     @classmethod
     def _build_insert_validator(cls, item_type):

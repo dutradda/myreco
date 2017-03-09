@@ -349,7 +349,7 @@ class TestSlotsModelPost(object):
             'engine': {
                 'item_type': {
                     'id': 1,
-                    'import_processor': None,
+                    'store_items_base_class': None,
                     'stores': [{
                         'configuration': {'data_path': '/test'},
                         'country': 'test',
@@ -456,7 +456,7 @@ class TestSlotsModelPost(object):
             'engine': {
                 'item_type': {
                     'id': 1,
-                    'import_processor': None,
+                    'store_items_base_class': None,
                     'stores': [{
                         'configuration': {'data_path': '/test'},
                         'country': 'test',
@@ -575,7 +575,7 @@ class TestSlotsModelPost(object):
                 'engine': {
                     'item_type': {
                         'id': 1,
-                        'import_processor': None,
+                        'store_items_base_class': None,
                         'stores': [{
                             'configuration': {'data_path': '/test'},
                             'country': 'test',
@@ -659,7 +659,7 @@ class TestSlotsModelPost(object):
             'engine': {
                 'item_type': {
                     'id': 1,
-                    'import_processor': None,
+                    'store_items_base_class': None,
                     'stores': [{
                         'configuration': {'data_path': '/test'},
                         'country': 'test',
@@ -796,7 +796,7 @@ class TestSlotsModelGet(object):
             'engine': {
                 'item_type': {
                     'id': 1,
-                    'import_processor': None,
+                    'store_items_base_class': None,
                     'stores': [{
                         'configuration': {'data_path': '/test'},
                         'country': 'test',
@@ -1070,7 +1070,7 @@ class TestSlotsModelUriTemplatePatch(object):
             'engine': {
                 'item_type': {
                     'id': 1,
-                    'import_processor': None,
+                    'store_items_base_class': None,
                     'stores': [{
                         'configuration': {'data_path': '/test'},
                         'country': 'test',
@@ -1223,7 +1223,7 @@ class TestSlotsModelUriTemplateGet(object):
             'engine': {
                 'item_type': {
                     'id': 1,
-                    'import_processor': None,
+                    'store_items_base_class': None,
                     'stores': [{
                         'configuration': {'data_path': '/test'},
                         'country': 'test',

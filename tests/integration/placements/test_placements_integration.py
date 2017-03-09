@@ -114,9 +114,9 @@ def init_db(models, session, api, temp_dir):
     item_type = {
         'name': 'new_products',
         'stores': [{'id': 1}],
-        'import_processor': {
-            'path': 'tests.integration.fixtures',
-            'object_name': 'ProductsImportProcessor'
+        'store_items_base_class': {
+            'module': 'tests.integration.fixtures',
+            'class_name': 'MyProducts'
         },
         'schema': {
             'type': 'object',
@@ -125,8 +125,7 @@ def init_db(models, session, api, temp_dir):
                 'filter_string': {'type': 'string'},
                 'filter_integer': {'type': 'integer'},
                 'filter_boolean': {'type': 'boolean'},
-                'filter_pre_processing': {'type': 'integer'},
-                'filter_post_processing': {'type': 'integer'},
+                'base_prop': {'type': 'integer'},
                 'filter_array': {
                     'type': 'array',
                     'items': {'type': 'string'}
@@ -206,13 +205,13 @@ def init_db(models, session, api, temp_dir):
     session.loop.run_until_complete(models['variables'].insert(session, {'name': 'test3', 'store_id': 1}))
     session.loop.run_until_complete(models['variables'].insert(session, {'name': 'filter_string_inclusive', 'store_id': 1}))
     session.loop.run_until_complete(models['variables'].insert(session, {'name': 'filter_integer_inclusive', 'store_id': 1}))
-    session.loop.run_until_complete(models['variables'].insert(session, {'name': 'filter_post_processing_inclusive', 'store_id': 1}))
+    session.loop.run_until_complete(models['variables'].insert(session, {'name': 'filter_base_prop_inclusive', 'store_id': 1}))
     session.loop.run_until_complete(models['variables'].insert(session, {'name': 'filter_boolean_inclusive', 'store_id': 1}))
     session.loop.run_until_complete(models['variables'].insert(session, {'name': 'filter_array_inclusive', 'store_id': 1}))
     session.loop.run_until_complete(models['variables'].insert(session, {'name': 'filter_object_inclusive', 'store_id': 1}))
     session.loop.run_until_complete(models['variables'].insert(session, {'name': 'filter_string_exclusive', 'store_id': 1}))
     session.loop.run_until_complete(models['variables'].insert(session, {'name': 'filter_integer_exclusive', 'store_id': 1}))
-    session.loop.run_until_complete(models['variables'].insert(session, {'name': 'filter_post_processing_exclusive', 'store_id': 1}))
+    session.loop.run_until_complete(models['variables'].insert(session, {'name': 'filter_base_prop_exclusive', 'store_id': 1}))
     session.loop.run_until_complete(models['variables'].insert(session, {'name': 'filter_boolean_exclusive', 'store_id': 1}))
     session.loop.run_until_complete(models['variables'].insert(session, {'name': 'filter_array_exclusive', 'store_id': 1}))
     session.loop.run_until_complete(models['variables'].insert(session, {'name': 'filter_object_exclusive', 'store_id': 1}))
@@ -281,12 +280,12 @@ def init_db(models, session, api, temp_dir):
             'inside_engine_name': 'filter_integer'
         },{
             '_operation': 'insert',
-            'variable_name': 'filter_post_processing_inclusive',
+            'variable_name': 'filter_base_prop_inclusive',
             'variable_store_id': 1,
             'is_filter': True,
             'is_inclusive_filter': True,
             'filter_type': 'By Property',
-            'inside_engine_name': 'filter_post_processing'
+            'inside_engine_name': 'base_prop'
         },{
             '_operation': 'insert',
             'variable_name': 'filter_boolean_inclusive',
@@ -329,12 +328,12 @@ def init_db(models, session, api, temp_dir):
             'inside_engine_name': 'filter_integer'
         },{
             '_operation': 'insert',
-            'variable_name': 'filter_post_processing_exclusive',
+            'variable_name': 'filter_base_prop_exclusive',
             'variable_store_id': 1,
             'is_filter': True,
             'is_inclusive_filter': False,
             'filter_type': 'By Property',
-            'inside_engine_name': 'filter_post_processing'
+            'inside_engine_name': 'base_prop'
         },{
             '_operation': 'insert',
             'variable_name': 'filter_boolean_exclusive',
@@ -538,7 +537,7 @@ class TestPlacementsModelPost(object):
                         'id': 1,
                         'item_type': {
                             'id': 1,
-                            'import_processor': None,
+                            'store_items_base_class': None,
                             'stores': [{
                                 'configuration': {'data_path': temp_dir.name},
                                 'country': 'test',
@@ -712,7 +711,7 @@ class TestPlacementsModelGet(object):
                         'id': 1,
                         'item_type': {
                             'id': 1,
-                            'import_processor': None,
+                            'store_items_base_class': None,
                             'stores': [{
                                 'configuration': {'data_path': temp_dir.name},
                                 'country': 'test',
@@ -975,7 +974,7 @@ class TestPlacementsModelUriTemplateGet(object):
                         'id': 1,
                         'item_type': {
                             'id': 1,
-                            'import_processor': None,
+                            'store_items_base_class': None,
                             'stores': [{
                                 'configuration': {'data_path': temp_dir.name},
                                 'country': 'test',
@@ -1598,8 +1597,8 @@ class TestPlacementsGetRecomendationsFilters(object):
         resp = await client.get('/placements/{}/items?filter_integer_inclusive=1'.format(obj['small_hash']), headers=headers_without_content_type)
         assert resp.status == 200
         assert (await resp.json())['slots'][0]['items'] == [
-            {'sku': 'test1', 'item_id': 1, 'filter_integer': 1},
-            {'sku': 'test2', 'item_id': 2, 'filter_integer': 1}
+            {'sku': 'test1', 'item_id': 1, 'filter_integer': 1, 'base_prop': 2},
+            {'sku': 'test2', 'item_id': 2, 'filter_integer': 1, 'base_prop': 2}
         ]
 
     async def test_get_items_by_integer_exclusive(self, init_db, client, headers, monkeypatch, headers_without_content_type):
@@ -1964,7 +1963,7 @@ class TestPlacementsGetRecomendationsFilters(object):
             {'sku': 'test2', 'item_id': 2, 'filter_object': {'id': 2}}
         ]
 
-    async def test_get_items_by_post_processing_inclusive(self, init_db, client, headers, monkeypatch, headers_without_content_type):
+    async def test_get_items_by_base_prop_inclusive(self, init_db, client, headers, monkeypatch, headers_without_content_type):
         random_patch(monkeypatch)
         client = await client
         products = [{
@@ -2031,14 +2030,14 @@ class TestPlacementsGetRecomendationsFilters(object):
         resp = await client.post('/placements/', headers=headers, data=ujson.dumps(body))
         obj = (await resp.json())[0]
 
-        resp = await client.get('/placements/{}/items?filter_post_processing_inclusive=1'.format(obj['small_hash']), headers=headers_without_content_type)
+        resp = await client.get('/placements/{}/items?filter_base_prop_inclusive=2'.format(obj['small_hash']), headers=headers_without_content_type)
         assert resp.status == 200
         assert (await resp.json())['slots'][0]['items'] == [
-            {'sku': 'test1', 'item_id': 1, 'filter_integer': 1, 'filter_post_processing': 1, 'filter_pre_processing': 2},
-            {'sku': 'test2', 'item_id': 2, 'filter_integer': 1, 'filter_post_processing': 1, 'filter_pre_processing': 2}
+            {'sku': 'test1', 'item_id': 1, 'filter_integer': 1, 'base_prop': 2},
+            {'sku': 'test2', 'item_id': 2, 'filter_integer': 1, 'base_prop': 2}
         ]
 
-    async def test_get_items_by_post_processing_exclusive(self, init_db, client, headers, monkeypatch, headers_without_content_type):
+    async def test_get_items_by_base_prop_exclusive(self, init_db, client, headers, monkeypatch, headers_without_content_type):
         random_patch(monkeypatch)
         client = await client
         products = [{
@@ -2106,7 +2105,7 @@ class TestPlacementsGetRecomendationsFilters(object):
         resp = await client.post('/placements/', headers=headers, data=ujson.dumps(body))
         obj = (await resp.json())[0]
 
-        resp = await client.get('/placements/{}/items?filter_post_processing_exclusive=1'.format(obj['small_hash']), headers=headers_without_content_type)
+        resp = await client.get('/placements/{}/items?filter_base_prop_exclusive=2'.format(obj['small_hash']), headers=headers_without_content_type)
         assert resp.status == 200
         assert (await resp.json())['slots'][0]['items'] == [{'sku': 'test3', 'item_id': 3}]
 
@@ -2266,7 +2265,7 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
         resp = await client.get('/placements/{}/items?filter_integer_inclusive_of=1|test1'.format(obj['small_hash']), headers=headers_without_content_type)
         assert resp.status == 200
         assert (await resp.json())['slots'][0]['items'] == [
-            {'sku': 'test1', 'item_id': 1, 'filter_integer': 1}]
+            {'sku': 'test1', 'item_id': 1, 'filter_integer': 1, 'base_prop': 2}]
 
     async def test_get_items_of_integer_exclusive(self, init_db, client, headers, monkeypatch, headers_without_content_type):
         random_patch(monkeypatch)
@@ -2318,7 +2317,7 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
         assert resp.status == 200
         assert (await resp.json())['slots'][0]['items'] == [
             {'sku': 'test3', 'item_id': 3},
-            {'sku': 'test2', 'item_id': 2, 'filter_integer': 2}
+            {'sku': 'test2', 'item_id': 2, 'filter_integer': 2, 'base_prop': 3}
         ]
 
     async def test_get_items_of_boolean_inclusive(self, init_db, client, headers, monkeypatch, headers_without_content_type):
