@@ -33,8 +33,8 @@ class EngineCoreRecommender(EngineCoreBase):
     def get_variables(self):
         return []
 
-    async def get_items(self, session, filters, max_items, show_details, **variables):
-        items_vector = await self._build_items_vector(session, **variables)
+    async def get_items(self, session, filters, max_items, show_details, **external_variables):
+        items_vector = await self._build_items_vector(session, **external_variables)
 
         if items_vector is not None:
             for filter_, ids in filters.items():
@@ -45,7 +45,7 @@ class EngineCoreRecommender(EngineCoreBase):
         return []
 
     @abstractmethod
-    async def _build_items_vector(self, session, **variables):
+    async def _build_items_vector(self, session, **external_variables):
         pass
 
     async def _build_rec_list(self, session, items_vector, max_items, show_details):

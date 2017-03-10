@@ -24,10 +24,10 @@
 from myreco.users.models import (GrantsModelBase, URIsModelBase, MethodsModelBase,
     UsersModelBase, build_users_grants_table, build_users_stores_table)
 from myreco.stores.model import StoresModelBase
-from myreco.variables.model import VariablesModelBase
+from myreco.external_variables.model import ExternalVariablesModelBase
 from myreco.placements.models import (PlacementsModelBase, VariationsModelBase,
     ABTestUsersModelBase, build_variations_slots_table)
-from myreco.slots.models import (SlotsVariablesModelBase,
+from myreco.slots.models import (SlotsVariablesModelBase, SlotsFiltersModelBase,
     SlotsModelBase, build_slots_fallbacks_table)
 from myreco.engines.base_model import EnginesModelBase
 from myreco.engines.data_importer.model import EnginesDataImporterModelBase
@@ -68,6 +68,7 @@ class ModelsFactory(object):
                         engines_core_base=EnginesCoresModelBase,
                         slots_base=SlotsModelBase,
                         slots_variables_base=SlotsVariablesModelBase,
+                        slots_filters_base=SlotsFiltersModelBase,
                         items_types_recommender_base=ItemsTypesModelBase,
                         items_types_data_importer_base=ItemsTypesDataFileImporterModelBase,
                         items_types_objects_exporter_base=ItemsTypesFiltersUpdaterModelBase,
@@ -79,7 +80,7 @@ class ModelsFactory(object):
                         users_base=UsersModelBase,
                         methods_base=MethodsModelBase,
                         grants_base=GrantsModelBase,
-                        variables_base=VariablesModelBase):
+                        external_variables_base=ExternalVariablesModelBase):
         self.make_all_tables()
         app_types = {'recommender', 'data_importer', 'objects_exporter'}
         if (app_type not in app_types):
@@ -97,6 +98,7 @@ class ModelsFactory(object):
             'engines_cores': self.make_engines_cores_model(engines_core_base),
             'slots': self.make_slots_model(slots_base),
             'slots_variables': self.make_slots_variables_model(slots_variables_base),
+            'slots_filters': self.make_slots_filters_model(slots_filters_base),
             'items_types': self.make_items_types_model(
                 app_type,
                 recommender_base=items_types_recommender_base,
@@ -111,7 +113,7 @@ class ModelsFactory(object):
             'users': self.make_users_model(users_base),
             'methods': self.make_methods_model(methods_base),
             'grants': self.make_grants_model(grants_base),
-            'variables': self.make_variables_model(variables_base)
+            'external_variables': self.make_external_variables_model(external_variables_base)
         }
 
     def make_all_tables(self):
@@ -171,9 +173,11 @@ class ModelsFactory(object):
 
     def make_slots_variables_model(self, base=SlotsVariablesModelBase, attributes=None):
         attributes = self._init_attributes(attributes, self._commons_models_attrs)
-        return self.meta_class(
-            'SlotsVariablesModel',
-            (base, self.base_model), attributes)
+        return self.meta_class('SlotsVariablesModel', (base, self.base_model), attributes)
+
+    def make_slots_filters_model(self, base=SlotsFiltersModelBase, attributes=None):
+        attributes = self._init_attributes(attributes, self._commons_models_attrs)
+        return self.meta_class('SlotsFiltersModel', (base, self.base_model), attributes)
 
     def make_items_types_model(self, app_type,
                                recommender_base=ItemsTypesModelBase,
@@ -231,7 +235,7 @@ class ModelsFactory(object):
         return self.meta_class(
             'GrantsModel', (base, self.base_model), attributes)
 
-    def make_variables_model(self, base=VariablesModelBase, attributes=None):
+    def make_external_variables_model(self, base=ExternalVariablesModelBase, attributes=None):
         attributes = self._init_attributes(attributes, self._commons_models_attrs)
         return self.meta_class(
-            'VariablesModel', (base, self.base_model), attributes)
+            'ExternalVariablesModel', (base, self.base_model), attributes)

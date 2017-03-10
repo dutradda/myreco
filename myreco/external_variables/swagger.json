@@ -1,6 +1,6 @@
 {
     "paths": {
-        "/variables/": {
+        "/external_variables/": {
             "post": {
                 "operationId": "swagger_insert",
                 "parameters": [{
@@ -32,7 +32,7 @@
                 "responses": {"200": {"description": "Got"}}
             }
         },
-        "/variables/{name}/{store_id}": {
+        "/external_variables/{name}/{store_id}": {
             "parameters": [{
                 "name": "name",
                 "in": "path",

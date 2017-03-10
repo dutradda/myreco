@@ -87,7 +87,8 @@
                 "store_id": {"type": "integer"},
                 "engine_id": {"type": "integer"},
                 "fallbacks": {"$ref": "#/definitions/fallbacks"},
-                "slot_variables": {"$ref": "#/definitions/slot_variables"}
+                "slot_variables": {"$ref": "#/definitions/slot_variables"},
+                "slot_filters": {"$ref": "#/definitions/slot_filters"}
             }
         },
         "schema_array": {
@@ -96,14 +97,15 @@
             "items": {
                 "type": "object",
                 "additionalProperties": false,
-                "required": ["engine_id", "store_id", "slot_variables", "max_items", "name"],
+                "required": ["engine_id", "store_id", "max_items", "name"],
                 "properties": {
                     "max_items": {"type": "integer"},
                     "name": {"type": "string"},
                     "store_id": {"type": "integer"},
                     "engine_id": {"type": "integer"},
                     "fallbacks": {"$ref": "#/definitions/fallbacks"},
-                    "slot_variables": {"$ref": "#/definitions/slot_variables"}
+                    "slot_variables": {"$ref": "#/definitions/slot_variables"},
+                    "slot_filters": {"$ref": "#/definitions/slot_filters"}
                 }
             }
         },
@@ -128,20 +130,44 @@
                 "minProperties": 2,
                 "oneOf": [
                     {"required": ["id", "_operation"]},
-                    {"required": ["variable_name", "variable_store_id", "inside_engine_name"]},
-                    {"required": ["variable", "inside_engine_name"]}
+                    {"required": ["external_variable_name", "external_variable_store_id", "engine_variable_name"]},
+                    {"required": ["external_variable", "engine_variable_name"]}
                 ],
                 "properties": {
                     "id": {"type": "integer"},
                     "slot_id": {"type": "integer"},
-                    "variable_name": {"type": "string"},
-                    "variable_store_id": {"type": "integer"},
+                    "external_variable_name": {"type": "string"},
+                    "external_variable_store_id": {"type": "integer"},
                     "_operation": {"enum": ["delete", "update", "insert"]},
-                    "inside_engine_name": {"type": "string"},
-                    "is_filter": {"type": "boolean"},
-                    "filter_type": {"enum": ["By Property", "By Property Of"]},
-                    "is_inclusive_filter": {"type": "boolean"},
+                    "engine_variable_name": {"type": "string"},
                     "override": {"type": "boolean"},
+                    "override_value": {"type": "string"},
+                    "external_variable": {"$ref": "#/definitions/external_variable"}
+                }
+            }
+        },
+        "slot_filters": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "minProperties": 2,
+                "oneOf": [
+                    {"required": ["id", "_operation"]},
+                    {"required": ["external_variable_name", "external_variable_store_id", "property_name", "type_id"]},
+                    {"required": ["external_variable", "property_name", "type_id"]}
+                ],
+                "properties": {
+                    "id": {"type": "integer"},
+                    "slot_id": {"type": "integer"},
+                    "type_id": {"type": "string"},
+                    "external_variable_name": {"type": "string"},
+                    "external_variable_store_id": {"type": "integer"},
+                    "_operation": {"enum": ["delete", "update", "insert"]},
+                    "property_name": {"type": "string"},
+                    "is_inclusive": {"type": "boolean", "default": true},
+                    "override": {"type": "boolean", "default": false},
                     "override_value": {"type": "string"},
                     "skip_values": {
                         "oneOf": [
@@ -149,21 +175,22 @@
                             {"type": "null"}
                         ]
                     },
-                    "variable": {
-                        "type": "object",
-                        "additionalProperties": false,
-                        "oneOf": [
-                            {"required": ["id"]},
-                            {"required": ["name", "engine_id", "_operation"]}
-                        ],
-                        "properties": {
-                            "id": {"type": "integer"},
-                            "engine_id": {"type": "integer"},
-                            "name": {"type": "string"},
-                            "_operation": {"enum": ["remove", "insert", "get"]}
-                        }
-                    }
+                    "external_variable": {"$ref": "#/definitions/external_variable"}
                 }
+            }
+        },
+        "external_variable": {
+            "type": "object",
+            "additionalProperties": false,
+            "oneOf": [
+                {"required": ["id"]},
+                {"required": ["name", "engine_id", "_operation"]}
+            ],
+            "properties": {
+                "id": {"type": "integer"},
+                "engine_id": {"type": "integer"},
+                "name": {"type": "string"},
+                "_operation": {"enum": ["remove", "insert", "get"]}
             }
         }
     }

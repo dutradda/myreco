@@ -553,53 +553,48 @@ def update_filters_init_db(models, session, api, monkeypatch):
     }
     session.loop.run_until_complete(models['engines'].insert(session, engine))
 
-    session.loop.run_until_complete(models['variables'].insert(session, {'name': 'test', 'store_id': 1}))
+    session.loop.run_until_complete(models['external_variables'].insert(session, {'name': 'test', 'store_id': 1}))
 
     slot = {
         'max_items': 10,
         'name': 'test',
         'store_id': 1,
         'engine_id': 1,
-        'slot_variables': [{
+        'slot_filters': [{
             '_operation': 'insert',
-            'variable_name': 'test',
-            'variable_store_id': 1,
-            'is_filter': True,
-            'is_inclusive_filter': True,
-            'filter_type': 'By Property',
-            'inside_engine_name': 'filter1'
+            'external_variable_name': 'test',
+            'external_variable_store_id': 1,
+            'is_inclusive': True,
+            'type_id': 'property_value',
+            'property_name': 'filter1'
         },{
             '_operation': 'insert',
-            'variable_name': 'test',
-            'variable_store_id': 1,
-            'is_filter': True,
-            'is_inclusive_filter': True,
-            'filter_type': 'By Property',
-            'inside_engine_name': 'filter2'
+            'external_variable_name': 'test',
+            'external_variable_store_id': 1,
+            'is_inclusive': True,
+            'type_id': 'property_value',
+            'property_name': 'filter2'
         },{
             '_operation': 'insert',
-            'variable_name': 'test',
-            'variable_store_id': 1,
-            'is_filter': True,
-            'is_inclusive_filter': True,
-            'filter_type': 'By Property',
-            'inside_engine_name': 'filter3'
+            'external_variable_name': 'test',
+            'external_variable_store_id': 1,
+            'is_inclusive': True,
+            'type_id': 'property_value',
+            'property_name': 'filter3'
         },{
             '_operation': 'insert',
-            'variable_name': 'test',
-            'variable_store_id': 1,
-            'is_filter': True,
-            'is_inclusive_filter': True,
-            'filter_type': 'By Property',
-            'inside_engine_name': 'filter4'
+            'external_variable_name': 'test',
+            'external_variable_store_id': 1,
+            'is_inclusive': True,
+            'type_id': 'property_value',
+            'property_name': 'filter4'
         },{
             '_operation': 'insert',
-            'variable_name': 'test',
-            'variable_store_id': 1,
-            'is_filter': True,
-            'is_inclusive_filter': True,
-            'filter_type': 'By Property',
-            'inside_engine_name': 'filter5'
+            'external_variable_name': 'test',
+            'external_variable_store_id': 1,
+            'is_inclusive': True,
+            'type_id': 'property_value',
+            'property_name': 'filter5'
         }]
     }
     session.loop.run_until_complete(models['slots'].insert(session, slot))

@@ -53,7 +53,7 @@ class ItemsTypesFiltersUpdaterModelBase(ItemsTypesDataFileImporterModelBase):
         items_indices_map_ret = await store_items_model.items_indices_map.update(session)
         items_indices_map_len = await store_items_model.items_indices_map.get_length(session)
 
-        filters_factory = FiltersFactory()
+        filters_factory = cls.get_model('slots_filters').__factory__
         enabled_filters = await cls._get_enabled_filters(store_items_model, session, store_id)
         filters_ret = dict()
         items_indices_map_dict = await store_items_model.items_indices_map.get_all(session)
@@ -64,10 +64,10 @@ class ItemsTypesFiltersUpdaterModelBase(ItemsTypesDataFileImporterModelBase):
         stock_filter = BooleanFilterBy(store_items_model, 'stock')
         await stock_filter.update(session, items, items_indices_map_len)
 
-        for slot_var, schema in enabled_filters:
+        for slot_filter, schema in enabled_filters:
             filter_ = filters_factory.make(
-                store_items_model, slot_var,
-                schema, slot_var['skip_values']
+                store_items_model, slot_filter,
+                schema, slot_filter['skip_values']
             )
             filters_ret[filter_.name] = await filter_.update(session, items, items_indices_map_len)
 
@@ -78,23 +78,22 @@ class ItemsTypesFiltersUpdaterModelBase(ItemsTypesDataFileImporterModelBase):
     async def _get_enabled_filters(cls, store_items_model, session, store_id):
         slots_model = cls.get_model('slots')
         slots = await slots_model.get(session, **{'store_id': store_id})
-        filters_variables = []
+        filters_external_variables = []
 
         # used to aggregate filters inclusive and exclusive with same property
         filters_names_set = set()
 
         for slot in slots:
             if store_items_model.item_type['id'] == slot['engine']['item_type_id']:
-                for slot_var in slot['slot_variables']:
-                    if slot_var['is_filter']:
-                        filter_name = slot_var['inside_engine_name']
-                        if filter_name not in filters_names_set:
-                            schema = \
-                                store_items_model.item_type['schema']['properties'][filter_name]
-                            filters_variables.append((slot_var, schema))
-                            filters_names_set.add(filter_name)
+                for slot_filter in slot['slot_filters']:
+                    filter_name = slot_filter['property_name']
+                    if filter_name not in filters_names_set:
+                        schema = \
+                            store_items_model.item_type['schema']['properties'][filter_name]
+                        filters_external_variables.append((slot_filter, schema))
+                        filters_names_set.add(filter_name)
 
-        return filters_variables
+        return filters_external_variables
 
     @classmethod
     async def _get_items_with_indices_and_stock(cls, store_items_model, session, items_indices_map_dict):

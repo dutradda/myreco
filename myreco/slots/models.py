@@ -21,6 +21,7 @@
 # SOFTWARE.
 
 
+from myreco.engines.cores.filters.factory import FiltersFactory
 from swaggerit.utils import get_swagger_json
 from swaggerit.exceptions import SwaggerItModelError
 from jsonschema import ValidationError
@@ -32,14 +33,66 @@ import ujson
 class SlotsVariablesModelBase(AbstractConcreteBase):
     __tablename__ = 'slots_variables'
     __use_redis__ = False
+    __id_names__ = ['id']
 
-    id = sa.Column(sa.Integer, primary_key=True)
-    is_filter = sa.Column(sa.Boolean, default=False)
-    filter_type = sa.Column(sa.String(255))
-    is_inclusive_filter = sa.Column(sa.Boolean)
+    # To autoincrement works a alter table with autoincrement is necessary
+    id = sa.Column(sa.Integer, nullable=False, unique=True, autoincrement=True, index=True)
     override = sa.Column(sa.Boolean, default=False)
     override_value_json = sa.Column(sa.Text)
-    inside_engine_name = sa.Column(sa.String(255), nullable=False)
+    engine_variable_name = sa.Column(sa.String(255), primary_key=True)
+
+    @property
+    def override_value(self):
+        if not hasattr(self, '_override_value'):
+            self._override_value = \
+                ujson.loads(self.override_value_json) if self.override_value_json is not None else None
+        return self._override_value
+
+    async def _setattr(self, attr_name, value, session, input_):
+        if attr_name == 'override_value':
+            value = ujson.dumps(value)
+            attr_name = 'override_value_json'
+
+        await super()._setattr(attr_name, value, session, input_)
+
+    def _format_output_json(self, dict_inst, schema):
+        if schema.get('override_value') is not False:
+            dict_inst.pop('override_value_json')
+            dict_inst['override_value'] = self.override_value
+
+    @declared_attr
+    def external_variable_name(cls):
+        return sa.Column(sa.ForeignKey('external_variables.name', ondelete='CASCADE', onupdate='CASCADE'), nullable=False)
+
+    @declared_attr
+    def external_variable_store_id(cls):
+        return sa.Column(sa.ForeignKey('external_variables.store_id', ondelete='CASCADE', onupdate='CASCADE'), nullable=False)
+
+    @declared_attr
+    def slot_id(cls):
+        return sa.Column(sa.ForeignKey('slots.id', ondelete='CASCADE', onupdate='CASCADE'), primary_key=True)
+
+    @declared_attr
+    def external_variable(cls):
+        return sa.orm.relationship('ExternalVariablesModel',
+            foreign_keys=[cls.external_variable_name, cls.external_variable_store_id],
+            primaryjoin='and_(SlotsVariablesModel.external_variable_name == ExternalVariablesModel.name, '\
+                        'SlotsVariablesModel.external_variable_store_id == ExternalVariablesModel.store_id)')
+
+
+class SlotsFiltersModelBase(AbstractConcreteBase):
+    __tablename__ = 'slots_filters'
+    __use_redis__ = False
+    __factory__ = FiltersFactory
+    __id_names__ = ['id']
+
+    # To autoincrement works a alter table with autoincrement is necessary
+    id = sa.Column(sa.Integer, nullable=False, unique=True, autoincrement=True, index=True)
+    is_inclusive = sa.Column(sa.Boolean, default=True, primary_key=True)
+    property_name = sa.Column(sa.String(255), nullable=False, primary_key=True)
+    type_id = sa.Column(sa.String(255), nullable=False, primary_key=True)
+    override = sa.Column(sa.Boolean, default=False)
+    override_value_json = sa.Column(sa.Text)
     skip_values_json = sa.Column(sa.Text)
 
     @property
@@ -77,23 +130,27 @@ class SlotsVariablesModelBase(AbstractConcreteBase):
             dict_inst['override_value'] = self.override_value
 
     @declared_attr
-    def variable_name(cls):
-        return sa.Column(sa.ForeignKey('variables.name', ondelete='CASCADE', onupdate='CASCADE'), nullable=False)
+    def external_variable_name(cls):
+        return sa.Column(sa.ForeignKey('external_variables.name', ondelete='CASCADE', onupdate='CASCADE'), nullable=False)
 
     @declared_attr
-    def variable_store_id(cls):
-        return sa.Column(sa.ForeignKey('variables.store_id', ondelete='CASCADE', onupdate='CASCADE'), nullable=False)
+    def external_variable_store_id(cls):
+        return sa.Column(sa.ForeignKey('external_variables.store_id', ondelete='CASCADE', onupdate='CASCADE'), nullable=False)
 
     @declared_attr
     def slot_id(cls):
         return sa.Column(sa.ForeignKey('slots.id', ondelete='CASCADE', onupdate='CASCADE'), nullable=False)
 
     @declared_attr
-    def variable(cls):
-        return sa.orm.relationship('VariablesModel',
-            foreign_keys=[cls.variable_name, cls.variable_store_id],
-            primaryjoin='and_(SlotsVariablesModel.variable_name == VariablesModel.name, '\
-                        'SlotsVariablesModel.variable_store_id == VariablesModel.store_id)')
+    def external_variable(cls):
+        return sa.orm.relationship('ExternalVariablesModel',
+            foreign_keys=[cls.external_variable_name, cls.external_variable_store_id],
+            primaryjoin='and_(SlotsFiltersModel.external_variable_name == ExternalVariablesModel.name, '\
+                        'SlotsFiltersModel.external_variable_store_id == ExternalVariablesModel.store_id)')
+
+    @property
+    def type(self):
+        return type(self).__factory__.get_filter_type(self.type_id)
 
 
 class SlotsModelBase(AbstractConcreteBase):
@@ -121,6 +178,10 @@ class SlotsModelBase(AbstractConcreteBase):
         return sa.orm.relationship('SlotsVariablesModel', uselist=True, passive_deletes=True)
 
     @declared_attr
+    def slot_filters(cls):
+        return sa.orm.relationship('SlotsFiltersModel', uselist=True, passive_deletes=True)
+
+    @declared_attr
     def fallbacks(cls):
         return sa.orm.relationship('SlotsModel',
                                    uselist=True, remote_side='SlotsModel.id',
@@ -132,6 +193,7 @@ class SlotsModelBase(AbstractConcreteBase):
         await super().init(session, input_=input_, **kwargs)
         self._validate_fallbacks(input_)
         self._validate_slot_variables(input_)
+        self._validate_slot_filters(input_)
 
     def _validate_fallbacks(self, input_):
         for fallback in self.fallbacks:
@@ -146,41 +208,33 @@ class SlotsModelBase(AbstractConcreteBase):
     def _validate_slot_variables(self, input_):
         if self.engine is not None:
             engine = self.engine.todict()
+            engine_variables_set = set([var['name'] for var in engine['variables']])
+            message = "Invalid slot variable with 'engine_variable_name' attribute value '{}'"
+            schema = {'available_variables': engine['variables']}
 
-            for engine_variable in self.slot_variables:
-                var_name = engine_variable.inside_engine_name
-                engines_variables_map = {var['name']: var[
-                    'schema'] for var in engine['variables']}
-                available_filters_map = {fil['name']: fil['schema']
-                                         for fil in engine['item_type']['available_filters']}
-                key_func = lambda v: v['name']
-                message = 'Invalid {}' + \
-                    " with 'inside_engine_name' value '{}'".format(var_name)
+            for slot_variable in self.slot_variables:
+                var_name = slot_variable.engine_variable_name
+                if var_name not in engine_variables_set:
+                    raise ValidationError(
+                        message.format(var_name),
+                        instance=input_, schema=schema
+                    )
 
-                if not engine_variable.is_filter:
-                    if var_name not in engines_variables_map:
-                        message = message.format('engine variable')
-                        schema = {'available_variables': sorted(
-                            engine['variables'], key=key_func)}
-                        raise ValidationError(
-                            message, instance=input_, schema=schema)
+    def _validate_slot_filters(self, input_):
+        if self.engine is not None:
+            engine = self.engine.todict()
+            available_filters = engine['item_type']['available_filters']
+            available_filters_set = set([filter_['name'] for filter_ in available_filters])
+            schema = {'available_filters': available_filters}
+            message = "Invalid slot filter with 'property_name' attribute value '{}'"
 
-                else:
-                    if engine_variable.is_inclusive_filter is None \
-                            or engine_variable.filter_type is None:
-                        raise SwaggerItModelError(
-                            "When 'is_filter' is 'true' the properties 'is_inclusive_filter'"
-                            " and 'filter_type' must be setted", input_)
-
-                    elif var_name not in available_filters_map:
-                        message = message.format('filter')
-                        schema = {
-                            'available_filters':
-                            sorted(engine['item_type'][
-                                   'available_filters'], key=key_func)
-                        }
-                        raise ValidationError(
-                            message, instance=input_, schema=schema)
+            for slot_filter in self.slot_filters:
+                filter_name = slot_filter.property_name
+                if filter_name not in available_filters_set:
+                    raise ValidationError(
+                        message.format(filter_name),
+                        instance=input_, schema=schema
+                    )
 
     async def _setattr(self, attr_name, value, session, input_):
         if attr_name == 'engine_id':
@@ -189,9 +243,9 @@ class SlotsModelBase(AbstractConcreteBase):
 
         if attr_name == 'slot_variables':
             for engine_var in value:
-                if 'variable_id' in engine_var:
-                    var = {'id': engine_var.pop('variable_id')}
-                    engine_var['variable'] = var
+                if 'external_variable_id' in engine_var:
+                    var = {'id': engine_var.pop('external_variable_id')}
+                    engine_var['external_variable'] = var
 
         await super()._setattr(attr_name, value, session, input_)
 

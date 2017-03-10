@@ -24,7 +24,6 @@
 from swaggerit.utils import get_swagger_json
 from swaggerit.json_builder import JsonBuilder
 from swaggerit.exceptions import SwaggerItModelError
-from myreco.engines.cores.filters.factory import FiltersFactory
 from myreco.utils import ModuleObjectLoader, get_items_model
 from sqlalchemy.ext.declarative import AbstractConcreteBase, declared_attr
 import random as random_
@@ -75,7 +74,7 @@ class PlacementsModelBase(AbstractConcreteBase):
             return cls._build_recos_response(None)
 
         explict_fallbacks = req.query.pop('explict_fallbacks', False)
-        input_variables = req.query
+        input_external_variables = req.query
         show_details = req.query.pop('show_details', placement.get('show_details'))
         distribute_items = placement.get('distribute_items')
         recos = slots = []
@@ -84,9 +83,9 @@ class PlacementsModelBase(AbstractConcreteBase):
         for slot in placement['variations'][0]['slots']:
             slot_recos = {'fallbacks': []}
             slot_recos['main'] = \
-                await cls._get_recos_by_slot(slot, input_variables, session, show_details)
+                await cls._get_recos_by_slot(slot, input_external_variables, session, show_details)
 
-            await cls._get_fallbacks_recos(slot_recos, slot, input_variables, session, show_details)
+            await cls._get_fallbacks_recos(slot_recos, slot, input_external_variables, session, show_details)
 
             slot = {'name': slot['name'], 'item_type': slot['engine']['item_type']['name']}
             slot['items'] = slot_recos
@@ -121,56 +120,72 @@ class PlacementsModelBase(AbstractConcreteBase):
         return placements[0]
 
     @classmethod
-    async def _get_recos_by_slot(cls, slot, input_variables, session, show_details, max_items=None):
+    async def _get_recos_by_slot(cls, slot, input_external_variables, session, show_details, max_items=None):
         try:
             engine = slot['engine']
             items_model = get_items_model(engine)
-            engine_vars, filters = \
-                cls._get_variables_and_filters(slot, items_model, input_variables)
+            engine_vars = cls._get_slot_variables(slot, input_external_variables)
+            filters = cls._get_slot_filters(slot, input_external_variables, items_model)
             core_config = engine['core']['configuration']['core_module']
             core_instance = ModuleObjectLoader.load(core_config)(engine, items_model)
             max_items = slot['max_items'] if max_items is None else max_items
 
             return await core_instance.get_items(
                 session, filters, max_items, show_details, **engine_vars)
+
         except Exception as error:
             cls._logger.debug('Slot:\n' + ujson.dumps(slot, indent=4))
-            cls._logger.debug('Input Variables:\n' + ujson.dumps(input_variables, indent=4))
+            cls._logger.debug('Input Variables:\n' + ujson.dumps(input_external_variables, indent=4))
             raise error
 
     @classmethod
-    def _get_variables_and_filters(cls, slot, items_model, input_variables):
+    def _get_slot_variables(cls, slot, input_external_variables):
         engine_vars = dict()
-        filters = dict()
-        engine = slot['engine']
 
-        for engine_var in slot['slot_variables']:
-            var_name = engine_var['variable']['name']
-            var_engine_name = engine_var['inside_engine_name']
+        for slot_var in slot['slot_variables']:
+            var_name = slot_var['external_variable']['name']
+            var_engine_name = slot_var['engine_variable_name']
 
-            if var_name in input_variables:
-                var_value = input_variables[var_name]
+            if var_name in input_external_variables:
+                var_value = input_external_variables[var_name]
+                schema = cls._get_external_variable_schema(slot, var_engine_name)
 
-                if engine_var['is_filter']:
-                    filter_schema, input_schema = \
-                        cls._get_filter_and_input_schema(engine, engine_var)
+                if schema is not None:
+                    engine_vars[var_engine_name] = JsonBuilder.build(var_value, schema)
 
-                    if filter_schema is not None and input_schema is not None:
-                        filter_ = FiltersFactory.make(items_model, engine_var, filter_schema)
-                        filters[filter_] = JsonBuilder.build(var_value, input_schema)
-
-                else:
-                    schema = cls._get_variable_schema(engine, engine_var)
-                    if schema is not None:
-                        engine_vars[var_engine_name] = JsonBuilder.build(var_value, schema)
-
-        return engine_vars, filters
+        return engine_vars
 
     @classmethod
-    def _get_filter_and_input_schema(cls, engine, engine_var):
+    def _get_external_variable_schema(cls, slot, var_name):
+        for var in slot['engine']['variables']:
+            if var['name'] == var_name:
+                return var['schema']
+
+    @classmethod
+    def _get_slot_filters(cls, slot, input_external_variables, items_model):
+        filters = dict()
+        factory = cls.get_model('slots_filters').__factory__
+
+        for slot_filter in slot['slot_filters']:
+            var_name = slot_filter['external_variable']['name']
+            prop_name = slot_filter['property_name']
+
+            if var_name in input_external_variables:
+                var_value = input_external_variables[var_name]
+                filter_schema, input_schema = \
+                    cls._get_filter_and_input_schema(slot['engine'], slot_filter)
+
+                if filter_schema is not None and input_schema is not None:
+                    filter_ = factory.make(items_model, slot_filter, filter_schema)
+                    filters[filter_] = JsonBuilder.build(var_value, input_schema)
+
+        return filters
+
+    @classmethod
+    def _get_filter_and_input_schema(cls, engine, slot_filter):
         for var in engine['item_type']['available_filters']:
-            if var['name'] == engine_var['inside_engine_name']:
-                if engine_var['filter_type'].endswith('Of'):
+            if var['name'] == slot_filter['property_name']:
+                if slot_filter['type_id'] == 'item_property_value':
                     input_schema = {'type': 'array', 'items': {'type': 'string'}}
 
                 elif var['schema'].get('type') != 'array':
@@ -185,13 +200,7 @@ class PlacementsModelBase(AbstractConcreteBase):
         return None, None
 
     @classmethod
-    def _get_variable_schema(cls, engine, engine_var):
-        for var in engine['variables']:
-            if var['name'] == engine_var['inside_engine_name']:
-                return var['schema']
-
-    @classmethod
-    async def _get_fallbacks_recos(cls, slot_recos, slot, input_variables, session, show_details):
+    async def _get_fallbacks_recos(cls, slot_recos, slot, input_external_variables, session, show_details):
         if len(slot_recos['main']) != slot['max_items']:
             for fallback in slot['fallbacks']:
                 fallbacks_recos_size = \
@@ -201,7 +210,7 @@ class PlacementsModelBase(AbstractConcreteBase):
                     break
 
                 fallback_recos = await cls._get_recos_by_slot(
-                    fallback, input_variables, session, show_details, max_items)
+                    fallback, input_external_variables, session, show_details, max_items)
                 all_recos = cls._get_all_slot_recos(slot_recos)
                 fallback_recos = cls._unique_recos(fallback_recos, all_recos)
                 slot_recos['fallbacks'].append(fallback_recos)

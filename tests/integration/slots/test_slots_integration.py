@@ -140,8 +140,8 @@ def init_db(models, session, api, monkeypatch):
     }
     session.loop.run_until_complete(models['engines'].insert(session, engine))
 
-    session.loop.run_until_complete(models['variables'].insert(session, {'name': 'test', 'store_id': 1}))
-    session.loop.run_until_complete(models['variables'].insert(session, {'name': 'test2', 'store_id': 1}))
+    session.loop.run_until_complete(models['external_variables'].insert(session, {'name': 'test', 'store_id': 1}))
+    session.loop.run_until_complete(models['external_variables'].insert(session, {'name': 'test2', 'store_id': 1}))
 
     yield None
 
@@ -168,19 +168,20 @@ class TestSlotsModelPost(object):
             'schema': {
                 'type': 'object',
                 'additionalProperties': False,
-                'required': ['engine_id', 'store_id', 'slot_variables', 'max_items', 'name'],
+                'required': ['engine_id', 'store_id', 'max_items', 'name'],
                 'properties': {
                     'max_items': {'type': 'integer'},
                     'name': {'type': 'string'},
                     'store_id': {'type': 'integer'},
                     'engine_id': {'type': 'integer'},
                     'fallbacks': {'$ref': '#/definitions/SlotsModel.fallbacks'},
-                    'slot_variables': {'$ref': '#/definitions/SlotsModel.slot_variables'}
+                    'slot_variables': {'$ref': '#/definitions/SlotsModel.slot_variables'},
+                    'slot_filters': {'$ref': '#/definitions/SlotsModel.slot_filters'}
                 }
             }
         }
 
-   async def test_post_with_invalid_variable_engine(self, init_db, client, headers, headers_without_content_type):
+   async def test_post_with_invalid_external_variable_engine(self, init_db, client, headers, headers_without_content_type):
         client = await client
         body = [{
             'max_items': 10,
@@ -189,15 +190,15 @@ class TestSlotsModelPost(object):
             'engine_id': 1,
             'slot_variables': [{
                 '_operation': 'insert',
-                'variable_name': 'test',
-                'variable_store_id': 1,
-                'inside_engine_name': 'test'
+                'external_variable_name': 'test',
+                'external_variable_store_id': 1,
+                'engine_variable_name': 'test'
             }]
         }]
         resp = await client.post('/slots/', headers=headers, data=ujson.dumps(body))
         assert resp.status == 400
         assert await resp.json() ==  {
-            'message': "Invalid engine variable with 'inside_engine_name' value 'test'",
+            'message': "Invalid slot variable with 'engine_variable_name' attribute value 'test'",
             'instance': [{
                 'max_items': 10,
                 'name': 'test',
@@ -205,18 +206,18 @@ class TestSlotsModelPost(object):
                 'store_id': 1,
                 'slot_variables': [{
                     '_operation': 'insert',
-                    'inside_engine_name': 'test',
-                    'variable_name': 'test',
-                    'variable_store_id': 1
+                    'engine_variable_name': 'test',
+                    'external_variable_name': 'test',
+                    'external_variable_store_id': 1
                 }]
             }],
             'schema': {
                 'available_variables': [{
-                    'name': 'filter_test',
-                    'schema': {"type": "string"}
-                },{
                     'name': 'item_id',
                     'schema': {"type": "integer"}
+                },{
+                    'name': 'filter_test',
+                    'schema': {"type": "string"}
                 }]
             }
         }
@@ -228,33 +229,31 @@ class TestSlotsModelPost(object):
             'name': 'test',
             'store_id': 1,
             'engine_id': 1,
-            'slot_variables': [{
+            'slot_filters': [{
                 '_operation': 'insert',
-                'variable_name': 'test',
-                'variable_store_id': 1,
-                'inside_engine_name': 'test',
-                'is_filter': True,
-                'filter_type': 'By Property',
-                'is_inclusive_filter': True
+                'external_variable_name': 'test',
+                'external_variable_store_id': 1,
+                'property_name': 'test',
+                'type_id': 'property_value',
+                'is_inclusive': True
             }]
         }]
         resp = await client.post('/slots/', headers=headers, data=ujson.dumps(body))
         assert resp.status == 400
         assert await resp.json() ==  {
-            'message': "Invalid filter with 'inside_engine_name' value 'test'",
+            'message': "Invalid slot filter with 'property_name' attribute value 'test'",
             'instance': [{
                 'max_items': 10,
                 'name': 'test',
                 'engine_id': 1,
                 'store_id': 1,
-                'slot_variables': [{
+                'slot_filters': [{
                     '_operation': 'insert',
-                    'inside_engine_name': 'test',
-                    'is_filter': True,
-                    'is_inclusive_filter': True,
-                    'filter_type': 'By Property',
-                    'variable_name': 'test',
-                    'variable_store_id': 1
+                    'property_name': 'test',
+                    'is_inclusive': True,
+                    'type_id': 'property_value',
+                    'external_variable_name': 'test',
+                    'external_variable_store_id': 1
                 }]
             }],
             'schema': {
@@ -268,7 +267,7 @@ class TestSlotsModelPost(object):
             }
         }
 
-   async def test_post_with_invalid_filter_missing_properties(self, init_db, client, headers, headers_without_content_type):
+   async def test_post_with_insert_engine_external_variable_engine_var(self, init_db, client, headers, headers_without_content_type):
         client = await client
         body = [{
             'max_items': 10,
@@ -277,46 +276,9 @@ class TestSlotsModelPost(object):
             'engine_id': 1,
             'slot_variables': [{
                 '_operation': 'insert',
-                'variable_name': 'test',
-                'variable_store_id': 1,
-                'inside_engine_name': 'filter_test',
-                'is_filter': True,
-                'filter_type': 'By Property'
-            }]
-        }]
-        resp = await client.post('/slots/', headers=headers, data=ujson.dumps(body))
-        assert resp.status == 400
-        assert await resp.json() ==  {
-            'message': "When 'is_filter' is 'true' the properties "\
-            "'is_inclusive_filter' and 'filter_type' must be setted",
-            'instance': [{
-                'max_items': 10,
-                'name': 'test',
-                'engine_id': 1,
-                'store_id': 1,
-                'slot_variables': [{
-                    '_operation': 'insert',
-                    'filter_type': 'By Property',
-                    'inside_engine_name': 'filter_test',
-                    'is_filter': True,
-                    'variable_name': 'test',
-                    'variable_store_id': 1
-                }]
-            }]
-        }
-
-   async def test_post_with_insert_engine_variable_engine_var(self, init_db, client, headers, headers_without_content_type):
-        client = await client
-        body = [{
-            'max_items': 10,
-            'name': 'test',
-            'store_id': 1,
-            'engine_id': 1,
-            'slot_variables': [{
-                '_operation': 'insert',
-                'variable_name': 'test',
-                'variable_store_id': 1,
-                'inside_engine_name': 'filter_test'
+                'external_variable_name': 'test',
+                'external_variable_store_id': 1,
+                'engine_variable_name': 'filter_test'
             }]
         }]
         resp = await client.post('/slots/', headers=headers, data=ujson.dumps(body))
@@ -327,23 +289,20 @@ class TestSlotsModelPost(object):
             'name': 'test',
             'fallbacks': [],
             'id': 1,
+            'slot_filters':[],
             'slot_variables': [
                 {
-                    'variable': {
+                    'external_variable': {
                         'name': 'test',
                         'store_id': 1
                     },
                     'id': 1,
-                    'inside_engine_name': 'filter_test',
+                    'engine_variable_name': 'filter_test',
                     'slot_id': 1,
                     'override': False,
                     'override_value': None,
-                    'skip_values': None,
-                    'variable_name': 'test',
-                    'variable_store_id': 1,
-                    'is_filter': False,
-                    'is_inclusive_filter': None,
-                    'filter_type': None
+                    'external_variable_name': 'test',
+                    'external_variable_store_id': 1
                 }
             ],
             'engine': {
@@ -409,21 +368,20 @@ class TestSlotsModelPost(object):
             'engine_id': 1
         }]
 
-   async def test_post_with_insert_engine_variable_engine_filter(self, init_db, client, headers, headers_without_content_type):
+   async def test_post_with_insert_engine_external_variable_engine_filter(self, init_db, client, headers, headers_without_content_type):
         client = await client
         body = [{
             'max_items': 10,
             'name': 'test',
             'store_id': 1,
             'engine_id': 1,
-            'slot_variables': [{
+            'slot_filters': [{
                 '_operation': 'insert',
-                'variable_name': 'test',
-                'variable_store_id': 1,
-                'is_filter': True,
-                'is_inclusive_filter': True,
-                'filter_type': 'By Property',
-                'inside_engine_name': 'filter_test'
+                'external_variable_name': 'test',
+                'external_variable_store_id': 1,
+                'is_inclusive': True,
+                'type_id': 'property_value',
+                'property_name': 'filter_test'
             }]
         }]
         resp = await client.post('/slots/', headers=headers, data=ujson.dumps(body))
@@ -434,23 +392,23 @@ class TestSlotsModelPost(object):
             'id': 1,
             'max_items': 10,
             'name': 'test',
-            'slot_variables': [
+            'slot_variables': [],
+            'slot_filters': [
                 {
-                    'variable': {
+                    'external_variable': {
                         'name': 'test',
                         'store_id': 1
                     },
                     'id': 1,
-                    'inside_engine_name': 'filter_test',
+                    'property_name': 'filter_test',
                     'slot_id': 1,
                     'override': False,
                     'override_value': None,
                     'skip_values': None,
-                    'variable_name': 'test',
-                    'variable_store_id': 1,
-                    'is_filter': True,
-                    'is_inclusive_filter': True,
-                    'filter_type': 'By Property'
+                    'external_variable_name': 'test',
+                    'external_variable_store_id': 1,
+                    'is_inclusive': True,
+                    'type_id': 'property_value'
                 }
             ],
             'engine': {
@@ -525,9 +483,9 @@ class TestSlotsModelPost(object):
             'engine_id': 1,
             'slot_variables': [{
                 '_operation': 'insert',
-                'variable_name': 'test',
-                'variable_store_id': 1,
-                'inside_engine_name': 'item_id'
+                'external_variable_name': 'test',
+                'external_variable_store_id': 1,
+                'engine_variable_name': 'item_id'
             }]
         }]
         await client.post('/slots/', headers=headers, data=ujson.dumps(body))
@@ -539,9 +497,9 @@ class TestSlotsModelPost(object):
             'engine_id': 1,
             'slot_variables': [{
                 '_operation': 'insert',
-                'variable_name': 'test',
-                'variable_store_id': 1,
-                'inside_engine_name': 'item_id'
+                'external_variable_name': 'test',
+                'external_variable_store_id': 1,
+                'engine_variable_name': 'item_id'
             }],
             'fallbacks': [{'id': 1}]
         }]
@@ -553,23 +511,20 @@ class TestSlotsModelPost(object):
                 'max_items': 10,
                 'name': 'test',
                 'id': 1,
+                'slot_filters': [],
                 'slot_variables': [
                     {
-                        'variable': {
+                        'external_variable': {
                             'name': 'test',
                             'store_id': 1
                         },
                         'id': 1,
-                        'inside_engine_name': 'item_id',
+                        'engine_variable_name': 'item_id',
                         'slot_id': 1,
                         'override': False,
                         'override_value': None,
-                        'skip_values': None,
-                        'variable_name': 'test',
-                        'variable_store_id': 1,
-                        'is_filter': False,
-                        'is_inclusive_filter': None,
-                        'filter_type': None
+                        'external_variable_name': 'test',
+                        'external_variable_store_id': 1
                     }
                 ],
                 'engine': {
@@ -637,23 +592,20 @@ class TestSlotsModelPost(object):
             'id': 2,
             'max_items': 10,
             'name': 'test',
+            'slot_filters': [],
             'slot_variables': [
                 {
-                    'variable': {
+                    'external_variable': {
                         'name': 'test',
                         'store_id': 1
                     },
                     'id': 2,
-                    'inside_engine_name': 'item_id',
+                    'engine_variable_name': 'item_id',
                     'slot_id': 2,
                     'override': False,
                     'override_value': None,
-                    'skip_values': None,
-                    'variable_name': 'test',
-                    'variable_store_id': 1,
-                    'is_filter': False,
-                    'is_inclusive_filter': None,
-                    'filter_type': None
+                    'external_variable_name': 'test',
+                    'external_variable_store_id': 1
                 }
             ],
             'engine': {
@@ -728,9 +680,9 @@ class TestSlotsModelPost(object):
             'engine_id': 1,
             'slot_variables': [{
                 '_operation': 'insert',
-                'variable_name': 'test',
-                'variable_store_id': 1,
-                'inside_engine_name': 'item_id'
+                'external_variable_name': 'test',
+                'external_variable_store_id': 1,
+                'engine_variable_name': 'item_id'
             }]
         }]
         resp = await client.post('/slots/', headers={'Authorization': 'invalid'}, data=ujson.dumps(body))
@@ -760,9 +712,9 @@ class TestSlotsModelGet(object):
             'engine_id': 1,
             'slot_variables': [{
                 '_operation': 'insert',
-                'variable_name': 'test',
-                'variable_store_id': 1,
-                'inside_engine_name': 'filter_test'
+                'external_variable_name': 'test',
+                'external_variable_store_id': 1,
+                'engine_variable_name': 'filter_test'
             }]
         }]
         await client.post('/slots/', headers=headers, data=ujson.dumps(body))
@@ -774,23 +726,20 @@ class TestSlotsModelGet(object):
             'id': 1,
             'max_items': 10,
             'name': 'test',
+            'slot_filters': [],
             'slot_variables': [
                 {
-                    'variable': {
+                    'external_variable': {
                         'name': 'test',
                         'store_id': 1
                     },
                     'id': 1,
-                    'inside_engine_name': 'filter_test',
+                    'engine_variable_name': 'filter_test',
                     'slot_id': 1,
                     'override': False,
                     'override_value': None,
-                    'skip_values': None,
-                    'variable_name': 'test',
-                    'variable_store_id': 1,
-                    'is_filter': False,
-                    'is_inclusive_filter': None,
-                    'filter_type': None
+                    'external_variable_name': 'test',
+                    'external_variable_store_id': 1
                 }
             ],
             'engine': {
@@ -891,6 +840,9 @@ class TestSlotsModelUriTemplatePatch(object):
                     },
                     'slot_variables': {
                         '$ref': '#/definitions/SlotsModel.slot_variables'
+                    },
+                    'slot_filters': {
+                        '$ref': '#/definitions/SlotsModel.slot_filters'
                     }
                 },
                 'type': 'object'
@@ -899,7 +851,7 @@ class TestSlotsModelUriTemplatePatch(object):
                        "Failed validating instance for schema['minProperties']"
         }
 
-   async def test_patch_with_invalid_engine_variable(self, init_db, client, headers, headers_without_content_type):
+   async def test_patch_with_invalid_engine_external_variable(self, init_db, client, headers, headers_without_content_type):
         client = await client
         body = [{
             'max_items': 10,
@@ -908,38 +860,39 @@ class TestSlotsModelUriTemplatePatch(object):
             'engine_id': 1,
             'slot_variables': [{
                 '_operation': 'insert',
-                'variable_name': 'test',
-                'variable_store_id': 1,
-                'inside_engine_name': 'filter_test'
+                'external_variable_name': 'test',
+                'external_variable_store_id': 1,
+                'engine_variable_name': 'filter_test'
             }]
         }]
         resp = await client.post('/slots/', headers=headers, data=ujson.dumps(body))
+        assert resp.status == 201
 
         body = {
             'slot_variables': [{
                 '_operation': 'update',
                 'id': 1,
-                'inside_engine_name': 'invalid'
+                'engine_variable_name': 'invalid'
             }]
         }
         resp = await client.patch('/slots/1/', headers=headers, data=ujson.dumps(body))
         assert resp.status == 400
         assert await resp.json() ==  {
-            'message': "Invalid engine variable with 'inside_engine_name' value 'invalid'",
+            'message': "Invalid slot variable with 'engine_variable_name' attribute value 'invalid'",
             'instance': [{
                 'slot_variables': [{
                     '_operation': 'update',
                     'id': 1,
-                    'inside_engine_name': 'invalid'
+                    'engine_variable_name': 'invalid'
                 }],
             }],
             'schema': {
                 'available_variables': [{
-                    'name': 'filter_test',
-                    'schema': {"type": "string"}
-                },{
                     'name': 'item_id',
                     'schema': {"type": "integer"}
+                },{
+                    'name': 'filter_test',
+                    'schema': {"type": "string"}
                 }]
             }
         }
@@ -953,9 +906,9 @@ class TestSlotsModelUriTemplatePatch(object):
             'engine_id': 1,
             'slot_variables': [{
                 '_operation': 'insert',
-                'variable_name': 'test',
-                'variable_store_id': 1,
-                'inside_engine_name': 'filter_test'
+                'external_variable_name': 'test',
+                'external_variable_store_id': 1,
+                'engine_variable_name': 'filter_test'
             }]
         }]
         resp = await client.post('/slots/', headers=headers, data=ujson.dumps(body))
@@ -979,9 +932,9 @@ class TestSlotsModelUriTemplatePatch(object):
             'engine_id': 1,
             'slot_variables': [{
                 '_operation': 'insert',
-                'variable_name': 'test',
-                'variable_store_id': 1,
-                'inside_engine_name': 'filter_test'
+                'external_variable_name': 'test',
+                'external_variable_store_id': 1,
+                'engine_variable_name': 'filter_test'
             }]
         },{
             'max_items': 10,
@@ -990,9 +943,9 @@ class TestSlotsModelUriTemplatePatch(object):
             'engine_id': 2,
             'slot_variables': [{
                 '_operation': 'insert',
-                'variable_name': 'test',
-                'variable_store_id': 1,
-                'inside_engine_name': 'item_id'
+                'external_variable_name': 'test',
+                'external_variable_store_id': 1,
+                'engine_variable_name': 'item_id'
             }]
         }]
         resp = await client.post('/slots/', headers=headers, data=ujson.dumps(body))
@@ -1025,9 +978,9 @@ class TestSlotsModelUriTemplatePatch(object):
             'engine_id': 1,
             'slot_variables': [{
                 '_operation': 'insert',
-                'variable_name': 'test',
-                'variable_store_id': 1,
-                'inside_engine_name': 'item_id'
+                'external_variable_name': 'test',
+                'external_variable_store_id': 1,
+                'engine_variable_name': 'item_id'
             }]
         }]
         resp = await client.post('/slots/', headers=headers, data=ujson.dumps(body))
@@ -1037,7 +990,7 @@ class TestSlotsModelUriTemplatePatch(object):
             'slot_variables': [{
                 '_operation': 'update',
                 'id': 1,
-                'inside_engine_name': 'filter_test'
+                'engine_variable_name': 'filter_test'
             }]
         }
         resp = await client.patch('/slots/1/', headers=headers, data=ujson.dumps(body))
@@ -1048,23 +1001,20 @@ class TestSlotsModelUriTemplatePatch(object):
             'id': 1,
             'max_items': 10,
             'name': 'test',
+            'slot_filters': [],
             'slot_variables': [
                 {
-                    'variable': {
+                    'external_variable': {
                         'name': 'test',
                         'store_id': 1
                     },
                     'id': 1,
-                    'inside_engine_name': 'filter_test',
+                    'engine_variable_name': 'filter_test',
                     'slot_id': 1,
                     'override': False,
                     'override_value': None,
-                    'skip_values': None,
-                    'variable_name': 'test',
-                    'variable_store_id': 1,
-                    'is_filter': False,
-                    'is_inclusive_filter': None,
-                    'filter_type': None
+                    'external_variable_name': 'test',
+                    'external_variable_store_id': 1
                 }
             ],
             'engine': {
@@ -1148,9 +1098,9 @@ class TestSlotsModelUriTemplateDelete(object):
             'engine_id': 1,
             'slot_variables': [{
                 '_operation': 'insert',
-                'variable_name': 'test',
-                'variable_store_id': 1,
-                'inside_engine_name': 'filter_test'
+                'external_variable_name': 'test',
+                'external_variable_store_id': 1,
+                'engine_variable_name': 'filter_test'
             }]
         }]
         await client.post('/slots/', headers=headers, data=ujson.dumps(body))
@@ -1186,9 +1136,9 @@ class TestSlotsModelUriTemplateGet(object):
             'engine_id': 1,
             'slot_variables': [{
                 '_operation': 'insert',
-                'variable_name': 'test',
-                'variable_store_id': 1,
-                'inside_engine_name': 'filter_test'
+                'external_variable_name': 'test',
+                'external_variable_store_id': 1,
+                'engine_variable_name': 'filter_test'
             }]
         }]
         await client.post('/slots/', headers=headers, data=ujson.dumps(body))
@@ -1201,23 +1151,20 @@ class TestSlotsModelUriTemplateGet(object):
             'id': 1,
             'max_items': 10,
             'name': 'test',
+            'slot_filters': [],
             'slot_variables': [
                 {
-                    'variable': {
+                    'external_variable': {
                         'name': 'test',
                         'store_id': 1
                     },
                     'id': 1,
-                    'inside_engine_name': 'filter_test',
+                    'engine_variable_name': 'filter_test',
                     'slot_id': 1,
                     'override': False,
                     'override_value': None,
-                    'skip_values': None,
-                    'variable_name': 'test',
-                    'variable_store_id': 1,
-                    'is_filter': False,
-                    'is_inclusive_filter': None,
-                    'filter_type': None
+                    'external_variable_name': 'test',
+                    'external_variable_store_id': 1
                 }
             ],
             'engine': {

@@ -26,12 +26,12 @@ from sqlalchemy.ext.declarative import AbstractConcreteBase, declared_attr
 import sqlalchemy as sa
 
 
-class VariablesModelBase(AbstractConcreteBase):
-    __tablename__ = 'variables'
+class ExternalVariablesModelBase(AbstractConcreteBase):
+    __tablename__ = 'external_variables'
     __swagger_json__ = get_swagger_json(__file__)
 
-    name = sa.Column(sa.String(255), primary_key=True, nullable=False)
+    name = sa.Column(sa.String(255), primary_key=True)
 
     @declared_attr
     def store_id(cls):
-        return sa.Column(sa.ForeignKey('stores.id'), primary_key=True, nullable=False)
+        return sa.Column(sa.ForeignKey('stores.id'), primary_key=True)

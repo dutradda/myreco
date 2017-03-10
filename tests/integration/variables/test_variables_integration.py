@@ -44,17 +44,17 @@ def init_db(models, session):
     asyncio.run_coroutine_threadsafe(models['stores'].insert(session, store), session.loop)
 
 
-class TestVariablesModelPost(object):
+class TestExternalVariablesModelPost(object):
 
    async def test_post_without_body(self, init_db, client, headers):
         client = await client
-        resp = await client.post('/variables/', headers=headers)
+        resp = await client.post('/external_variables/', headers=headers)
         assert resp.status == 400
         assert (await resp.json()) == {'message': 'Request body is missing'}
 
    async def test_post_with_invalid_body(self, init_db, client, headers):
         client = await client
-        resp = await client.post('/variables/', headers=headers, data='[{}]')
+        resp = await client.post('/external_variables/', headers=headers, data='[{}]')
         assert resp.status == 400
         assert (await resp.json()) ==  {
             'message': "'name' is a required property. "\
@@ -76,7 +76,7 @@ class TestVariablesModelPost(object):
             'name': 'test',
             'store_id': 1
         }]
-        resp = await client.post('/variables/', headers={'Authorization': 'invalid'}, data=ujson.dumps(body))
+        resp = await client.post('/external_variables/', headers={'Authorization': 'invalid'}, data=ujson.dumps(body))
         assert resp.status == 401
         assert (await resp.json()) ==  {'message': 'Invalid authorization'}
 
@@ -86,22 +86,22 @@ class TestVariablesModelPost(object):
             'name': 'test',
             'store_id': 1
         }]
-        resp = await client.post('/variables/', headers=headers, data=ujson.dumps(body))
+        resp = await client.post('/external_variables/', headers=headers, data=ujson.dumps(body))
 
         assert resp.status == 201
         assert (await resp.json()) ==  body
 
 
-class TestVariablesModelGet(object):
+class TestExternalVariablesModelGet(object):
 
    async def test_get_not_found(self, init_db, client, headers_without_content_type):
         client = await client
-        resp = await client.get('/variables/?store_id=1', headers=headers_without_content_type)
+        resp = await client.get('/external_variables/?store_id=1', headers=headers_without_content_type)
         assert resp.status == 404
 
    async def test_get_invalid_with_body(self, init_db, client, headers):
         client = await client
-        resp = await client.get('/variables/?store_id=1', headers=headers, data='{}')
+        resp = await client.get('/external_variables/?store_id=1', headers=headers, data='{}')
         assert resp.status == 400
         assert (await resp.json()) == {'message': 'Request body is not acceptable'}
 
@@ -111,24 +111,24 @@ class TestVariablesModelGet(object):
             'name': 'test',
             'store_id': 1
         }]
-        await client.post('/variables/', headers=headers, data=ujson.dumps(body))
+        await client.post('/external_variables/', headers=headers, data=ujson.dumps(body))
 
-        resp = await client.get('/variables/?store_id=1', headers=headers_without_content_type)
+        resp = await client.get('/external_variables/?store_id=1', headers=headers_without_content_type)
         assert resp.status == 200
         assert (await resp.json()) ==  body
 
 
-class TestVariablesModelUriTemplatePatch(object):
+class TestExternalVariablesModelUriTemplatePatch(object):
 
    async def test_patch_without_body(self, init_db, client, headers):
         client = await client
-        resp = await client.patch('/variables/test/1/', headers=headers, data='')
+        resp = await client.patch('/external_variables/test/1/', headers=headers, data='')
         assert resp.status == 400
         assert (await resp.json()) == {'message': 'Request body is missing'}
 
    async def test_patch_with_invalid_body(self, init_db, client, headers):
         client = await client
-        resp = await client.patch('/variables/test/1/', headers=headers, data='{}')
+        resp = await client.patch('/external_variables/test/1/', headers=headers, data='{}')
         assert resp.status == 400
         assert (await resp.json()) ==  {
             'message': '{} does not have enough properties. '\
@@ -150,7 +150,7 @@ class TestVariablesModelUriTemplatePatch(object):
             'name': 'test',
             'store_id': 1
         }
-        resp = await client.patch('/variables/test/1/', headers=headers, data=ujson.dumps(body))
+        resp = await client.patch('/external_variables/test/1/', headers=headers, data=ujson.dumps(body))
         assert resp.status == 404
 
    async def test_patch(self, init_db, client, headers):
@@ -159,24 +159,24 @@ class TestVariablesModelUriTemplatePatch(object):
             'name': 'test',
             'store_id': 1
         }]
-        resp = await client.post('/variables/', headers=headers, data=ujson.dumps(body))
+        resp = await client.post('/external_variables/', headers=headers, data=ujson.dumps(body))
         obj = (await resp.json())[0]
 
         body = {
             'name': 'test2'
         }
-        resp = await client.patch('/variables/test/1/', headers=headers, data=ujson.dumps(body))
+        resp = await client.patch('/external_variables/test/1/', headers=headers, data=ujson.dumps(body))
         obj['name'] = 'test2'
 
         assert resp.status == 200
         assert (await resp.json()) ==  obj
 
 
-class TestVariablesModelUriTemplateDelete(object):
+class TestExternalVariablesModelUriTemplateDelete(object):
 
    async def test_delete_with_body(self, init_db, client, headers):
         client = await client
-        resp = await client.delete('/variables/test/1/', headers=headers, data='{}')
+        resp = await client.delete('/external_variables/test/1/', headers=headers, data='{}')
         assert resp.status == 400
         assert (await resp.json()) == {'message': 'Request body is not acceptable'}
 
@@ -186,29 +186,29 @@ class TestVariablesModelUriTemplateDelete(object):
             'name': 'test',
             'store_id': 1
         }]
-        resp = await client.post('/variables/', headers=headers, data=ujson.dumps(body))
+        resp = await client.post('/external_variables/', headers=headers, data=ujson.dumps(body))
 
-        resp = await client.get('/variables/test/1/', headers=headers_without_content_type)
+        resp = await client.get('/external_variables/test/1/', headers=headers_without_content_type)
         assert resp.status == 200
 
-        resp = await client.delete('/variables/test/1/', headers=headers_without_content_type)
+        resp = await client.delete('/external_variables/test/1/', headers=headers_without_content_type)
         assert resp.status == 204
 
-        resp = await client.get('/variables/test/1/', headers=headers_without_content_type)
+        resp = await client.get('/external_variables/test/1/', headers=headers_without_content_type)
         assert resp.status == 404
 
 
-class TestVariablesModelUriTemplateGet(object):
+class TestExternalVariablesModelUriTemplateGet(object):
 
    async def test_get_with_body(self, init_db, client, headers):
         client = await client
-        resp = await client.get('/variables/test/1/', headers=headers, data='{}')
+        resp = await client.get('/external_variables/test/1/', headers=headers, data='{}')
         assert resp.status == 400
         assert (await resp.json()) == {'message': 'Request body is not acceptable'}
 
    async def test_get_not_found(self, init_db, client, headers_without_content_type):
         client = await client
-        resp = await client.get('/variables/test/1/', headers=headers_without_content_type)
+        resp = await client.get('/external_variables/test/1/', headers=headers_without_content_type)
         assert resp.status == 404
 
    async def test_get(self, init_db, client, headers, headers_without_content_type):
@@ -217,8 +217,8 @@ class TestVariablesModelUriTemplateGet(object):
             'name': 'test',
             'store_id': 1
         }]
-        await client.post('/variables/', headers=headers, data=ujson.dumps(body))
+        await client.post('/external_variables/', headers=headers, data=ujson.dumps(body))
 
-        resp = await client.get('/variables/test/1/', headers=headers_without_content_type)
+        resp = await client.get('/external_variables/test/1/', headers=headers_without_content_type)
         assert resp.status == 200
         assert (await resp.json()) == body[0]

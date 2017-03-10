@@ -27,41 +27,70 @@ from myreco.engines.cores.filters.filters import (BooleanFilterBy, SimpleFilterB
 
 
 class FiltersFactory(object):
+    _filters_types_map = {
+        'property_value': {
+            'name': 'Filter by property value',
+            'types': {
+                'integer': SimpleFilterBy,
+                'string': SimpleFilterBy,
+                'object': ObjectFilterBy,
+                'array': ArrayFilterBy,
+                'boolean': BooleanFilterBy
+            }
+        },
+        'item_property_value': {
+            'name': 'Filter by item property value',
+            'types': {
+                'integer': SimpleFilterOf,
+                'string': SimpleFilterOf,
+                'object': ObjectFilterOf,
+                'array': ArrayFilterOf,
+                'boolean': BooleanFilterBy
+            }
+        },
+        'property_value_index': {
+            'name': 'Filter by property value index',
+            'types': {
+                'integer': IndexFilterOf,
+                'string': IndexFilterOf,
+                'object': IndexFilterOf,
+                'array': IndexFilterOf,
+                'boolean': IndexFilterOf
+            }
+        },
+        'item_property_value_index': {
+            'name': 'Filter by item property value index',
+            'types': {
+                'integer': IndexFilterByPropertyOf,
+                'string': IndexFilterByPropertyOf,
+                'object': IndexFilterByPropertyOf,
+                'array': IndexFilterByPropertyOf,
+                'boolean': IndexFilterByPropertyOf
+            }
+        }
+    }
 
     @classmethod
-    def make(cls, items_model, engine_variable, schema, skip_values=None):
-        filter_type = schema['type']
-        var_name = engine_variable['inside_engine_name']
-        type_ = engine_variable['filter_type']
-        is_inclusive = engine_variable['is_inclusive_filter']
-        id_names = None
+    def get_filter_types(cls):
+        return [{'name': filter_type['name'], 'id': filter_type_id}
+            for filter_type_id, filter_type in cls._filters_types_map.items()]
 
-        if type_ == 'Index Of':
-            filter_class = IndexFilterOf
+    @classmethod
+    def get_filter_type(cls, filter_type_id):
+        filter_type = cls._filters_types_map.get(filter_type_id)
+        return {
+            'name': filter_type['name'],
+            'id': filter_type_id
+        } if filter_type else None
 
-        elif type_ == 'Index By Property Of':
-            filter_class = IndexFilterByPropertyOf
+    @classmethod
+    def make(cls, items_model, slot_filter, schema, skip_values=None):
+        value_type = schema['type']
+        filter_name = slot_filter['property_name']
+        type_id = slot_filter['type_id']
+        is_inclusive = slot_filter['is_inclusive']
+        id_names = schema.get('id_names')
+        filter_class = cls._filters_types_map.get(type_id, {'types': {}})['types'].get(value_type)
 
-        elif filter_type == 'integer' or filter_type == 'string':
-            if type_ == 'By Property':
-                filter_class = SimpleFilterBy
-            else:
-                filter_class = SimpleFilterOf
-
-        elif filter_type == 'boolean':
-            filter_class = BooleanFilterBy
-
-        elif filter_type == 'object':
-            id_names = schema['id_names']
-            if type_ == 'By Property':
-                filter_class = ObjectFilterBy
-            else:
-                filter_class = ObjectFilterOf
-
-        elif filter_type == 'array':
-            if type_ == 'By Property':
-                filter_class = ArrayFilterBy
-            else:
-                filter_class = ArrayFilterOf
-
-        return filter_class(items_model, var_name, is_inclusive, id_names, skip_values)
+        if filter_class:
+            return filter_class(items_model, filter_name, is_inclusive, id_names, skip_values)
