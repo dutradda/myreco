@@ -52,15 +52,15 @@ class EnginesObjectsExporterModelBase(EnginesDataImporterModelBase):
         import_data = req.query.get('import_data')
 
         if import_data:
-            importer_result = engine.core_instance.get_data(session)
-            exporter_result = engine.core_instance.export_objects(session)
+            importer_result = engine.strategy.get_data(session)
+            exporter_result = engine.strategy.export_objects(session)
 
             return {
                 'importer': importer_result,
                 'exporter': exporter_result
             }
         else:
-            return engine.core_instance.export_objects(session)
+            return engine.strategy.export_objects(session)
 
     @classmethod
     async def get_export_objects_job(cls, req, session):

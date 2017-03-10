@@ -21,8 +21,8 @@
 # SOFTWARE.
 
 
-from myreco.engines.cores.base import EngineCoreBase
-from myreco.engines.exceptions import EngineError
+from myreco.engines.strategies.base import EngineStrategyBase
+from myreco.exceptions import EngineError
 from abc import abstractmethod
 from glob import glob
 from aiofiles import gzip_open
@@ -30,7 +30,7 @@ import os.path
 import asyncio
 
 
-class EngineCoreObjectsExporter(EngineCoreBase):
+class EngineStrategyObjectsExporter(EngineStrategyBase):
 
     @abstractmethod
     def export_objects(self, session):

@@ -21,21 +21,18 @@
 # SOFTWARE.
 
 
-import os
+from myreco.engines.strategies.base import EngineStrategyBase
+from abc import abstractmethod
 
 
-def build_engine_key_prefix(engine):
-    return 'engine_{}_{}'.format(engine['id'], engine['core']['name'])
+class EngineStrategyDataImporter(EngineStrategyBase):
 
+    @abstractmethod
+    def get_data(self, items_indices_map, session):
+        pass
 
-def build_engine_data_path(engine):
-    engine_path = build_engine_key_prefix(engine)
-    return os.path.join(engine['store']['configuration']['data_path'], engine_path)
+    def _log_get_data_started(self):
+        self._logger.info("Started import data")
 
-
-def makedirs(dir_):
-    try:
-        os.makedirs(dir_)
-    except OSError as e:
-        if os.errno.EEXIST != e.errno:
-            raise
+    def _log_get_data_finished(self):
+        self._logger.info("Finished import data")

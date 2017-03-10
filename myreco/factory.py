@@ -29,10 +29,9 @@ from myreco.placements.models import (PlacementsModelBase, VariationsModelBase,
     ABTestUsersModelBase, build_variations_slots_table)
 from myreco.slots.models import (SlotsVariablesModelBase, SlotsFiltersModelBase,
     SlotsModelBase, build_slots_fallbacks_table)
-from myreco.engines.base_model import EnginesModelBase
+from myreco.engines.model import EnginesModelBase
 from myreco.engines.data_importer.model import EnginesDataImporterModelBase
 from myreco.engines.objects_exporter.model import EnginesObjectsExporterModelBase
-from myreco.engines.cores.model import EnginesCoresModelBase
 from myreco.items_types.model import ItemsTypesModelBase, build_items_types_stores_table
 from myreco.items_types.data_file_importer.model import ItemsTypesDataFileImporterModelBase
 from myreco.items_types.filters_updater.model import ItemsTypesFiltersUpdaterModelBase
@@ -65,7 +64,6 @@ class ModelsFactory(object):
                         engines_recommender_base=EnginesModelBase,
                         engines_data_importer_base=EnginesDataImporterModelBase,
                         engines_objects_exporter_base=EnginesObjectsExporterModelBase,
-                        engines_core_base=EnginesCoresModelBase,
                         slots_base=SlotsModelBase,
                         slots_variables_base=SlotsVariablesModelBase,
                         slots_filters_base=SlotsFiltersModelBase,
@@ -95,7 +93,6 @@ class ModelsFactory(object):
                 data_importer_base=engines_data_importer_base,
                 objects_exporter_base=engines_objects_exporter_base
             ),
-            'engines_cores': self.make_engines_cores_model(engines_core_base),
             'slots': self.make_slots_model(slots_base),
             'slots_variables': self.make_slots_variables_model(slots_variables_base),
             'slots_filters': self.make_slots_filters_model(slots_filters_base),
@@ -160,11 +157,6 @@ class ModelsFactory(object):
             bases_classes = (objects_exporter_base, self.base_model)
 
         return self.meta_class('EnginesModel', bases_classes, attributes)
-
-    def make_engines_cores_model(self, base=EnginesCoresModelBase, attributes=None):
-        attributes = self._init_attributes(attributes, self._commons_models_attrs)
-        return self.meta_class(
-            'EnginesCoresModel', (base, self.base_model), attributes)
 
     def make_slots_model(self, base=SlotsModelBase, attributes=None):
         attributes = self._init_attributes(attributes, self._commons_models_attrs)

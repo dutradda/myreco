@@ -21,5 +21,16 @@
 # SOFTWARE.
 
 
-class EngineError(Exception):
+from swaggerit.exceptions import SwaggerItError
+
+
+class MyrecoError(SwaggerItError):
+    pass
+
+
+class EngineError(MyrecoError):
+    pass
+
+
+class ModuleObjectLoaderError(MyrecoError):
     pass

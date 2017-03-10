@@ -21,7 +21,7 @@
 # SOFTWARE.
 
 
-from tests.integration.fixtures import EngineCoreTestWithVars, EngineCoreTest
+from tests.integration.fixtures import EngineStrategyTestWithVars, EngineStrategyTest
 from swaggerit.models._base import _all_models
 from tempfile import TemporaryDirectory
 from time import sleep
@@ -59,27 +59,6 @@ def init_db(models, session, api, temp_dir):
     }
     session.loop.run_until_complete(models['stores'].insert(session, store))
 
-    engine_core = {
-        'name': 'visual_similarity',
-        'configuration': {
-            'core_module': {
-                'path': 'tests.integration.fixtures',
-                'object_name': 'EngineCoreTestWithVars'
-            }
-        }
-    }
-    session.loop.run_until_complete(models['engines_cores'].insert(session, engine_core))
-    engine_core = {
-        'name': 'top_seller',
-        'configuration': {
-            'core_module': {
-                'path': 'tests.integration.fixtures',
-                'object_name': 'EngineCoreTest'
-            }
-        }
-    }
-    session.loop.run_until_complete(models['engines_cores'].insert(session, engine_core))
-
     schema = {
         'type': 'object',
         'id_names': ['item_id'],
@@ -114,7 +93,7 @@ def init_db(models, session, api, temp_dir):
     item_type = {
         'name': 'new_products',
         'stores': [{'id': 1}],
-        'store_items_base_class': {
+        'store_items_class': {
             'module': 'tests.integration.fixtures',
             'class_name': 'MyProducts'
         },
@@ -152,8 +131,11 @@ def init_db(models, session, api, temp_dir):
             'data_importer_path': 'test.test'
         }),
         'store_id': 1,
-        'core_id': 1,
-        'item_type_id': 1
+        'item_type_id': 1,
+        'strategy_class': {
+            'module': 'tests.integration.fixtures',
+            'class_name': 'EngineStrategyTestWithVars'
+        }
     }
     session.loop.run_until_complete(models['engines'].insert(session, engine))
     engine = {
@@ -163,8 +145,11 @@ def init_db(models, session, api, temp_dir):
             'aggregators_ids_name': 'filter_test'
         }),
         'store_id': 1,
-        'core_id': 1,
-        'item_type_id': 2
+        'item_type_id': 2,
+        'strategy_class': {
+            'module': 'tests.integration.fixtures',
+            'class_name': 'EngineStrategyTestWithVars'
+        }
     }
     session.loop.run_until_complete(models['engines'].insert(session, engine))
     engine = {
@@ -173,8 +158,11 @@ def init_db(models, session, api, temp_dir):
             'days_interval': 7
         }),
         'store_id': 1,
-        'core_id': 2,
-        'item_type_id': 3
+        'item_type_id': 3,
+        'strategy_class': {
+            'module': 'tests.integration.fixtures',
+            'class_name': 'EngineStrategyTest'
+        }
     }
     session.loop.run_until_complete(models['engines'].insert(session, engine))
     engine = {
@@ -183,19 +171,25 @@ def init_db(models, session, api, temp_dir):
             'days_interval': 7
         }),
         'store_id': 1,
-        'core_id': 2,
-        'item_type_id': 4
+        'item_type_id': 4,
+        'strategy_class': {
+            'module': 'tests.integration.fixtures',
+            'class_name': 'EngineStrategyTest'
+        }
     }
     session.loop.run_until_complete(models['engines'].insert(session, engine))
     engine = {
         'name': 'With Fallback',
         'store_id': 1,
-        'core_id': 1,
         'item_type_id': 4,
         'configuration': {
             'item_id_name': 'item_id',
             'aggregators_ids_name': 'filter_string',
             'data_importer_path': 'test.test'
+        },
+        'strategy_class': {
+            'module': 'tests.integration.fixtures',
+            'class_name': 'EngineStrategyTestWithVars'
         }
     }
     session.loop.run_until_complete(models['engines'].insert(session, engine))
@@ -512,7 +506,7 @@ class TestPlacementsModelPost(object):
                         'id': 1,
                         'item_type': {
                             'id': 1,
-                            'store_items_base_class': None,
+                            'store_items_class': None,
                             'stores': [{
                                 'configuration': {'data_path': temp_dir.name},
                                 'country': 'test',
@@ -545,17 +539,10 @@ class TestPlacementsModelPost(object):
                             'configuration': {'data_path': temp_dir.name}
                         },
                         'store_id': 1,
-                        'core': {
-                            'id': 1,
-                            'name': 'visual_similarity',
-                            'configuration': {
-                                'core_module': {
-                                    'path': 'tests.integration.fixtures',
-                                    'object_name': 'EngineCoreTestWithVars'
-                                }
-                            }
+                        'strategy_class': {
+                            'module': 'tests.integration.fixtures',
+                            'class_name': 'EngineStrategyTestWithVars'
                         },
-                        'core_id': 1,
                         'variables': [{
                             'name': 'item_id', 'schema': {'type': 'integer'}
                         },{
@@ -681,7 +668,7 @@ class TestPlacementsModelGet(object):
                         'id': 1,
                         'item_type': {
                             'id': 1,
-                            'store_items_base_class': None,
+                            'store_items_class': None,
                             'stores': [{
                                 'configuration': {'data_path': temp_dir.name},
                                 'country': 'test',
@@ -714,17 +701,10 @@ class TestPlacementsModelGet(object):
                             'configuration': {'data_path': temp_dir.name}
                         },
                         'store_id': 1,
-                        'core': {
-                            'id': 1,
-                            'name': 'visual_similarity',
-                            'configuration': {
-                                'core_module': {
-                                    'path': 'tests.integration.fixtures',
-                                    'object_name': 'EngineCoreTestWithVars'
-                                }
-                            }
+                        'strategy_class': {
+                            'module': 'tests.integration.fixtures',
+                            'class_name': 'EngineStrategyTestWithVars'
                         },
-                        'core_id': 1,
                         'variables': [{
                             'name': 'item_id', 'schema': {'type': 'integer'}
                         },{
@@ -939,7 +919,7 @@ class TestPlacementsModelUriTemplateGet(object):
                         'id': 1,
                         'item_type': {
                             'id': 1,
-                            'store_items_base_class': None,
+                            'store_items_class': None,
                             'stores': [{
                                 'configuration': {'data_path': temp_dir.name},
                                 'country': 'test',
@@ -972,17 +952,10 @@ class TestPlacementsModelUriTemplateGet(object):
                             'configuration': {'data_path': temp_dir.name}
                         },
                         'store_id': 1,
-                        'core': {
-                            'id': 1,
-                            'name': 'visual_similarity',
-                            'configuration': {
-                                'core_module': {
-                                    'path': 'tests.integration.fixtures',
-                                    'object_name': 'EngineCoreTestWithVars'
-                                }
-                            }
+                        'strategy_class': {
+                            'module': 'tests.integration.fixtures',
+                            'class_name': 'EngineStrategyTestWithVars'
                         },
-                        'core_id': 1,
                         'variables': [{
                             'name': 'item_id', 'schema': {'type': 'integer'}
                         },{
@@ -1084,7 +1057,8 @@ class TestPlacementsGetRecomendations(object):
     async def test_get_items_with_external_variable_valid(self, init_db, client, headers, monkeypatch, headers_without_content_type):
         client = await client
         class_loader = mock.MagicMock()
-        monkeypatch.setattr('myreco.placements.models.ModuleObjectLoader', class_loader)
+        monkeypatch.setattr('myreco.items_types.model.ModuleObjectLoader', class_loader)
+        monkeypatch.setattr('myreco.engines.model.ModuleObjectLoader', class_loader)
 
         class_loader.load()().get_items = CoroMock()
         class_loader.load()().get_items.coro.return_value = [{'id': 1}, {'id': 2}, {'id': 3}]
@@ -1096,6 +1070,8 @@ class TestPlacementsGetRecomendations(object):
                 'slots': [{'id': 1}]
             }]
         }]
+        class_loader.load()().get_variables.return_value = \
+            [{'name': 'item_id', 'schema': {'type': 'integer'}}]
         resp = await client.post('/placements/', headers=headers, data=ujson.dumps(body))
         obj = (await resp.json())[0]
 
@@ -1200,9 +1176,9 @@ class TestPlacementsGetRecomendations(object):
         resp = await client.post('/placements/', headers=headers, data=ujson.dumps(body))
         obj = (await resp.json())[0]
 
-        EngineCoreTestWithVars.get_items.coro.return_value = []
+        EngineStrategyTestWithVars.get_items.coro.return_value = []
         resp = await client.get('/placements/{}/items'.format(obj['small_hash']), headers=headers_without_content_type)
-        EngineCoreTestWithVars.get_items.coro.reset_mock()
+        EngineStrategyTestWithVars.get_items.coro.reset_mock()
 
         assert resp.status == 200
         assert (await resp.json())['slots'][0]['items'] == [
@@ -1389,9 +1365,9 @@ class TestPlacementsGetRecomendations(object):
         obj = (await resp.json())[0]
 
         random.seed(0)
-        EngineCoreTestWithVars.get_items.coro.return_value = [{'test': 1}, {'test': 2}]
+        EngineStrategyTestWithVars.get_items.coro.return_value = [{'test': 1}, {'test': 2}]
         resp = await client.get('/placements/{}/items'.format(obj['small_hash']), headers=headers_without_content_type)
-        EngineCoreTestWithVars.get_items.coro.reset_mock()
+        EngineStrategyTestWithVars.get_items.coro.reset_mock()
 
         assert resp.status == 200
         assert (await resp.json())['distributed_items'] == [

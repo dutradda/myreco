@@ -21,12 +21,12 @@
 # SOFTWARE.
 
 
-from myreco.engines.cores.top_seller.redis_object import TopSellerRedisObject
-from myreco.engines.cores.objects_exporter import EngineCoreObjectsExporter
-from myreco.engines.cores.recommender import EngineCoreRecommender
+from myreco.engines.strategies.top_seller.redis_object import TopSellerRedisObject
+from myreco.engines.strategies.objects_exporter import EngineStrategyObjectsExporter
+from myreco.engines.strategies.recommender import EngineStrategyRecommender
 
 
-class TopSellerEngineCore(EngineCoreObjectsExporter, EngineCoreRecommender):
+class TopSellerEngineStrategy(EngineStrategyObjectsExporter, EngineStrategyRecommender):
     __configuration_schema__ = {
         "type": "object",
         "required": ["days_interval"],

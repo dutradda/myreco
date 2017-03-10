@@ -21,7 +21,7 @@
 # SOFTWARE.
 
 
-from myreco.engines.cores.filters.factory import FiltersFactory
+from myreco.engines.strategies.filters.factory import FiltersFactory
 from swaggerit.utils import get_swagger_json
 from swaggerit.exceptions import SwaggerItModelError
 from jsonschema import ValidationError

@@ -21,33 +21,26 @@
 # SOFTWARE.
 
 
-from swaggerit.utils import set_logger
-from myreco.engines.cores.utils import build_engine_key_prefix
-import zlib
-import numpy as np
+import os
+import re
 
 
-class RedisObjectBase(object):
+engine_key_prefix_regex = re.compile(r'(\w)(\W)(\w)')
 
-    def __init__(self, engine_core):
-        self._engine_core = engine_core
-        self._set_redis_key()
-        set_logger(self, self._redis_key)
+def build_engine_key_prefix(engine):
+    name = engine['strategy_class']['class_name']
+    name = engine_key_prefix_regex.sub(r'\1_\2\3', name)
+    return 'engine_{}_{}'.format(engine['id'], name.lower())
 
-    def _set_redis_key(self):
-        self._redis_key = build_engine_key_prefix(self._engine_core.engine)
 
-    def _pack_array(self, array, compress=True, level=-1):
-        if compress:
-            return zlib.compress(array.tobytes(), level)
-        else:
-            return array.tobytes()
+def build_engine_data_path(engine):
+    engine_path = build_engine_key_prefix(engine)
+    return os.path.join(engine['store']['configuration']['data_path'], engine_path)
 
-    def _unpack_array(self, array, dtype, compress=True):
-        if array is not None:
-            if compress:
-                return np.fromstring(zlib.decompress(array), dtype=dtype)
-            else:
-                return np.fromstring(array, dtype=dtype)
-        else:
-            return None
+
+def makedirs(dir_):
+    try:
+        os.makedirs(dir_)
+    except OSError as e:
+        if os.errno.EEXIST != e.errno:
+            raise

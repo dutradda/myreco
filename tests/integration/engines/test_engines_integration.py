@@ -24,7 +24,7 @@
 from unittest import mock
 from time import sleep
 from datetime import datetime
-from tests.integration.fixtures import EngineCoreTest
+from tests.integration.fixtures import EngineStrategyTest
 from swaggerit.models._base import _all_models
 import asyncio
 import tempfile
@@ -50,17 +50,6 @@ def init_db(models, session, api):
     }
     session.loop.run_until_complete(models['stores'].insert(session, store))
 
-    core = {
-        'name': 'top_seller',
-        'configuration': {
-            'core_module': {
-                'path': 'tests.integration.fixtures',
-                'object_name': 'EngineCoreTest'
-            }
-        }
-    }
-    session.loop.run_until_complete(models['engines_cores'].insert(session, core))
-
     item_type = {
         'name': 'products',
         'schema': {
@@ -76,8 +65,11 @@ def init_db(models, session, api):
         'name': 'Seven Days Top Seller',
         'configuration': {'days_interval': 7},
         'store_id': 1,
-        'core_id': 1,
-        'item_type_id': 1
+        'item_type_id': 1,
+        'strategy_class': {
+            'module': 'tests.integration.fixtures',
+            'class_name': 'EngineStrategyTest'
+        }
     }
     session.loop.run_until_complete(models['engines'].insert(session, engine))
 
@@ -105,13 +97,13 @@ class TestEnginesModelPost(object):
             'schema': {
                 'type': 'object',
                 'additionalProperties': False,
-                'required': ['configuration', 'store_id', 'core_id', 'item_type_id'],
+                'required': ['configuration', 'store_id', 'item_type_id', 'strategy_class'],
                 'properties': {
                     'name': {'type': 'string'},
                     'configuration': {},
                     'store_id': {'type': 'integer'},
-                    'core_id': {'type': 'integer'},
-                    'item_type_id': {'type': 'integer'}
+                    'item_type_id': {'type': 'integer'},
+                    'strategy_class': {'$ref': '#/definitions/EnginesModel.strategy_class'}
                 }
             }
         }
@@ -127,28 +119,27 @@ class TestEnginesModelPost(object):
             'name': 'Seven Days Top Seller 2',
             'configuration': {"days_interval": 7, 'data_importer_path': 'test.test'},
             'store_id': 1,
-            'core_id': 1,
-            'item_type_id': 1
+            'item_type_id': 1,
+            'strategy_class': {
+                'module': 'tests.integration.fixtures',
+                'class_name': 'EngineStrategyTest'
+            }
         }]
         client = await client
         resp = await client.post('/engines/', headers=headers, data=ujson.dumps(body))
+        assert resp.status == 201
+
         body[0]['id'] = 2
         body[0]['variables'] = []
         body[0]['store'] = \
             {'id': 1, 'name': 'test', 'country': 'test', 'configuration': {'data_path': init_db}}
-        body[0]['core'] = {
-            'id': 1,
-            'name': 'top_seller',
-            'configuration': {
-                'core_module': {
-                    'path': 'tests.integration.fixtures',
-                    'object_name': 'EngineCoreTest'
-                }
-            }
+        body[0]['strategy_class'] = {
+            'module': 'tests.integration.fixtures',
+            'class_name': 'EngineStrategyTest'
         }
         body[0]['item_type'] = {
             'id': 1,
-            'store_items_base_class': None,
+            'store_items_class': None,
             'stores': [{
                 'configuration': {'data_path': init_db},
                 'country': 'test',
@@ -164,7 +155,6 @@ class TestEnginesModelPost(object):
             'available_filters': [{'name': 'sku', 'schema': {'type': 'string'}}]
         }
 
-        assert resp.status == 201
         assert await resp.json() ==  body
 
 
@@ -186,26 +176,23 @@ class TestEnginesModelGet(object):
             'name': 'Seven Days Top Seller',
             'configuration': {"days_interval": 7},
             'store_id': 1,
-            'core_id': 1,
-            'item_type_id': 1
+            'item_type_id': 1,
+            'strategy_class': {
+                'module': 'tests.integration.fixtures',
+                'class_name': 'EngineStrategyTest'
+            }
         }]
         body[0]['id'] = 1
         body[0]['variables'] = []
         body[0]['store'] = \
             {'id': 1, 'name': 'test', 'country': 'test', 'configuration': {'data_path': init_db}}
-        body[0]['core'] = {
-            'id': 1,
-            'name': 'top_seller',
-            'configuration': {
-                'core_module': {
-                    'path': 'tests.integration.fixtures',
-                    'object_name': 'EngineCoreTest'
-                }
-            }
+        body[0]['strategy_class'] = {
+            'module': 'tests.integration.fixtures',
+            'class_name': 'EngineStrategyTest'
         }
         body[0]['item_type'] = {
             'id': 1,
-            'store_items_base_class': None,
+            'store_items_class': None,
             'stores': [{
                 'configuration': {'data_path': init_db},
                 'country': 'test',
@@ -250,8 +237,8 @@ class TestEnginesModelUriTemplatePatch(object):
                     'name': {'type': 'string'},
                     'configuration': {},
                     'store_id': {'type': 'integer'},
-                    'core_id': {'type': 'integer'},
-                    'item_type_id': {'type': 'integer'}
+                    'item_type_id': {'type': 'integer'},
+                    'strategy_class': {'$ref': '#/definitions/EnginesModel.strategy_class'}
                 }
             }
         }
@@ -339,26 +326,19 @@ class TestEnginesModelUriTemplateGet(object):
             'name': 'Seven Days Top Seller',
             'configuration': {"days_interval": 7},
             'store_id': 1,
-            'core_id': 1,
             'item_type_id': 1
         }]
         body[0]['id'] = 1
         body[0]['variables'] = []
         body[0]['store'] = \
             {'id': 1, 'name': 'test', 'country': 'test', 'configuration': {'data_path': init_db}}
-        body[0]['core'] = {
-            'id': 1,
-            'name': 'top_seller',
-            'configuration': {
-                'core_module': {
-                    'path': 'tests.integration.fixtures',
-                    'object_name': 'EngineCoreTest'
-                }
-            }
+        body[0]['strategy_class'] = {
+            'module': 'tests.integration.fixtures',
+            'class_name': 'EngineStrategyTest'
         }
         body[0]['item_type'] = {
             'id': 1,
-            'store_items_base_class': None,
+            'store_items_class': None,
             'stores': [{
                 'configuration': {'data_path': init_db},
                 'country': 'test',
@@ -443,7 +423,7 @@ class TestEnginesModelsDataImporter(object):
 
     async def test_importer_get_with_error(self, init_db, headers_without_content_type, client, monkeypatch):
         set_patches(monkeypatch)
-        monkeypatch.setattr('tests.integration.fixtures.EngineCoreTest.get_data',
+        monkeypatch.setattr('tests.integration.fixtures.EngineStrategyTest.get_data',
                             mock.MagicMock(side_effect=Exception('testing')))
         client = await client
         await client.post('/engines/1/import_data', headers=headers_without_content_type)
@@ -489,8 +469,8 @@ def set_readers_builders_patch(monkeypatch, values=None):
     mock_ = CoroMock()
     mock_.coro.return_value = readers_builder
 
-    monkeypatch.setattr('myreco.engines.cores.objects_exporter.'
-                        'EngineCoreObjectsExporter._build_csv_readers', mock_)
+    monkeypatch.setattr('myreco.engines.strategies.objects_exporter.'
+                        'EngineStrategyObjectsExporter._build_csv_readers', mock_)
 
 
 class TestEnginesModelsObjectsExporter(object):
@@ -581,7 +561,7 @@ def set_data_importer_patch(monkeypatch, mock_=None):
     if mock_ is None:
         mock_ = mock.MagicMock()
 
-    monkeypatch.setattr('tests.integration.fixtures.EngineCoreTest.get_data', mock_)
+    monkeypatch.setattr('tests.integration.fixtures.EngineStrategyTest.get_data', mock_)
     return mock_
 
 
@@ -602,8 +582,8 @@ class TestEnginesModelsObjectsExporterWithImport(object):
 
         await _wait_job_finish(client, headers_without_content_type)
 
-        called = bool(EngineCoreTest.get_data.called)
-        EngineCoreTest.get_data.reset_mock()
+        called = bool(EngineStrategyTest.get_data.called)
+        EngineStrategyTest.get_data.reset_mock()
 
         assert hash_ == {'job_hash': '6342e10bd7dca3240c698aa79c98362e'}
         assert called
@@ -712,243 +692,3 @@ class TestEnginesModelsObjectsExporterWithImport(object):
                 'end': '1900-01-01 00:00'
             }
         }
-
-
-class TestEnginesCoresModelPost(object):
-
-    async def test_post_without_body(self, init_db, headers, client):
-        client = await client
-        resp = await client.post('/engines_cores/', headers=headers)
-        assert resp.status == 400
-        assert await resp.json() == {'message': 'Request body is missing'}
-
-    async def test_post_with_invalid_body(self, init_db, headers, client):
-        client = await client
-        resp = await client.post('/engines_cores/', headers=headers, data='[{}]')
-        assert resp.status == 400
-        assert await resp.json() ==  {
-            'message': "'configuration' is a required property. "\
-                       "Failed validating instance['0'] for schema['items']['required']",
-            'schema': {
-                'type': 'object',
-                'additionalProperties': False,
-                'required': ['configuration'],
-                'properties': {
-                    'name': {'type': 'string'},
-                    'configuration': {'$ref': '#/definitions/EnginesCoresModel.configuration'}
-                }
-            }
-        }
-
-    async def test_post_with_invalid_grant(self, init_db, client):
-        body = [{
-            'name': 'top_seller2',
-            'configuration': {
-                'core_module': {
-                    'path': 'tests.integration.fixtures',
-                    'object_name': 'EngineCoreTest'
-                }
-            }
-        }]
-        client = await client
-        resp = await client.post('/engines_cores/', headers={'Authorization': 'invalid'},data=ujson.dumps(body))
-        assert resp.status == 401
-        assert await resp.json() ==  {'message': 'Invalid authorization'}
-
-    async def test_post(self, init_db, headers, client):
-        body = [{
-            'name': 'top_seller2',
-            'configuration': {
-                'core_module': {
-                    'path': 'tests.integration.fixtures',
-                    'object_name': 'EngineCoreTest'
-                }
-            }
-        }]
-        client = await client
-        resp = await client.post('/engines_cores/', headers=headers, data=ujson.dumps(body))
-        body[0]['id'] = 2
-
-        assert resp.status == 201
-        assert await resp.json() ==  body
-
-
-class TestEnginesCoresModelGet(object):
-
-    async def test_get_not_found(self, init_db, headers_without_content_type, client):
-        client = await client
-        await client.delete('/engines/1/', headers=headers_without_content_type)
-        await client.delete('/engines_cores/1/', headers=headers_without_content_type)
-        resp = await client.get('/engines_cores/', headers=headers_without_content_type)
-        assert resp.status == 404
-
-    async def test_get_invalid_with_body(self, init_db, headers, client):
-        client = await client
-        resp = await client.get('/engines_cores/', headers=headers, data='{}')
-        assert resp.status == 400
-        assert await resp.json() == {'message': 'Request body is not acceptable'}
-
-    async def test_get(self, init_db, headers, headers_without_content_type, client):
-        body = [{
-            'name': 'top_seller2',
-            'configuration': {
-                'core_module': {
-                    'path': 'tests.integration.fixtures',
-                    'object_name': 'EngineCoreTest'
-                }
-            }
-        }]
-        client = await client
-        await client.delete('/engines/1/', headers=headers_without_content_type)
-        await client.delete('/engines_cores/1/', headers=headers_without_content_type)
-        await client.post('/engines_cores/', headers=headers, data=ujson.dumps(body))
-        body[0]['id'] = 2
-        resp = await client.get('/engines_cores/', headers=headers_without_content_type)
-        assert resp.status == 200
-        assert await resp.json() ==  body
-
-
-class TestEnginesCoresModelUriTemplatePatch(object):
-
-    async def test_patch_without_body(self, init_db, headers, client):
-        client = await client
-        resp = await client.patch('/engines_cores/1/', headers=headers, data='')
-        assert resp.status == 400
-        assert await resp.json() == {'message': 'Request body is missing'}
-
-    async def test_patch_with_invalid_body(self, init_db, headers, client):
-        client = await client
-        resp = await client.patch('/engines_cores/1/', headers=headers, data='{}')
-        assert resp.status == 400
-        assert await resp.json() ==  {
-            'message': "{} does not have enough properties. "\
-                       "Failed validating instance for schema['minProperties']",
-            'schema': {
-                'type': 'object',
-                'additionalProperties': False,
-                'minProperties': 1,
-                'properties': {
-                    'name': {'type': 'string'},
-                    'configuration': {'$ref': '#/definitions/EnginesCoresModel.configuration'}
-                }
-            }
-        }
-
-    async def test_patch_with_invalid_configuration(self, init_db, headers, client):
-        body = [{
-            'name': 'top_seller2',
-            'configuration': {
-            }
-        }]
-        client = await client
-        await client.post('/engines_cores/', headers=headers, data=ujson.dumps(body))
-
-        body = {
-            'configuration': {}
-        }
-        resp = await client.patch('/engines_cores/2/', headers=headers, data=ujson.dumps(body))
-        assert resp.status == 400
-        assert await resp.json() ==  {
-            'message': "'core_module' is a required property. "\
-                       "Failed validating instance['configuration'] "\
-                       "for schema['properties']['configuration']['required']",
-            'schema': {
-                'type': 'object',
-                'required': ['core_module'],
-                'properties': {
-                    'core_module': {'$ref': '#/definitions/EnginesCoresModel.module'}
-                }
-            }
-        }
-
-    async def test_patch_not_found(self, init_db, headers, client):
-        body = {
-            'name': 'test'
-        }
-        client = await client
-        resp = await client.patch('/engines_cores/2/', headers=headers, data=ujson.dumps(body))
-        assert resp.status == 404
-
-    async def test_patch(self, init_db, headers, client):
-        body = [{
-            'name': 'top_seller2',
-            'configuration': {
-                'core_module': {
-                    'path': 'tests.integration.fixtures',
-                    'object_name': 'EngineCoreTest'
-                }
-            }
-        }]
-        client = await client
-        resp = await client.post('/engines_cores/', headers=headers, data=ujson.dumps(body))
-        obj = (await resp.json())[0]
-
-        body = {
-            'name': 'test2'
-        }
-        resp = await client.patch('/engines_cores/2/', headers=headers, data=ujson.dumps(body))
-        obj['name'] = 'test2'
-
-        assert resp.status == 200
-        assert await resp.json() ==  obj
-
-
-class TestEnginesCoresModelUriTemplateDelete(object):
-
-    async def test_delete_with_body(self, init_db, headers, client):
-        client = await client
-        resp = await client.delete('/engines_cores/1/', headers=headers, data='{}')
-        assert resp.status == 400
-        assert await resp.json() == {'message': 'Request body is not acceptable'}
-
-    async def test_delete(self, init_db, headers, headers_without_content_type, client):
-        body = [{
-            'name': 'top_seller2',
-            'configuration': {
-                'core_module': {
-                    'path': 'tests.integration.fixtures',
-                    'object_name': 'EngineCoreTest'
-                }
-            }
-        }]
-        client = await client
-        await client.post('/engines_cores/', headers=headers, data=ujson.dumps(body))
-        resp = await client.get('/engines_cores/2/', headers=headers_without_content_type)
-        assert resp.status == 200
-
-        resp = await client.delete('/engines_cores/2/', headers=headers_without_content_type)
-        assert resp.status == 204
-
-        resp = await client.get('/engines_cores/2/', headers=headers_without_content_type)
-        assert resp.status == 404
-
-
-class TestEnginesCoresModelUriTemplateGet(object):
-
-    async def test_get_with_body(self, init_db, headers, client):
-        client = await client
-        resp = await client.get('/engines_cores/2/', headers=headers, data='{}')
-        assert resp.status == 400
-        assert await resp.json() == {'message': 'Request body is not acceptable'}
-
-    async def test_get_not_found(self, init_db, headers_without_content_type, client):
-        client = await client
-        resp = await client.get('/engines_cores/2/', headers=headers_without_content_type)
-        assert resp.status == 404
-
-    async def test_get(self, init_db, headers, headers_without_content_type, client):
-        body = [{
-            'name': 'top_seller2',
-            'configuration': {
-                'core_module': {
-                    'path': 'tests.integration.fixtures',
-                    'object_name': 'EngineCoreTest'
-                }
-            }
-        }]
-        client = await client
-        await client.post('/engines_cores/', headers=headers, data=ujson.dumps(body))
-        resp = await client.get('/engines_cores/2/', headers=headers_without_content_type)
-        body[0]['id'] = 2
-        assert resp.status == 200
-        assert await resp.json() == body[0]

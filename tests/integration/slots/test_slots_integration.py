@@ -24,7 +24,7 @@
 from unittest import mock
 from time import sleep
 from datetime import datetime
-from tests.integration.fixtures import EngineCoreTest
+from tests.integration.fixtures import EngineStrategyTest
 from swaggerit.models._base import _all_models
 import asyncio
 import tempfile
@@ -34,7 +34,7 @@ import ujson
 
 @pytest.fixture
 def init_db(models, session, api, monkeypatch):
-    monkeypatch.setattr('myreco.engines.cores.base.makedirs', mock.MagicMock())
+    monkeypatch.setattr('myreco.engines.strategies.base.makedirs', mock.MagicMock())
 
     user = {
         'name': 'test',
@@ -50,27 +50,6 @@ def init_db(models, session, api, monkeypatch):
         'configuration': {'data_path': '/test'}
     }
     session.loop.run_until_complete(models['stores'].insert(session, store))
-
-    engine_core = {
-        'name': 'visual_similarity',
-        'configuration': {
-            'core_module': {
-                'path': 'tests.integration.fixtures',
-                'object_name': 'EngineCoreTestWithVars'
-            }
-        }
-    }
-    session.loop.run_until_complete(models['engines_cores'].insert(session, engine_core))
-    engine_core = {
-        'name': 'top_seller',
-        'configuration': {
-            'core_module': {
-                'path': 'tests.integration.fixtures',
-                'object_name': 'EngineCoreTest'
-            }
-        }
-    }
-    session.loop.run_until_complete(models['engines_cores'].insert(session, engine_core))
 
     schema = {
         'type': 'object',
@@ -112,7 +91,10 @@ def init_db(models, session, api, monkeypatch):
             'data_importer_path': 'test.test'
         }),
         'store_id': 1,
-        'core_id': 1,
+        'strategy_class': {
+            'module': 'tests.integration.fixtures',
+            'class_name': 'EngineStrategyTestWithVars'
+        },
         'item_type_id': 1
     }
     session.loop.run_until_complete(models['engines'].insert(session, engine))
@@ -124,7 +106,10 @@ def init_db(models, session, api, monkeypatch):
             'data_importer_path': 'test.test'
         }),
         'store_id': 1,
-        'core_id': 1,
+        'strategy_class': {
+            'module': 'tests.integration.fixtures',
+            'class_name': 'EngineStrategyTestWithVars'
+        },
         'item_type_id': 2
     }
     session.loop.run_until_complete(models['engines'].insert(session, engine))
@@ -135,7 +120,10 @@ def init_db(models, session, api, monkeypatch):
             'data_importer_path': 'test.test'
         }),
         'store_id': 1,
-        'core_id': 2,
+        'strategy_class': {
+            'module': 'tests.integration.fixtures',
+            'class_name': 'EngineStrategyTest'
+        },
         'item_type_id': 3
     }
     session.loop.run_until_complete(models['engines'].insert(session, engine))
@@ -308,7 +296,7 @@ class TestSlotsModelPost(object):
             'engine': {
                 'item_type': {
                     'id': 1,
-                    'store_items_base_class': None,
+                    'store_items_class': None,
                     'stores': [{
                         'configuration': {'data_path': '/test'},
                         'country': 'test',
@@ -335,15 +323,9 @@ class TestSlotsModelPost(object):
                 'store_id': 1,
                 'name': 'Visual Similarity',
                 'item_type_id': 1,
-                'core': {
-                    'id': 1,
-                    'name': 'visual_similarity',
-                    'configuration': {
-                        'core_module': {
-                            'path': 'tests.integration.fixtures',
-                            'object_name': 'EngineCoreTestWithVars'
-                        }
-                    }
+                'strategy_class': {
+                    'class_name': 'EngineStrategyTestWithVars',
+                    'module': 'tests.integration.fixtures'
                 },
                 'id': 1,
                 'variables': [{
@@ -351,7 +333,6 @@ class TestSlotsModelPost(object):
                 },{
                     'name': 'filter_test', 'schema': {'type': 'string'}
                 }],
-                'core_id': 1,
                 'configuration': {
                     'aggregators_ids_name': 'filter_test',
                     'item_id_name': 'item_id',
@@ -414,7 +395,7 @@ class TestSlotsModelPost(object):
             'engine': {
                 'item_type': {
                     'id': 1,
-                    'store_items_base_class': None,
+                    'store_items_class': None,
                     'stores': [{
                         'configuration': {'data_path': '/test'},
                         'country': 'test',
@@ -441,15 +422,9 @@ class TestSlotsModelPost(object):
                 'store_id': 1,
                 'name': 'Visual Similarity',
                 'item_type_id': 1,
-                'core': {
-                    'id': 1,
-                    'name': 'visual_similarity',
-                    'configuration': {
-                        'core_module': {
-                            'path': 'tests.integration.fixtures',
-                            'object_name': 'EngineCoreTestWithVars'
-                        }
-                    }
+                'strategy_class': {
+                    'class_name': 'EngineStrategyTestWithVars',
+                    'module': 'tests.integration.fixtures'
                 },
                 'id': 1,
                 'variables': [{
@@ -457,7 +432,6 @@ class TestSlotsModelPost(object):
                 },{
                     'name': 'filter_test', 'schema': {'type': 'string'}
                 }],
-                'core_id': 1,
                 'configuration': {
                     'aggregators_ids_name': 'filter_test',
                     'item_id_name': 'item_id',
@@ -530,7 +504,7 @@ class TestSlotsModelPost(object):
                 'engine': {
                     'item_type': {
                         'id': 1,
-                        'store_items_base_class': None,
+                        'store_items_class': None,
                         'stores': [{
                             'configuration': {'data_path': '/test'},
                             'country': 'test',
@@ -557,15 +531,9 @@ class TestSlotsModelPost(object):
                     'store_id': 1,
                     'name': 'Visual Similarity',
                     'item_type_id': 1,
-                    'core': {
-                        'id': 1,
-                        'name': 'visual_similarity',
-                        'configuration': {
-                            'core_module': {
-                                'path': 'tests.integration.fixtures',
-                                'object_name': 'EngineCoreTestWithVars'
-                            }
-                        }
+                    'strategy_class': {
+                        'class_name': 'EngineStrategyTestWithVars',
+                        'module': 'tests.integration.fixtures'
                     },
                     'id': 1,
                     'variables': [{
@@ -573,7 +541,6 @@ class TestSlotsModelPost(object):
                     },{
                         'name': 'filter_test', 'schema': {'type': 'string'}
                     }],
-                    'core_id': 1,
                     'configuration': {
                         'aggregators_ids_name': 'filter_test',
                         'item_id_name': 'item_id',
@@ -611,7 +578,7 @@ class TestSlotsModelPost(object):
             'engine': {
                 'item_type': {
                     'id': 1,
-                    'store_items_base_class': None,
+                    'store_items_class': None,
                     'stores': [{
                         'configuration': {'data_path': '/test'},
                         'country': 'test',
@@ -638,15 +605,9 @@ class TestSlotsModelPost(object):
                 'store_id': 1,
                 'name': 'Visual Similarity',
                 'item_type_id': 1,
-                'core': {
-                    'id': 1,
-                    'name': 'visual_similarity',
-                    'configuration': {
-                        'core_module': {
-                            'path': 'tests.integration.fixtures',
-                            'object_name': 'EngineCoreTestWithVars'
-                        }
-                    }
+                'strategy_class': {
+                    'class_name': 'EngineStrategyTestWithVars',
+                    'module': 'tests.integration.fixtures'
                 },
                 'id': 1,
                 'variables': [{
@@ -654,7 +615,6 @@ class TestSlotsModelPost(object):
                 },{
                     'name': 'filter_test', 'schema': {'type': 'string'}
                 }],
-                'core_id': 1,
                 'configuration': {
                     'aggregators_ids_name': 'filter_test',
                     'item_id_name': 'item_id',
@@ -745,7 +705,7 @@ class TestSlotsModelGet(object):
             'engine': {
                 'item_type': {
                     'id': 1,
-                    'store_items_base_class': None,
+                    'store_items_class': None,
                     'stores': [{
                         'configuration': {'data_path': '/test'},
                         'country': 'test',
@@ -772,15 +732,9 @@ class TestSlotsModelGet(object):
                 'store_id': 1,
                 'name': 'Visual Similarity',
                 'item_type_id': 1,
-                'core': {
-                    'id': 1,
-                    'name': 'visual_similarity',
-                    'configuration': {
-                        'core_module': {
-                            'path': 'tests.integration.fixtures',
-                            'object_name': 'EngineCoreTestWithVars'
-                        }
-                    }
+                'strategy_class': {
+                    'class_name': 'EngineStrategyTestWithVars',
+                    'module': 'tests.integration.fixtures'
                 },
                 'id': 1,
                 'variables': [{
@@ -788,7 +742,6 @@ class TestSlotsModelGet(object):
                 },{
                     'name': 'filter_test', 'schema': {'type': 'string'}
                 }],
-                'core_id': 1,
                 'configuration': {
                     'aggregators_ids_name': 'filter_test',
                     'item_id_name': 'item_id',
@@ -1020,7 +973,7 @@ class TestSlotsModelUriTemplatePatch(object):
             'engine': {
                 'item_type': {
                     'id': 1,
-                    'store_items_base_class': None,
+                    'store_items_class': None,
                     'stores': [{
                         'configuration': {'data_path': '/test'},
                         'country': 'test',
@@ -1047,15 +1000,9 @@ class TestSlotsModelUriTemplatePatch(object):
                 'store_id': 1,
                 'name': 'Visual Similarity',
                 'item_type_id': 1,
-                'core': {
-                    'id': 1,
-                    'name': 'visual_similarity',
-                    'configuration': {
-                        'core_module': {
-                            'path': 'tests.integration.fixtures',
-                            'object_name': 'EngineCoreTestWithVars'
-                        }
-                    }
+                'strategy_class': {
+                    'class_name': 'EngineStrategyTestWithVars',
+                    'module': 'tests.integration.fixtures'
                 },
                 'id': 1,
                 'variables': [{
@@ -1063,7 +1010,6 @@ class TestSlotsModelUriTemplatePatch(object):
                 },{
                     'name': 'filter_test', 'schema': {'type': 'string'}
                 }],
-                'core_id': 1,
                 'configuration': {
                     'aggregators_ids_name': 'filter_test',
                     'item_id_name': 'item_id',
@@ -1170,7 +1116,7 @@ class TestSlotsModelUriTemplateGet(object):
             'engine': {
                 'item_type': {
                     'id': 1,
-                    'store_items_base_class': None,
+                    'store_items_class': None,
                     'stores': [{
                         'configuration': {'data_path': '/test'},
                         'country': 'test',
@@ -1197,15 +1143,9 @@ class TestSlotsModelUriTemplateGet(object):
                 'store_id': 1,
                 'name': 'Visual Similarity',
                 'item_type_id': 1,
-                'core': {
-                    'id': 1,
-                    'name': 'visual_similarity',
-                    'configuration': {
-                        'core_module': {
-                            'path': 'tests.integration.fixtures',
-                            'object_name': 'EngineCoreTestWithVars'
-                        }
-                    }
+                'strategy_class': {
+                    'class_name': 'EngineStrategyTestWithVars',
+                    'module': 'tests.integration.fixtures'
                 },
                 'id': 1,
                 'variables': [{
@@ -1213,7 +1153,6 @@ class TestSlotsModelUriTemplateGet(object):
                 },{
                     'name': 'filter_test', 'schema': {'type': 'string'}
                 }],
-                'core_id': 1,
                 'configuration': {
                     'aggregators_ids_name': 'filter_test',
                     'item_id_name': 'item_id',

@@ -21,8 +21,8 @@
 # SOFTWARE.
 
 
-from myreco.engines.cores.redis_object import RedisObjectBase
-from myreco.engines.exceptions import EngineError
+from myreco.engines.strategies.redis_object import RedisObjectBase
+from myreco.exceptions import EngineError
 import numpy as np
 import ujson
 

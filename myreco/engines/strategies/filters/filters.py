@@ -21,7 +21,7 @@
 # SOFTWARE.
 
 
-from myreco.engines.cores.items_indices_map import ItemsIndicesMap
+from myreco.engines.strategies.items_indices_map import ItemsIndicesMap
 from zlib import decompress, compress
 from collections import defaultdict
 import numpy as np

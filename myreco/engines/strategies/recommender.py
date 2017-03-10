@@ -21,14 +21,14 @@
 # SOFTWARE.
 
 
-from myreco.engines.cores.base import EngineCoreBase
-from myreco.engines.exceptions import EngineError
+from myreco.engines.strategies.base import EngineStrategyBase
+from myreco.exceptions import EngineError
 from abc import abstractmethod
 from swaggerit.json_builder import JsonBuilder
 from numpy import argpartition
 
 
-class EngineCoreRecommender(EngineCoreBase):
+class EngineStrategyRecommender(EngineStrategyBase):
 
     def get_variables(self):
         return []

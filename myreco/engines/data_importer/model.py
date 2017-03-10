@@ -21,8 +21,8 @@
 # SOFTWARE.
 
 
-from myreco.engines.cores.utils import build_engine_key_prefix
-from myreco.engines.base_model import EnginesModelBase
+from myreco.engines.strategies.utils import build_engine_key_prefix
+from myreco.engines.model import EnginesModelBase
 from myreco.utils import extend_swagger_json
 from copy import deepcopy
 import asyncio
@@ -61,11 +61,11 @@ class EnginesDataImporterModelBase(EnginesModelBase):
 
     @classmethod
     def _get_jobs_id(cls, engine):
-        return build_engine_key_prefix({'id': engine.id, 'core': {'name': engine.core.name}})
+        return build_engine_key_prefix(engine.todict())
 
     @classmethod
     def _run_import_data_job(cls, req, session, engine):
-        return engine.core_instance.get_data(session)
+        return engine.strategy.get_data(session)
 
     @classmethod
     async def get_import_data_job(cls, req, session):

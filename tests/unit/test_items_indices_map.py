@@ -21,7 +21,7 @@
 # SOFTWARE.
 
 
-from myreco.engines.cores.items_indices_map import ItemsIndicesMap
+from myreco.engines.strategies.items_indices_map import ItemsIndicesMap
 from unittest import mock
 from types import MethodType
 from collections import OrderedDict
@@ -124,7 +124,7 @@ def indices_map_new_item(indices_map):
     return indices_map
 
 
-@mock.patch('myreco.engines.cores.items_indices_map.dict', new=OrderedDict)
+@mock.patch('myreco.engines.strategies.items_indices_map.dict', new=OrderedDict)
 class TestItemsIndicesMapWithNewItem(object):
 
     async def test_if_update_builds_items_indices_map_correctly(self, indices_map_new_item, session):
@@ -154,7 +154,7 @@ def indices_map_removed_item(indices_map):
     return indices_map
 
 
-@mock.patch('myreco.engines.cores.items_indices_map.dict', new=OrderedDict)
+@mock.patch('myreco.engines.strategies.items_indices_map.dict', new=OrderedDict)
 class TestItemsIndicesMapWithItemRemoved(object):
 
     async def test_if_update_builds_items_indices_map_correctly(self, indices_map_removed_item, session):
@@ -187,7 +187,7 @@ def indices_map_removed_and_added_item_in_freed_index(indices_map):
     return indices_map
 
 
-@mock.patch('myreco.engines.cores.items_indices_map.dict', new=OrderedDict)
+@mock.patch('myreco.engines.strategies.items_indices_map.dict', new=OrderedDict)
 class TestItemsIndicesMapWithItemRemovedAndAddedInFreedIndex(object):
 
     async def test_if_update_builds_items_indices_map_correctly(self, indices_map_removed_and_added_item_in_freed_index, session):
@@ -221,7 +221,7 @@ def indices_map_removed_and_added_two_items(indices_map):
     return indices_map
 
 
-@mock.patch('myreco.engines.cores.items_indices_map.dict', new=OrderedDict)
+@mock.patch('myreco.engines.strategies.items_indices_map.dict', new=OrderedDict)
 class TestItemsIndicesMapWithItemRemovedAndAddedTwoItems(object):
 
     async def test_if_update_builds_items_indices_map_correctly(self, indices_map_removed_and_added_two_items, session):
@@ -260,7 +260,7 @@ def indices_map_free_indices(indices_map):
     return indices_map
 
 
-@mock.patch('myreco.engines.cores.items_indices_map.dict', new=OrderedDict)
+@mock.patch('myreco.engines.strategies.items_indices_map.dict', new=OrderedDict)
 class TestItemsIndicesMapFreeIndices(object):
 
     async def test_if_update_builds_items_indices_map_correctly(self, indices_map_free_indices, session):

@@ -22,13 +22,13 @@
 
 
 from swaggerit.utils import build_validator, get_module_path, set_logger
-from myreco.engines.cores.utils import build_engine_data_path, build_engine_key_prefix, makedirs
-from myreco.engines.cores.items_indices_map import ItemsIndicesMap
+from myreco.engines.strategies.utils import build_engine_data_path, build_engine_key_prefix, makedirs
+from myreco.engines.strategies.items_indices_map import ItemsIndicesMap
 from jsonschema import Draft4Validator
 from abc import ABCMeta
 
 
-class EngineCoreMetaBase(ABCMeta):
+class EngineStrategyMetaBase(ABCMeta):
 
     def __init__(cls, name, bases_classes, attributes):
         if hasattr(cls, '__configuration_schema__'):
@@ -37,7 +37,7 @@ class EngineCoreMetaBase(ABCMeta):
             cls.__config_validator__ = build_validator(schema, get_module_path(cls))
 
 
-class EngineCoreBase(metaclass=EngineCoreMetaBase):
+class EngineStrategyBase(metaclass=EngineStrategyMetaBase):
 
     def __init__(self, engine, items_model):
         self.engine = engine

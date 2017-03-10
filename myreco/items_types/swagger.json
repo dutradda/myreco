@@ -229,7 +229,7 @@
                 "name": {"type": "string"},
                 "schema": {"$ref": "#/definitions/items"},
                 "stores": {"$ref": "#/definitions/stores"},
-                "store_items_base_class": {"$ref": "#/definitions/store_items_base_class"}
+                "store_items_class": {"$ref": "#/definitions/store_items_class"}
             }
         },
         "schema_array": {
@@ -243,7 +243,7 @@
                     "name": {"type": "string"},
                     "schema": {"$ref": "#/definitions/items"},
                     "stores": {"$ref": "#/definitions/stores"},
-                    "store_items_base_class": {"$ref": "#/definitions/store_items_base_class"}
+                    "store_items_class": {"$ref": "#/definitions/store_items_class"}
                 }
             }
         },
@@ -270,7 +270,7 @@
                 "properties": {"$ref": "store_items_metaschema.json#/definitions/baseObject/properties/properties"}
             }
         },
-        "store_items_base_class": {
+        "store_items_class": {
             "type": "object",
             "required": ["module", "class_name"],
             "properties": {

@@ -21,7 +21,7 @@
 # SOFTWARE.
 
 
-from swaggerit.exceptions import SwaggerItModelError
+from myreco.exceptions import ModuleObjectLoaderError
 from swaggerit.models.orm.factory import FactoryOrmModels
 from swaggerit.utils import get_model, get_swagger_json
 from importlib import import_module
@@ -43,7 +43,7 @@ class ModuleObjectLoader(object):
                 cls._objects[key] = obj
 
             except Exception as error:
-                raise SwaggerItModelError(
+                raise ModuleObjectLoaderError(
                     "Error loading module '{}.{}'.\nError Class: {}. Error Message: {}".format(
                         config['path'], config['object_name'],
                         error.__class__.__name__, str(error)

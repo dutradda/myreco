@@ -22,7 +22,7 @@
 
 
 from swaggerit.models._base import _all_models
-from myreco.engines.cores.items_indices_map import ItemsIndicesMap
+from myreco.engines.strategies.items_indices_map import ItemsIndicesMap
 from myreco.authorizer import MyrecoAuthorizer
 from base64 import b64encode
 from unittest import mock
@@ -80,7 +80,7 @@ class TestItemsTypesModelPost(object):
                     'name': {'type': 'string'},
                     'stores': {'$ref': '#/definitions/ItemsTypesModel.stores'},
                     'schema': {'$ref': '#/definitions/ItemsTypesModel.items'},
-                    'store_items_base_class': {'$ref': '#/definitions/ItemsTypesModel.store_items_base_class'}
+                    'store_items_class': {'$ref': '#/definitions/ItemsTypesModel.store_items_class'}
                 }
             }
         }
@@ -105,7 +105,7 @@ class TestItemsTypesModelPost(object):
             'id': 1,
             'name': 'test'
         }]
-        body[0]['store_items_base_class'] = None
+        body[0]['store_items_class'] = None
 
         assert resp.status == 201
         assert await resp.json() ==  body
@@ -213,7 +213,7 @@ class TestItemsTypesModelGet(object):
             'id': 1,
             'name': 'test'
         }]
-        body[0]['store_items_base_class'] = None
+        body[0]['store_items_class'] = None
 
         resp = await client.get('/items_types/?stores=id:1', headers=headers_without_content_type)
         assert resp.status == 200
@@ -243,7 +243,7 @@ class TestItemsTypesModelUriTemplatePatch(object):
                     'name': {'type': 'string'},
                     'stores': {'$ref': '#/definitions/ItemsTypesModel.stores'},
                     'schema': {'$ref': '#/definitions/ItemsTypesModel.items'},
-                    'store_items_base_class': {'$ref': '#/definitions/ItemsTypesModel.store_items_base_class'}
+                    'store_items_class': {'$ref': '#/definitions/ItemsTypesModel.store_items_class'}
                 }
             }
         }
@@ -336,7 +336,7 @@ class TestItemsTypesModelUriTemplateGet(object):
             'id': 1,
             'name': 'test'
         }]
-        body[0]['store_items_base_class'] = None
+        body[0]['store_items_class'] = None
 
         assert resp.status == 200
         assert await resp.json() == body[0]
@@ -487,7 +487,7 @@ class TestItemsModelPatch(object):
 
 @pytest.fixture
 def update_filters_init_db(models, session, api, monkeypatch):
-    monkeypatch.setattr('myreco.engines.cores.base.makedirs', mock.MagicMock())
+    monkeypatch.setattr('myreco.engines.strategies.base.makedirs', mock.MagicMock())
 
     user = {
         'name': 'test',
@@ -530,26 +530,18 @@ def update_filters_init_db(models, session, api, monkeypatch):
     }
     types = session.loop.run_until_complete(models['items_types'].insert(session, item_type))
 
-    engine_core = {
-        'name': 'top_seller',
-        'configuration': {
-            'core_module': {
-                'path': 'myreco.engines.cores.top_seller.core',
-                'object_name': 'TopSellerEngineCore'
-            }
-        }
-    }
-    session.loop.run_until_complete(models['engines_cores'].insert(session, engine_core))
-
     engine = {
         'name': 'Top Seller',
         'configuration_json': ujson.dumps({
             'days_interval': 7,
-            'data_importer_path': 'myreco.engines.cores.base.AbstractDataImporter'
+            'data_importer_path': 'myreco.engines.strategies.base.AbstractDataImporter'
         }),
         'store_id': 1,
-        'core_id': 1,
-        'item_type_id': 1
+        'item_type_id': 1,
+        'strategy_class': {
+                'module': 'myreco.engines.strategies.top_seller.core',
+                'class_name': 'TopSellerEngineStrategy'
+            }
     }
     session.loop.run_until_complete(models['engines'].insert(session, engine))
 

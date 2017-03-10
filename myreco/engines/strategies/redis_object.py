@@ -21,18 +21,33 @@
 # SOFTWARE.
 
 
-from myreco.engines.cores.base import EngineCoreBase
-from abc import abstractmethod
+from swaggerit.utils import set_logger
+from myreco.engines.strategies.utils import build_engine_key_prefix
+import zlib
+import numpy as np
 
 
-class EngineCoreDataImporter(EngineCoreBase):
+class RedisObjectBase(object):
 
-    @abstractmethod
-    def get_data(self, items_indices_map, session):
-        pass
+    def __init__(self, engine_core):
+        self._engine_core = engine_core
+        self._set_redis_key()
+        set_logger(self, self._redis_key)
 
-    def _log_get_data_started(self):
-        self._logger.info("Started import data")
+    def _set_redis_key(self):
+        self._redis_key = build_engine_key_prefix(self._engine_core.engine)
 
-    def _log_get_data_finished(self):
-        self._logger.info("Finished import data")
+    def _pack_array(self, array, compress=True, level=-1):
+        if compress:
+            return zlib.compress(array.tobytes(), level)
+        else:
+            return array.tobytes()
+
+    def _unpack_array(self, array, dtype, compress=True):
+        if array is not None:
+            if compress:
+                return np.fromstring(zlib.decompress(array), dtype=dtype)
+            else:
+                return np.fromstring(array, dtype=dtype)
+        else:
+            return None

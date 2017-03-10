@@ -24,7 +24,7 @@
 from swaggerit.utils import get_swagger_json
 from swaggerit.json_builder import JsonBuilder
 from swaggerit.exceptions import SwaggerItModelError
-from myreco.utils import ModuleObjectLoader, get_items_model
+from myreco.utils import get_items_model
 from sqlalchemy.ext.declarative import AbstractConcreteBase, declared_attr
 import random as random_
 import sqlalchemy as sa
@@ -126,11 +126,10 @@ class PlacementsModelBase(AbstractConcreteBase):
             items_model = get_items_model(engine)
             engine_vars = cls._get_slot_variables(slot, input_external_variables)
             filters = cls._get_slot_filters(slot, input_external_variables, items_model)
-            core_config = engine['core']['configuration']['core_module']
-            core_instance = ModuleObjectLoader.load(core_config)(engine, items_model)
+            engine_strategy = cls.get_model('engines').get_strategy(engine)
             max_items = slot['max_items'] if max_items is None else max_items
 
-            return await core_instance.get_items(
+            return await engine_strategy.get_items(
                 session, filters, max_items, show_details, **engine_vars)
 
         except Exception as error:

@@ -23,7 +23,7 @@
 
 from myreco.items_types._store_items_model_meta import _StoreItemsModelBaseMeta
 from myreco.utils import build_item_key, build_class_name, ModuleObjectLoader
-from myreco.engines.cores.filters.filters import BooleanFilterBy
+from myreco.engines.strategies.filters.filters import BooleanFilterBy
 from swaggerit.utils import get_swagger_json, get_dir_path
 from swaggerit.method import SwaggerMethod
 from swaggerit.models.orm.factory import FactoryOrmModels
@@ -42,19 +42,19 @@ class _ItemsTypesModelBase(AbstractConcreteBase):
     id = sa.Column(sa.Integer, primary_key=True)
     name = sa.Column(sa.String(255), unique=True, nullable=False)
     schema_json = sa.Column(sa.Text, nullable=False)
-    store_items_base_class_json = sa.Column(sa.Text)
+    store_items_class_json = sa.Column(sa.Text)
 
     @declared_attr
     def stores(cls):
         return sa.orm.relationship('StoresModel', uselist=True, secondary='items_types_stores')
 
     @property
-    def store_items_base_class(self):
-        if not hasattr(self, '_store_items_base_class'):
-            self._store_items_base_class = \
-                ujson.loads(self.store_items_base_class_json) if self.store_items_base_class_json \
+    def store_items_class(self):
+        if not hasattr(self, '_store_items_class'):
+            self._store_items_class = \
+                ujson.loads(self.store_items_class_json) if self.store_items_class_json \
                     is not None else None
-        return self._store_items_base_class
+        return self._store_items_class
 
     async def _setattr(self, attr_name, value, session, input_):
         if attr_name == 'schema':
@@ -62,9 +62,9 @@ class _ItemsTypesModelBase(AbstractConcreteBase):
             value = ujson.dumps(value)
             attr_name = 'schema_json'
 
-        if attr_name == 'store_items_base_class':
+        if attr_name == 'store_items_class':
             value = ujson.dumps(value)
-            attr_name = 'store_items_base_class_json'
+            attr_name = 'store_items_class_json'
 
         await super()._setattr(attr_name, value, session, input_)
 
@@ -88,9 +88,9 @@ class _ItemsTypesModelBase(AbstractConcreteBase):
                     [{'name': name, 'schema': schema_properties[name]} \
                         for name in schema_properties_names]
 
-        if todict_schema.get('store_items_base_class') is not False:
-            dict_inst.pop('store_items_base_class_json')
-            dict_inst['store_items_base_class'] = self.store_items_base_class
+        if todict_schema.get('store_items_class') is not False:
+            dict_inst.pop('store_items_class_json')
+            dict_inst['store_items_class'] = self.store_items_class
 
 
 class _StoreItemsOperationsMixin(object):
@@ -145,7 +145,7 @@ class _StoreItemsOperationsMixin(object):
     @classmethod
     def _set_store_items_model(cls, item_type, store_items_model_key, store_id):
         class_name = build_class_name(item_type['name'], str(store_id))
-        base_class = cls._get_store_items_base_class(item_type)
+        base_class = cls._get_store_items_class(item_type)
         store_items_model = FactoryOrmModels.make_redis_elsearch(
             class_name, item_type['schema']['id_names'],
             store_items_model_key, use_elsearch=True,
@@ -160,11 +160,11 @@ class _StoreItemsOperationsMixin(object):
         return store_items_model
 
     @classmethod
-    def _get_store_items_base_class(cls, item_type):
+    def _get_store_items_class(cls, item_type):
         return ModuleObjectLoader.load({
-            'path': item_type['store_items_base_class']['module'],
-            'object_name': item_type['store_items_base_class']['class_name']
-        }) if item_type['store_items_base_class'] else object
+            'path': item_type['store_items_class']['module'],
+            'object_name': item_type['store_items_class']['class_name']
+        }) if item_type['store_items_class'] else object
 
     @classmethod
     def _build_insert_validator(cls, item_type):
