@@ -21,7 +21,7 @@
 # SOFTWARE.
 
 
-from myreco.items_types._store_items_model_meta import _StoreItemsModelBaseMeta
+from myreco.item_types._store_items_model_meta import _StoreItemsModelBaseMeta
 from myreco.utils import build_item_key, build_class_name, ModuleObjectLoader
 from myreco.engines.strategies.filters.filters import BooleanFilterBy
 from swaggerit.utils import get_swagger_json, get_dir_path
@@ -34,8 +34,8 @@ import sqlalchemy as sa
 import ujson
 
 
-class _ItemsTypesModelBase(AbstractConcreteBase):
-    __tablename__ = 'items_types'
+class _ItemTypesModelBase(AbstractConcreteBase):
+    __tablename__ = 'item_types'
     __swagger_json__ = get_swagger_json(__file__)
     __schema_dir__ = get_dir_path(__file__)
 
@@ -46,7 +46,7 @@ class _ItemsTypesModelBase(AbstractConcreteBase):
 
     @declared_attr
     def stores(cls):
-        return sa.orm.relationship('StoresModel', uselist=True, secondary='items_types_stores')
+        return sa.orm.relationship('StoresModel', uselist=True, secondary='item_types_stores')
 
     @property
     def store_items_class(self):
@@ -117,11 +117,11 @@ class _StoreItemsOperationsMixin(object):
 
     @classmethod
     async def _get_item_type(cls, id_, store_id, session):
-        items_types = await cls.get(session, {'id': id_})
-        if not items_types or not (items_types and cls._has_store(items_types[0], store_id)):
+        item_types = await cls.get(session, {'id': id_})
+        if not item_types or not (item_types and cls._has_store(item_types[0], store_id)):
             return None
 
-        return items_types[0]
+        return item_types[0]
 
     @classmethod
     def _has_store(cls, item_type, store_id):
@@ -260,13 +260,13 @@ class _StoreItemsOperationsMixin(object):
             items.append(item)
 
 
-class ItemsTypesModelBase(_ItemsTypesModelBase, _StoreItemsOperationsMixin):
+class ItemTypesModelBase(_ItemTypesModelBase, _StoreItemsOperationsMixin):
     pass
 
 
-def build_items_types_stores_table(metadata, **kwargs):
+def build_item_types_stores_table(metadata, **kwargs):
     return sa.Table(
-        'items_types_stores', metadata,
-        sa.Column('item_type_id', sa.Integer, sa.ForeignKey('items_types.id', ondelete='CASCADE', onupdate='CASCADE'), primary_key=True),
+        'item_types_stores', metadata,
+        sa.Column('item_type_id', sa.Integer, sa.ForeignKey('item_types.id', ondelete='CASCADE', onupdate='CASCADE'), primary_key=True),
         sa.Column('store_id', sa.Integer, sa.ForeignKey('stores.id', ondelete='CASCADE', onupdate='CASCADE'), primary_key=True),
         **kwargs)

@@ -56,7 +56,7 @@ class MyrecoAPI(AioHttpAPI):
 
     def _set_items_metaschema_route(self, swagger_doc_url):
         self.items_metaschema = \
-            get_swagger_json(__file__, 'items_types/store_items_metaschema.json')
+            get_swagger_json(__file__, 'item_types/store_items_metaschema.json')
         path = '/doc/items_metaschema.json'
         handler = self._set_handler_decorator(self._get_items_metaschema)
         self._set_route(path, 'GET', handler)

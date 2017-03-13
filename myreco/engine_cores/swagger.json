@@ -1,6 +1,6 @@
 {
     "paths": {
-        "/engines/": {
+        "/engine_cores/": {
             "post": {
                 "operationId": "swagger_insert",
                 "parameters": [{
@@ -22,17 +22,12 @@
                     "in": "header",
                     "required": true,
                     "type": "string"
-                },{
-                    "name": "store_id",
-                    "in": "query",
-                    "required": true,
-                    "type": "integer"
                 }],
                 "operationId": "swagger_get_all",
                 "responses": {"200": {"description": "Got"}}
             }
         },
-        "/engines/{id}/": {
+        "/engine_cores/{id}/": {
             "parameters": [{
                 "name": "id",
                 "in": "path",
@@ -83,10 +78,7 @@
             "additionalProperties": false,
             "properties": {
                 "name": {"type": "string"},
-                "configuration": {},
-                "store_id": {"type": "integer"},
-                "item_type_id": {"type": "integer"},
-                "core_id": {"type": "integer"}
+                "strategy_class": {"$ref": "#/definitions/strategy_class"}
             }
         },
         "schema_array": {
@@ -95,14 +87,19 @@
             "items": {
                 "type": "object",
                 "additionalProperties": false,
-                "required": ["configuration", "store_id", "item_type_id", "core_id"],
+                "required": ["name", "strategy_class"],
                 "properties": {
                     "name": {"type": "string"},
-                    "configuration": {},
-                    "store_id": {"type": "integer"},
-                    "item_type_id": {"type": "integer"},
-                    "core_id": {"type": "integer"}
+                    "strategy_class": {"$ref": "#/definitions/strategy_class"}
                 }
+            }
+        },
+        "strategy_class": {
+            "type": "object",
+            "required": ["module", "class_name"],
+            "properties": {
+                "module": {"type": "string"},
+                "class_name": {"type": "string"}
             }
         }
     }

@@ -24,7 +24,7 @@
 from unittest import mock
 from time import sleep
 from datetime import datetime
-from tests.integration.fixtures import EngineStrategyTest
+from tests.integration.fixtures import EngineCoreTest
 from swaggerit.models._base import _all_models
 import asyncio
 import tempfile
@@ -59,19 +59,26 @@ def init_db(models, session, api):
         },
         'stores': [{'id': 1}]
     }
-    session.loop.run_until_complete(models['items_types'].insert(session, item_type))
+    session.loop.run_until_complete(models['item_types'].insert(session, item_type))
+
+    core = {
+        'name': 'test',
+        'strategy_class': {
+            'module': 'tests.integration.fixtures',
+            'class_name': 'EngineCoreTest'
+        }
+    }
+    session.loop.run_until_complete(models['engine_cores'].insert(session, core))
 
     engine = {
         'name': 'Seven Days Top Seller',
         'configuration': {'days_interval': 7},
         'store_id': 1,
         'item_type_id': 1,
-        'strategy_class': {
-            'module': 'tests.integration.fixtures',
-            'class_name': 'EngineStrategyTest'
-        }
+        'core_id': 1
     }
     session.loop.run_until_complete(models['engines'].insert(session, engine))
+
 
     yield tmp.name
 
@@ -97,13 +104,13 @@ class TestEnginesModelPost(object):
             'schema': {
                 'type': 'object',
                 'additionalProperties': False,
-                'required': ['configuration', 'store_id', 'item_type_id', 'strategy_class'],
+                'required': ['configuration', 'store_id', 'item_type_id', 'core_id'],
                 'properties': {
                     'name': {'type': 'string'},
                     'configuration': {},
                     'store_id': {'type': 'integer'},
                     'item_type_id': {'type': 'integer'},
-                    'strategy_class': {'$ref': '#/definitions/EnginesModel.strategy_class'}
+                    'core_id': {'type': 'integer'}
                 }
             }
         }
@@ -120,10 +127,7 @@ class TestEnginesModelPost(object):
             'configuration': {"days_interval": 7, 'data_importer_path': 'test.test'},
             'store_id': 1,
             'item_type_id': 1,
-            'strategy_class': {
-                'module': 'tests.integration.fixtures',
-                'class_name': 'EngineStrategyTest'
-            }
+            'core_id': 1
         }]
         client = await client
         resp = await client.post('/engines/', headers=headers, data=ujson.dumps(body))
@@ -133,10 +137,7 @@ class TestEnginesModelPost(object):
         body[0]['variables'] = []
         body[0]['store'] = \
             {'id': 1, 'name': 'test', 'country': 'test', 'configuration': {'data_path': init_db}}
-        body[0]['strategy_class'] = {
-            'module': 'tests.integration.fixtures',
-            'class_name': 'EngineStrategyTest'
-        }
+        body[0]['core_id'] = 1
         body[0]['item_type'] = {
             'id': 1,
             'store_items_class': None,
@@ -153,6 +154,14 @@ class TestEnginesModelPost(object):
                 'properties': {'sku': {'type': 'string'}}
             },
             'available_filters': [{'name': 'sku', 'schema': {'type': 'string'}}]
+        }
+        body[0]['core'] = {
+            'id': 1,
+            'name': 'test',
+            'strategy_class': {
+                'module': 'tests.integration.fixtures',
+                'class_name': 'EngineCoreTest'
+            }
         }
 
         assert await resp.json() ==  body
@@ -177,19 +186,13 @@ class TestEnginesModelGet(object):
             'configuration': {"days_interval": 7},
             'store_id': 1,
             'item_type_id': 1,
-            'strategy_class': {
-                'module': 'tests.integration.fixtures',
-                'class_name': 'EngineStrategyTest'
-            }
+            'core_id': 1
         }]
         body[0]['id'] = 1
         body[0]['variables'] = []
         body[0]['store'] = \
             {'id': 1, 'name': 'test', 'country': 'test', 'configuration': {'data_path': init_db}}
-        body[0]['strategy_class'] = {
-            'module': 'tests.integration.fixtures',
-            'class_name': 'EngineStrategyTest'
-        }
+        body[0]['core_id'] = 1
         body[0]['item_type'] = {
             'id': 1,
             'store_items_class': None,
@@ -206,6 +209,14 @@ class TestEnginesModelGet(object):
                 'properties': {'sku': {'type': 'string'}}
             },
             'available_filters': [{'name': 'sku', 'schema': {'type': 'string'}}]
+        }
+        body[0]['core'] = {
+            'id': 1,
+            'name': 'test',
+            'strategy_class': {
+                'module': 'tests.integration.fixtures',
+                'class_name': 'EngineCoreTest'
+            }
         }
 
         client = await client
@@ -238,7 +249,7 @@ class TestEnginesModelUriTemplatePatch(object):
                     'configuration': {},
                     'store_id': {'type': 'integer'},
                     'item_type_id': {'type': 'integer'},
-                    'strategy_class': {'$ref': '#/definitions/EnginesModel.strategy_class'}
+                    'core_id': {'type': 'integer'}
                 }
             }
         }
@@ -332,10 +343,7 @@ class TestEnginesModelUriTemplateGet(object):
         body[0]['variables'] = []
         body[0]['store'] = \
             {'id': 1, 'name': 'test', 'country': 'test', 'configuration': {'data_path': init_db}}
-        body[0]['strategy_class'] = {
-            'module': 'tests.integration.fixtures',
-            'class_name': 'EngineStrategyTest'
-        }
+        body[0]['core_id'] = 1
         body[0]['item_type'] = {
             'id': 1,
             'store_items_class': None,
@@ -352,6 +360,14 @@ class TestEnginesModelUriTemplateGet(object):
                 'properties': {'sku': {'type': 'string'}}
             },
             'available_filters': [{'name': 'sku', 'schema': {'type': 'string'}}]
+        }
+        body[0]['core'] = {
+            'id': 1,
+            'name': 'test',
+            'strategy_class': {
+                'module': 'tests.integration.fixtures',
+                'class_name': 'EngineCoreTest'
+            }
         }
 
         assert resp.status == 200
@@ -423,7 +439,7 @@ class TestEnginesModelsDataImporter(object):
 
     async def test_importer_get_with_error(self, init_db, headers_without_content_type, client, monkeypatch):
         set_patches(monkeypatch)
-        monkeypatch.setattr('tests.integration.fixtures.EngineStrategyTest.get_data',
+        monkeypatch.setattr('tests.integration.fixtures.EngineCoreTest.get_data',
                             mock.MagicMock(side_effect=Exception('testing')))
         client = await client
         await client.post('/engines/1/import_data', headers=headers_without_content_type)
@@ -442,15 +458,15 @@ class TestEnginesModelsDataImporter(object):
 
 
 async def _post_products(client, headers, headers_without_content_type, products=[{'sku': 'test'}]):
-    resp = await client.post('/items_types/1/items?store_id=1',
+    resp = await client.post('/item_types/1/items?store_id=1',
                         data=ujson.dumps(products), headers=headers)
-    resp = await client.post('/items_types/1/update_filters?store_id=1',
+    resp = await client.post('/item_types/1/update_filters?store_id=1',
                         headers=headers_without_content_type)
 
     sleep(0.05)
     while True:
         resp = await client.get(
-            '/items_types/1/update_filters?store_id=1&job_hash=6342e10bd7dca3240c698aa79c98362e',
+            '/item_types/1/update_filters?store_id=1&job_hash=6342e10bd7dca3240c698aa79c98362e',
             headers=headers_without_content_type)
         if (await resp.json())['status'] != 'running':
             break
@@ -470,7 +486,7 @@ def set_readers_builders_patch(monkeypatch, values=None):
     mock_.coro.return_value = readers_builder
 
     monkeypatch.setattr('myreco.engines.strategies.objects_exporter.'
-                        'EngineStrategyObjectsExporter._build_csv_readers', mock_)
+                        'EngineCoreObjectsExporter._build_csv_readers', mock_)
 
 
 class TestEnginesModelsObjectsExporter(object):
@@ -561,7 +577,7 @@ def set_data_importer_patch(monkeypatch, mock_=None):
     if mock_ is None:
         mock_ = mock.MagicMock()
 
-    monkeypatch.setattr('tests.integration.fixtures.EngineStrategyTest.get_data', mock_)
+    monkeypatch.setattr('tests.integration.fixtures.EngineCoreTest.get_data', mock_)
     return mock_
 
 
@@ -582,8 +598,8 @@ class TestEnginesModelsObjectsExporterWithImport(object):
 
         await _wait_job_finish(client, headers_without_content_type)
 
-        called = bool(EngineStrategyTest.get_data.called)
-        EngineStrategyTest.get_data.reset_mock()
+        called = bool(EngineCoreTest.get_data.called)
+        EngineCoreTest.get_data.reset_mock()
 
         assert hash_ == {'job_hash': '6342e10bd7dca3240c698aa79c98362e'}
         assert called

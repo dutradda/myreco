@@ -30,8 +30,8 @@ import sqlalchemy as sa
 import ujson
 
 
-class SlotsVariablesModelBase(AbstractConcreteBase):
-    __tablename__ = 'slots_variables'
+class SlotVariablesModelBase(AbstractConcreteBase):
+    __tablename__ = 'slot_variables'
     __use_redis__ = False
     __id_names__ = ['id']
 
@@ -76,12 +76,12 @@ class SlotsVariablesModelBase(AbstractConcreteBase):
     def external_variable(cls):
         return sa.orm.relationship('ExternalVariablesModel',
             foreign_keys=[cls.external_variable_name, cls.external_variable_store_id],
-            primaryjoin='and_(SlotsVariablesModel.external_variable_name == ExternalVariablesModel.name, '\
-                        'SlotsVariablesModel.external_variable_store_id == ExternalVariablesModel.store_id)')
+            primaryjoin='and_(SlotVariablesModel.external_variable_name == ExternalVariablesModel.name, '\
+                        'SlotVariablesModel.external_variable_store_id == ExternalVariablesModel.store_id)')
 
 
-class SlotsFiltersModelBase(AbstractConcreteBase):
-    __tablename__ = 'slots_filters'
+class SlotFiltersModelBase(AbstractConcreteBase):
+    __tablename__ = 'slot_filters'
     __use_redis__ = False
     __factory__ = FiltersFactory
     __id_names__ = ['id']
@@ -90,7 +90,7 @@ class SlotsFiltersModelBase(AbstractConcreteBase):
     id = sa.Column(sa.Integer, nullable=False, unique=True, autoincrement=True, index=True)
     is_inclusive = sa.Column(sa.Boolean, default=True, primary_key=True)
     property_name = sa.Column(sa.String(255), nullable=False, primary_key=True)
-    type_id = sa.Column(sa.String(255), nullable=False, primary_key=True)
+    type_id = sa.Column(sa.String(255), primary_key=True)
     override = sa.Column(sa.Boolean, default=False)
     override_value_json = sa.Column(sa.Text)
     skip_values_json = sa.Column(sa.Text)
@@ -139,18 +139,21 @@ class SlotsFiltersModelBase(AbstractConcreteBase):
 
     @declared_attr
     def slot_id(cls):
-        return sa.Column(sa.ForeignKey('slots.id', ondelete='CASCADE', onupdate='CASCADE'), nullable=False)
+        return sa.Column(sa.ForeignKey('slots.id', ondelete='CASCADE', onupdate='CASCADE'), primary_key=True)
 
     @declared_attr
     def external_variable(cls):
         return sa.orm.relationship('ExternalVariablesModel',
             foreign_keys=[cls.external_variable_name, cls.external_variable_store_id],
-            primaryjoin='and_(SlotsFiltersModel.external_variable_name == ExternalVariablesModel.name, '\
-                        'SlotsFiltersModel.external_variable_store_id == ExternalVariablesModel.store_id)')
+            primaryjoin='and_(SlotFiltersModel.external_variable_name == ExternalVariablesModel.name, '\
+                        'SlotFiltersModel.external_variable_store_id == ExternalVariablesModel.store_id)')
 
     @property
     def type(self):
         return type(self).__factory__.get_filter_type(self.type_id)
+
+    def _validate(self):
+        self.type
 
 
 class SlotsModelBase(AbstractConcreteBase):
@@ -175,11 +178,11 @@ class SlotsModelBase(AbstractConcreteBase):
 
     @declared_attr
     def slot_variables(cls):
-        return sa.orm.relationship('SlotsVariablesModel', uselist=True, passive_deletes=True)
+        return sa.orm.relationship('SlotVariablesModel', uselist=True, passive_deletes=True)
 
     @declared_attr
     def slot_filters(cls):
-        return sa.orm.relationship('SlotsFiltersModel', uselist=True, passive_deletes=True)
+        return sa.orm.relationship('SlotFiltersModel', uselist=True, passive_deletes=True)
 
     @declared_attr
     def fallbacks(cls):

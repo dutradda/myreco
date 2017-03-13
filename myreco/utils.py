@@ -61,8 +61,8 @@ def build_item_key(name, *args):
 
 
 def get_items_model(engine):
-    items_types_model = get_model('items_types')
-    return items_types_model.get_store_items_model(engine['item_type'], engine['store_id'])
+    item_types_model = get_model('item_types')
+    return item_types_model.get_store_items_model(engine['item_type'], engine['store_id'])
 
 
 def build_class_name(*names):

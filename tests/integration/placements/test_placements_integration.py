@@ -21,7 +21,7 @@
 # SOFTWARE.
 
 
-from tests.integration.fixtures import EngineStrategyTestWithVars, EngineStrategyTest
+from tests.integration.fixtures import EngineCoreTestWithVars, EngineCoreTest
 from swaggerit.models._base import _all_models
 from tempfile import TemporaryDirectory
 from time import sleep
@@ -73,13 +73,13 @@ def init_db(models, session, api, temp_dir):
         'stores': [{'id': 1}],
         'schema': schema
     }
-    session.loop.run_until_complete(models['items_types'].insert(session, item_type))
+    session.loop.run_until_complete(models['item_types'].insert(session, item_type))
     item_type = {
         'name': 'categories',
         'stores': [{'id': 1}],
         'schema': schema
     }
-    session.loop.run_until_complete(models['items_types'].insert(session, item_type))
+    session.loop.run_until_complete(models['item_types'].insert(session, item_type))
     item_type = {
         'name': 'invalid',
         'stores': [{'id': 1}],
@@ -89,7 +89,7 @@ def init_db(models, session, api, temp_dir):
             'properties': {'item_id': {'type': 'string'}}
         }
     }
-    session.loop.run_until_complete(models['items_types'].insert(session, item_type))
+    session.loop.run_until_complete(models['item_types'].insert(session, item_type))
     item_type = {
         'name': 'new_products',
         'stores': [{'id': 1}],
@@ -121,7 +121,26 @@ def init_db(models, session, api, temp_dir):
             }
         }
     }
-    session.loop.run_until_complete(models['items_types'].insert(session, item_type))
+    session.loop.run_until_complete(models['item_types'].insert(session, item_type))
+
+
+    core = {
+        'name': 'test with vars',
+        'strategy_class': {
+            'module': 'tests.integration.fixtures',
+            'class_name': 'EngineCoreTestWithVars'
+        }
+    }
+    session.loop.run_until_complete(models['engine_cores'].insert(session, core))
+
+    core = {
+        'name': 'test',
+        'strategy_class': {
+            'module': 'tests.integration.fixtures',
+            'class_name': 'EngineCoreTest'
+        }
+    }
+    session.loop.run_until_complete(models['engine_cores'].insert(session, core))
 
     engine = {
         'name': 'Visual Similarity',
@@ -132,10 +151,7 @@ def init_db(models, session, api, temp_dir):
         }),
         'store_id': 1,
         'item_type_id': 1,
-        'strategy_class': {
-            'module': 'tests.integration.fixtures',
-            'class_name': 'EngineStrategyTestWithVars'
-        }
+        'core_id': 1
     }
     session.loop.run_until_complete(models['engines'].insert(session, engine))
     engine = {
@@ -146,10 +162,7 @@ def init_db(models, session, api, temp_dir):
         }),
         'store_id': 1,
         'item_type_id': 2,
-        'strategy_class': {
-            'module': 'tests.integration.fixtures',
-            'class_name': 'EngineStrategyTestWithVars'
-        }
+        'core_id': 1
     }
     session.loop.run_until_complete(models['engines'].insert(session, engine))
     engine = {
@@ -159,10 +172,7 @@ def init_db(models, session, api, temp_dir):
         }),
         'store_id': 1,
         'item_type_id': 3,
-        'strategy_class': {
-            'module': 'tests.integration.fixtures',
-            'class_name': 'EngineStrategyTest'
-        }
+        'core_id': 2
     }
     session.loop.run_until_complete(models['engines'].insert(session, engine))
     engine = {
@@ -172,10 +182,7 @@ def init_db(models, session, api, temp_dir):
         }),
         'store_id': 1,
         'item_type_id': 4,
-        'strategy_class': {
-            'module': 'tests.integration.fixtures',
-            'class_name': 'EngineStrategyTest'
-        }
+        'core_id': 2
     }
     session.loop.run_until_complete(models['engines'].insert(session, engine))
     engine = {
@@ -187,10 +194,7 @@ def init_db(models, session, api, temp_dir):
             'aggregators_ids_name': 'filter_string',
             'data_importer_path': 'test.test'
         },
-        'strategy_class': {
-            'module': 'tests.integration.fixtures',
-            'class_name': 'EngineStrategyTestWithVars'
-        }
+        'core_id': 1
     }
     session.loop.run_until_complete(models['engines'].insert(session, engine))
 
@@ -539,9 +543,14 @@ class TestPlacementsModelPost(object):
                             'configuration': {'data_path': temp_dir.name}
                         },
                         'store_id': 1,
-                        'strategy_class': {
-                            'module': 'tests.integration.fixtures',
-                            'class_name': 'EngineStrategyTestWithVars'
+                        'core_id': 1,
+                        'core': {
+                            'id': 1,
+                            'name': 'test with vars',
+                            'strategy_class': {
+                                'module': 'tests.integration.fixtures',
+                                'class_name': 'EngineCoreTestWithVars'
+                            }
                         },
                         'variables': [{
                             'name': 'item_id', 'schema': {'type': 'integer'}
@@ -701,9 +710,14 @@ class TestPlacementsModelGet(object):
                             'configuration': {'data_path': temp_dir.name}
                         },
                         'store_id': 1,
-                        'strategy_class': {
-                            'module': 'tests.integration.fixtures',
-                            'class_name': 'EngineStrategyTestWithVars'
+                        'core_id': 1,
+                        'core': {
+                            'id': 1,
+                            'name': 'test with vars',
+                            'strategy_class': {
+                                'module': 'tests.integration.fixtures',
+                                'class_name': 'EngineCoreTestWithVars'
+                            }
                         },
                         'variables': [{
                             'name': 'item_id', 'schema': {'type': 'integer'}
@@ -952,9 +966,14 @@ class TestPlacementsModelUriTemplateGet(object):
                             'configuration': {'data_path': temp_dir.name}
                         },
                         'store_id': 1,
-                        'strategy_class': {
-                            'module': 'tests.integration.fixtures',
-                            'class_name': 'EngineStrategyTestWithVars'
+                        'core_id': 1,
+                        'core': {
+                            'id': 1,
+                            'name': 'test with vars',
+                            'strategy_class': {
+                                'module': 'tests.integration.fixtures',
+                                'class_name': 'EngineCoreTestWithVars'
+                            }
                         },
                         'variables': [{
                             'name': 'item_id', 'schema': {'type': 'integer'}
@@ -1057,7 +1076,7 @@ class TestPlacementsGetRecomendations(object):
     async def test_get_items_with_external_variable_valid(self, init_db, client, headers, monkeypatch, headers_without_content_type):
         client = await client
         class_loader = mock.MagicMock()
-        monkeypatch.setattr('myreco.items_types.model.ModuleObjectLoader', class_loader)
+        monkeypatch.setattr('myreco.item_types.model.ModuleObjectLoader', class_loader)
         monkeypatch.setattr('myreco.engines.model.ModuleObjectLoader', class_loader)
 
         class_loader.load()().get_items = CoroMock()
@@ -1093,13 +1112,13 @@ class TestPlacementsGetRecomendations(object):
             'item_id': 3,
             'sku': 'test3'
         }]
-        await client.post('/items_types/4/items?store_id=1', headers=headers, data=ujson.dumps(products))
+        await client.post('/item_types/4/items?store_id=1', headers=headers, data=ujson.dumps(products))
 
-        await client.post('/items_types/4/update_filters?store_id=1', headers=headers_without_content_type)
+        await client.post('/item_types/4/update_filters?store_id=1', headers=headers_without_content_type)
         sleep(0.05)
         while True:
             resp = await client.get(
-                '/items_types/4/update_filters?store_id=1&job_hash=6342e10bd7dca3240c698aa79c98362e',
+                '/item_types/4/update_filters?store_id=1&job_hash=6342e10bd7dca3240c698aa79c98362e',
                 headers=headers_without_content_type)
             if (await resp.json())['status'] != 'running':
                 break
@@ -1145,13 +1164,13 @@ class TestPlacementsGetRecomendations(object):
             'item_id': 3,
             'sku': 'test3'
         }]
-        await client.post('/items_types/4/items?store_id=1', headers=headers, data=ujson.dumps(products))
+        await client.post('/item_types/4/items?store_id=1', headers=headers, data=ujson.dumps(products))
 
-        await client.post('/items_types/4/update_filters?store_id=1', headers=headers_without_content_type)
+        await client.post('/item_types/4/update_filters?store_id=1', headers=headers_without_content_type)
         sleep(0.05)
         while True:
             resp = await client.get(
-                '/items_types/4/update_filters?store_id=1&job_hash=6342e10bd7dca3240c698aa79c98362e',
+                '/item_types/4/update_filters?store_id=1&job_hash=6342e10bd7dca3240c698aa79c98362e',
                 headers=headers_without_content_type)
             if (await resp.json())['status'] != 'running':
                 break
@@ -1176,9 +1195,9 @@ class TestPlacementsGetRecomendations(object):
         resp = await client.post('/placements/', headers=headers, data=ujson.dumps(body))
         obj = (await resp.json())[0]
 
-        EngineStrategyTestWithVars.get_items.coro.return_value = []
+        EngineCoreTestWithVars.get_items.coro.return_value = []
         resp = await client.get('/placements/{}/items'.format(obj['small_hash']), headers=headers_without_content_type)
-        EngineStrategyTestWithVars.get_items.coro.reset_mock()
+        EngineCoreTestWithVars.get_items.coro.reset_mock()
 
         assert resp.status == 200
         assert (await resp.json())['slots'][0]['items'] == [
@@ -1200,13 +1219,13 @@ class TestPlacementsGetRecomendations(object):
             'item_id': 3,
             'sku': 'test3'
         }]
-        await client.post('/items_types/4/items?store_id=1', headers=headers, data=ujson.dumps(products))
+        await client.post('/item_types/4/items?store_id=1', headers=headers, data=ujson.dumps(products))
 
-        await client.post('/items_types/4/update_filters?store_id=1', headers=headers_without_content_type)
+        await client.post('/item_types/4/update_filters?store_id=1', headers=headers_without_content_type)
         sleep(0.05)
         while True:
             resp = await client.get(
-                '/items_types/4/update_filters?store_id=1&job_hash=6342e10bd7dca3240c698aa79c98362e',
+                '/item_types/4/update_filters?store_id=1&job_hash=6342e10bd7dca3240c698aa79c98362e',
                 headers=headers_without_content_type)
             if (await resp.json())['status'] != 'running':
                 break
@@ -1278,14 +1297,14 @@ class TestPlacementsGetRecomendations(object):
             'sku': 'test3',
             'filter_string': 'test'
         }]
-        await client.post('/items_types/4/items?store_id=1', headers=headers, data=ujson.dumps(products))
+        await client.post('/item_types/4/items?store_id=1', headers=headers, data=ujson.dumps(products))
 
-        await client.post('/items_types/4/update_filters?store_id=1', headers=headers_without_content_type)
+        await client.post('/item_types/4/update_filters?store_id=1', headers=headers_without_content_type)
 
         sleep(0.05)
         while True:
             resp = await client.get(
-                '/items_types/4/update_filters?store_id=1&job_hash=6342e10bd7dca3240c698aa79c98362e',
+                '/item_types/4/update_filters?store_id=1&job_hash=6342e10bd7dca3240c698aa79c98362e',
                 headers=headers_without_content_type)
             if (await resp.json())['status'] != 'running':
                 break
@@ -1332,13 +1351,13 @@ class TestPlacementsGetRecomendations(object):
             'item_id': 3,
             'sku': 'test3'
         }]
-        await client.post('/items_types/4/items?store_id=1', headers=headers, data=ujson.dumps(products))
+        await client.post('/item_types/4/items?store_id=1', headers=headers, data=ujson.dumps(products))
 
-        resp = await client.post('/items_types/4/update_filters?store_id=1', headers=headers_without_content_type)
+        resp = await client.post('/item_types/4/update_filters?store_id=1', headers=headers_without_content_type)
         sleep(0.05)
         while True:
             resp = await client.get(
-                '/items_types/4/update_filters?store_id=1&job_hash=6342e10bd7dca3240c698aa79c98362e',
+                '/item_types/4/update_filters?store_id=1&job_hash=6342e10bd7dca3240c698aa79c98362e',
                 headers=headers_without_content_type)
             if (await resp.json())['status'] != 'running':
                 break
@@ -1365,9 +1384,9 @@ class TestPlacementsGetRecomendations(object):
         obj = (await resp.json())[0]
 
         random.seed(0)
-        EngineStrategyTestWithVars.get_items.coro.return_value = [{'test': 1}, {'test': 2}]
+        EngineCoreTestWithVars.get_items.coro.return_value = [{'test': 1}, {'test': 2}]
         resp = await client.get('/placements/{}/items'.format(obj['small_hash']), headers=headers_without_content_type)
-        EngineStrategyTestWithVars.get_items.coro.reset_mock()
+        EngineCoreTestWithVars.get_items.coro.reset_mock()
 
         assert resp.status == 200
         assert (await resp.json())['distributed_items'] == [
@@ -1396,13 +1415,13 @@ class TestPlacementsGetRecomendationsFilters(object):
             'item_id': 3,
             'sku': 'test3'
         }]
-        await client.post('/items_types/4/items?store_id=1', headers=headers, data=ujson.dumps(products))
+        await client.post('/item_types/4/items?store_id=1', headers=headers, data=ujson.dumps(products))
 
-        await client.post('/items_types/4/update_filters?store_id=1', headers=headers_without_content_type)
+        await client.post('/item_types/4/update_filters?store_id=1', headers=headers_without_content_type)
         sleep(0.05)
         while True:
             resp = await client.get(
-                '/items_types/4/update_filters?store_id=1&job_hash=6342e10bd7dca3240c698aa79c98362e',
+                '/item_types/4/update_filters?store_id=1&job_hash=6342e10bd7dca3240c698aa79c98362e',
                 headers=headers_without_content_type)
             if (await resp.json())['status'] != 'running':
                 break
@@ -1449,13 +1468,13 @@ class TestPlacementsGetRecomendationsFilters(object):
             'item_id': 3,
             'sku': 'test3'
         }]
-        await client.post('/items_types/4/items?store_id=1', headers=headers, data=ujson.dumps(products))
+        await client.post('/item_types/4/items?store_id=1', headers=headers, data=ujson.dumps(products))
 
-        await client.post('/items_types/4/update_filters?store_id=1', headers=headers_without_content_type)
+        await client.post('/item_types/4/update_filters?store_id=1', headers=headers_without_content_type)
         sleep(0.05)
         while True:
             resp = await client.get(
-                '/items_types/4/update_filters?store_id=1&job_hash=6342e10bd7dca3240c698aa79c98362e',
+                '/item_types/4/update_filters?store_id=1&job_hash=6342e10bd7dca3240c698aa79c98362e',
                 headers=headers_without_content_type)
             if (await resp.json())['status'] != 'running':
                 break
@@ -1499,13 +1518,13 @@ class TestPlacementsGetRecomendationsFilters(object):
             'item_id': 3,
             'sku': 'test3'
         }]
-        await client.post('/items_types/4/items?store_id=1', headers=headers, data=ujson.dumps(products))
+        await client.post('/item_types/4/items?store_id=1', headers=headers, data=ujson.dumps(products))
 
-        await client.post('/items_types/4/update_filters?store_id=1', headers=headers_without_content_type)
+        await client.post('/item_types/4/update_filters?store_id=1', headers=headers_without_content_type)
         sleep(0.05)
         while True:
             resp = await client.get(
-                '/items_types/4/update_filters?store_id=1&job_hash=6342e10bd7dca3240c698aa79c98362e',
+                '/item_types/4/update_filters?store_id=1&job_hash=6342e10bd7dca3240c698aa79c98362e',
                 headers=headers_without_content_type)
             if (await resp.json())['status'] != 'running':
                 break
@@ -1552,13 +1571,13 @@ class TestPlacementsGetRecomendationsFilters(object):
             'item_id': 3,
             'sku': 'test3'
         }]
-        await client.post('/items_types/4/items?store_id=1', headers=headers, data=ujson.dumps(products))
+        await client.post('/item_types/4/items?store_id=1', headers=headers, data=ujson.dumps(products))
 
-        await client.post('/items_types/4/update_filters?store_id=1', headers=headers_without_content_type)
+        await client.post('/item_types/4/update_filters?store_id=1', headers=headers_without_content_type)
         sleep(0.05)
         while True:
             resp = await client.get(
-                '/items_types/4/update_filters?store_id=1&job_hash=6342e10bd7dca3240c698aa79c98362e',
+                '/item_types/4/update_filters?store_id=1&job_hash=6342e10bd7dca3240c698aa79c98362e',
                 headers=headers_without_content_type)
             if (await resp.json())['status'] != 'running':
                 break
@@ -1602,13 +1621,13 @@ class TestPlacementsGetRecomendationsFilters(object):
             'item_id': 3,
             'sku': 'test3'
         }]
-        await client.post('/items_types/4/items?store_id=1', headers=headers, data=ujson.dumps(products))
+        await client.post('/item_types/4/items?store_id=1', headers=headers, data=ujson.dumps(products))
 
-        await client.post('/items_types/4/update_filters?store_id=1', headers=headers_without_content_type)
+        await client.post('/item_types/4/update_filters?store_id=1', headers=headers_without_content_type)
         sleep(0.05)
         while True:
             resp = await client.get(
-                '/items_types/4/update_filters?store_id=1&job_hash=6342e10bd7dca3240c698aa79c98362e',
+                '/item_types/4/update_filters?store_id=1&job_hash=6342e10bd7dca3240c698aa79c98362e',
                 headers=headers_without_content_type)
             if (await resp.json())['status'] != 'running':
                 break
@@ -1655,13 +1674,13 @@ class TestPlacementsGetRecomendationsFilters(object):
             'item_id': 3,
             'sku': 'test3'
         }]
-        await client.post('/items_types/4/items?store_id=1', headers=headers, data=ujson.dumps(products))
+        await client.post('/item_types/4/items?store_id=1', headers=headers, data=ujson.dumps(products))
 
-        await client.post('/items_types/4/update_filters?store_id=1', headers=headers_without_content_type)
+        await client.post('/item_types/4/update_filters?store_id=1', headers=headers_without_content_type)
         sleep(0.05)
         while True:
             resp = await client.get(
-                '/items_types/4/update_filters?store_id=1&job_hash=6342e10bd7dca3240c698aa79c98362e',
+                '/item_types/4/update_filters?store_id=1&job_hash=6342e10bd7dca3240c698aa79c98362e',
                 headers=headers_without_content_type)
             if (await resp.json())['status'] != 'running':
                 break
@@ -1705,13 +1724,13 @@ class TestPlacementsGetRecomendationsFilters(object):
             'item_id': 3,
             'sku': 'test3'
         }]
-        await client.post('/items_types/4/items?store_id=1', headers=headers, data=ujson.dumps(products))
+        await client.post('/item_types/4/items?store_id=1', headers=headers, data=ujson.dumps(products))
 
-        await client.post('/items_types/4/update_filters?store_id=1', headers=headers_without_content_type)
+        await client.post('/item_types/4/update_filters?store_id=1', headers=headers_without_content_type)
         sleep(0.05)
         while True:
             resp = await client.get(
-                '/items_types/4/update_filters?store_id=1&job_hash=6342e10bd7dca3240c698aa79c98362e',
+                '/item_types/4/update_filters?store_id=1&job_hash=6342e10bd7dca3240c698aa79c98362e',
                 headers=headers_without_content_type)
             if (await resp.json())['status'] != 'running':
                 break
@@ -1758,13 +1777,13 @@ class TestPlacementsGetRecomendationsFilters(object):
             'item_id': 3,
             'sku': 'test3'
         }]
-        await client.post('/items_types/4/items?store_id=1', headers=headers, data=ujson.dumps(products))
+        await client.post('/item_types/4/items?store_id=1', headers=headers, data=ujson.dumps(products))
 
-        await client.post('/items_types/4/update_filters?store_id=1', headers=headers_without_content_type)
+        await client.post('/item_types/4/update_filters?store_id=1', headers=headers_without_content_type)
         sleep(0.05)
         while True:
             resp = await client.get(
-                '/items_types/4/update_filters?store_id=1&job_hash=6342e10bd7dca3240c698aa79c98362e',
+                '/item_types/4/update_filters?store_id=1&job_hash=6342e10bd7dca3240c698aa79c98362e',
                 headers=headers_without_content_type)
             if (await resp.json())['status'] != 'running':
                 break
@@ -1808,13 +1827,13 @@ class TestPlacementsGetRecomendationsFilters(object):
             'item_id': 3,
             'sku': 'test3'
         }]
-        await client.post('/items_types/4/items?store_id=1', headers=headers, data=ujson.dumps(products))
+        await client.post('/item_types/4/items?store_id=1', headers=headers, data=ujson.dumps(products))
 
-        await client.post('/items_types/4/update_filters?store_id=1', headers=headers_without_content_type)
+        await client.post('/item_types/4/update_filters?store_id=1', headers=headers_without_content_type)
         sleep(0.05)
         while True:
             resp = await client.get(
-                '/items_types/4/update_filters?store_id=1&job_hash=6342e10bd7dca3240c698aa79c98362e',
+                '/item_types/4/update_filters?store_id=1&job_hash=6342e10bd7dca3240c698aa79c98362e',
                 headers=headers_without_content_type)
             if (await resp.json())['status'] != 'running':
                 break
@@ -1861,13 +1880,13 @@ class TestPlacementsGetRecomendationsFilters(object):
             'item_id': 3,
             'sku': 'test3'
         }]
-        await client.post('/items_types/4/items?store_id=1', headers=headers, data=ujson.dumps(products))
+        await client.post('/item_types/4/items?store_id=1', headers=headers, data=ujson.dumps(products))
 
-        await client.post('/items_types/4/update_filters?store_id=1', headers=headers_without_content_type)
+        await client.post('/item_types/4/update_filters?store_id=1', headers=headers_without_content_type)
         sleep(0.05)
         while True:
             resp = await client.get(
-                '/items_types/4/update_filters?store_id=1&job_hash=6342e10bd7dca3240c698aa79c98362e',
+                '/item_types/4/update_filters?store_id=1&job_hash=6342e10bd7dca3240c698aa79c98362e',
                 headers=headers_without_content_type)
             if (await resp.json())['status'] != 'running':
                 break
@@ -1926,22 +1945,22 @@ class TestPlacementsGetRecomendationsFilters(object):
         headers_ = {}
         headers_.update(headers)
         headers_['Content-Type'] = 'application/zip'
-        resp = await client.post('/items_types/4/import_data_file?store_id=1&upload_file=false', headers=headers_, data=data_filez)
+        resp = await client.post('/item_types/4/import_data_file?store_id=1&upload_file=false', headers=headers_, data=data_filez)
         sleep(0.05)
         while True:
             resp = await client.get(
-                '/items_types/4/import_data_file?store_id=1&job_hash=6342e10bd7dca3240c698aa79c98362e',
+                '/item_types/4/import_data_file?store_id=1&job_hash=6342e10bd7dca3240c698aa79c98362e',
                 headers=headers_without_content_type)
             if (await resp.json())['status'] != 'running':
                 break
 
         os.remove(data_file.name)
 
-        await client.post('/items_types/4/update_filters?store_id=1', headers=headers_without_content_type)
+        await client.post('/item_types/4/update_filters?store_id=1', headers=headers_without_content_type)
         sleep(0.05)
         while True:
             resp = await client.get(
-                '/items_types/4/update_filters?store_id=1&job_hash=6342e10bd7dca3240c698aa79c98362e',
+                '/item_types/4/update_filters?store_id=1&job_hash=6342e10bd7dca3240c698aa79c98362e',
                 headers=headers_without_content_type)
             if (await resp.json())['status'] != 'running':
                 break
@@ -2001,22 +2020,22 @@ class TestPlacementsGetRecomendationsFilters(object):
         headers_ = {}
         headers_.update(headers)
         headers_['Content-Type'] = 'application/zip'
-        resp = await client.post('/items_types/4/import_data_file?store_id=1&upload_file=false', headers=headers_, data=data_filez)
+        resp = await client.post('/item_types/4/import_data_file?store_id=1&upload_file=false', headers=headers_, data=data_filez)
         sleep(0.05)
         while True:
             resp = await client.get(
-                '/items_types/4/import_data_file?store_id=1&job_hash=6342e10bd7dca3240c698aa79c98362e',
+                '/item_types/4/import_data_file?store_id=1&job_hash=6342e10bd7dca3240c698aa79c98362e',
                 headers=headers_without_content_type)
             if (await resp.json())['status'] != 'running':
                 break
 
         os.remove(data_file.name)
 
-        await client.post('/items_types/4/update_filters?store_id=1', headers=headers_without_content_type)
+        await client.post('/item_types/4/update_filters?store_id=1', headers=headers_without_content_type)
         sleep(0.05)
         while True:
             resp = await client.get(
-                '/items_types/4/update_filters?store_id=1&job_hash=6342e10bd7dca3240c698aa79c98362e',
+                '/item_types/4/update_filters?store_id=1&job_hash=6342e10bd7dca3240c698aa79c98362e',
                 headers=headers_without_content_type)
             if (await resp.json())['status'] != 'running':
                 break
@@ -2064,13 +2083,13 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
             'item_id': 3,
             'sku': 'test3'
         }]
-        await client.post('/items_types/4/items?store_id=1', headers=headers, data=ujson.dumps(products))
+        await client.post('/item_types/4/items?store_id=1', headers=headers, data=ujson.dumps(products))
 
-        await client.post('/items_types/4/update_filters?store_id=1', headers=headers_without_content_type)
+        await client.post('/item_types/4/update_filters?store_id=1', headers=headers_without_content_type)
         sleep(0.05)
         while True:
             resp = await client.get(
-                '/items_types/4/update_filters?store_id=1&job_hash=6342e10bd7dca3240c698aa79c98362e',
+                '/item_types/4/update_filters?store_id=1&job_hash=6342e10bd7dca3240c698aa79c98362e',
                 headers=headers_without_content_type)
             if (await resp.json())['status'] != 'running':
                 break
@@ -2115,13 +2134,13 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
             'item_id': 3,
             'sku': 'test3'
         }]
-        await client.post('/items_types/4/items?store_id=1', headers=headers, data=ujson.dumps(products))
+        await client.post('/item_types/4/items?store_id=1', headers=headers, data=ujson.dumps(products))
 
-        await client.post('/items_types/4/update_filters?store_id=1', headers=headers_without_content_type)
+        await client.post('/item_types/4/update_filters?store_id=1', headers=headers_without_content_type)
         sleep(0.05)
         while True:
             resp = await client.get(
-                '/items_types/4/update_filters?store_id=1&job_hash=6342e10bd7dca3240c698aa79c98362e',
+                '/item_types/4/update_filters?store_id=1&job_hash=6342e10bd7dca3240c698aa79c98362e',
                 headers=headers_without_content_type)
             if (await resp.json())['status'] != 'running':
                 break
@@ -2167,13 +2186,13 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
             'item_id': 3,
             'sku': 'test3'
         }]
-        await client.post('/items_types/4/items?store_id=1', headers=headers, data=ujson.dumps(products))
+        await client.post('/item_types/4/items?store_id=1', headers=headers, data=ujson.dumps(products))
 
-        await client.post('/items_types/4/update_filters?store_id=1', headers=headers_without_content_type)
+        await client.post('/item_types/4/update_filters?store_id=1', headers=headers_without_content_type)
         sleep(0.05)
         while True:
             resp = await client.get(
-                '/items_types/4/update_filters?store_id=1&job_hash=6342e10bd7dca3240c698aa79c98362e',
+                '/item_types/4/update_filters?store_id=1&job_hash=6342e10bd7dca3240c698aa79c98362e',
                 headers=headers_without_content_type)
             if (await resp.json())['status'] != 'running':
                 break
@@ -2218,13 +2237,13 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
             'item_id': 3,
             'sku': 'test3'
         }]
-        await client.post('/items_types/4/items?store_id=1', headers=headers, data=ujson.dumps(products))
+        await client.post('/item_types/4/items?store_id=1', headers=headers, data=ujson.dumps(products))
 
-        await client.post('/items_types/4/update_filters?store_id=1', headers=headers_without_content_type)
+        await client.post('/item_types/4/update_filters?store_id=1', headers=headers_without_content_type)
         sleep(0.05)
         while True:
             resp = await client.get(
-                '/items_types/4/update_filters?store_id=1&job_hash=6342e10bd7dca3240c698aa79c98362e',
+                '/item_types/4/update_filters?store_id=1&job_hash=6342e10bd7dca3240c698aa79c98362e',
                 headers=headers_without_content_type)
             if (await resp.json())['status'] != 'running':
                 break
@@ -2271,13 +2290,13 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
             'item_id': 3,
             'sku': 'test3'
         }]
-        await client.post('/items_types/4/items?store_id=1', headers=headers, data=ujson.dumps(products))
+        await client.post('/item_types/4/items?store_id=1', headers=headers, data=ujson.dumps(products))
 
-        await client.post('/items_types/4/update_filters?store_id=1', headers=headers_without_content_type)
+        await client.post('/item_types/4/update_filters?store_id=1', headers=headers_without_content_type)
         sleep(0.05)
         while True:
             resp = await client.get(
-                '/items_types/4/update_filters?store_id=1&job_hash=6342e10bd7dca3240c698aa79c98362e',
+                '/item_types/4/update_filters?store_id=1&job_hash=6342e10bd7dca3240c698aa79c98362e',
                 headers=headers_without_content_type)
             if (await resp.json())['status'] != 'running':
                 break
@@ -2325,13 +2344,13 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
             'sku': 'test3',
             'filter_boolean': False
         }]
-        await client.post('/items_types/4/items?store_id=1', headers=headers, data=ujson.dumps(products))
+        await client.post('/item_types/4/items?store_id=1', headers=headers, data=ujson.dumps(products))
 
-        await client.post('/items_types/4/update_filters?store_id=1', headers=headers_without_content_type)
+        await client.post('/item_types/4/update_filters?store_id=1', headers=headers_without_content_type)
         sleep(0.05)
         while True:
             resp = await client.get(
-                '/items_types/4/update_filters?store_id=1&job_hash=6342e10bd7dca3240c698aa79c98362e',
+                '/item_types/4/update_filters?store_id=1&job_hash=6342e10bd7dca3240c698aa79c98362e',
                 headers=headers_without_content_type)
             if (await resp.json())['status'] != 'running':
                 break
@@ -2378,13 +2397,13 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
             'item_id': 3,
             'sku': 'test3'
         }]
-        await client.post('/items_types/4/items?store_id=1', headers=headers, data=ujson.dumps(products))
+        await client.post('/item_types/4/items?store_id=1', headers=headers, data=ujson.dumps(products))
 
-        await client.post('/items_types/4/update_filters?store_id=1', headers=headers_without_content_type)
+        await client.post('/item_types/4/update_filters?store_id=1', headers=headers_without_content_type)
         sleep(0.05)
         while True:
             resp = await client.get(
-                '/items_types/4/update_filters?store_id=1&job_hash=6342e10bd7dca3240c698aa79c98362e',
+                '/item_types/4/update_filters?store_id=1&job_hash=6342e10bd7dca3240c698aa79c98362e',
                 headers=headers_without_content_type)
             if (await resp.json())['status'] != 'running':
                 break
@@ -2429,13 +2448,13 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
             'item_id': 3,
             'sku': 'test3'
         }]
-        await client.post('/items_types/4/items?store_id=1', headers=headers, data=ujson.dumps(products))
+        await client.post('/item_types/4/items?store_id=1', headers=headers, data=ujson.dumps(products))
 
-        await client.post('/items_types/4/update_filters?store_id=1', headers=headers_without_content_type)
+        await client.post('/item_types/4/update_filters?store_id=1', headers=headers_without_content_type)
         sleep(0.05)
         while True:
             resp = await client.get(
-                '/items_types/4/update_filters?store_id=1&job_hash=6342e10bd7dca3240c698aa79c98362e',
+                '/item_types/4/update_filters?store_id=1&job_hash=6342e10bd7dca3240c698aa79c98362e',
                 headers=headers_without_content_type)
             if (await resp.json())['status'] != 'running':
                 break
@@ -2481,13 +2500,13 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
             'item_id': 3,
             'sku': 'test3'
         }]
-        await client.post('/items_types/4/items?store_id=1', headers=headers, data=ujson.dumps(products))
+        await client.post('/item_types/4/items?store_id=1', headers=headers, data=ujson.dumps(products))
 
-        await client.post('/items_types/4/update_filters?store_id=1', headers=headers_without_content_type)
+        await client.post('/item_types/4/update_filters?store_id=1', headers=headers_without_content_type)
         sleep(0.05)
         while True:
             resp = await client.get(
-                '/items_types/4/update_filters?store_id=1&job_hash=6342e10bd7dca3240c698aa79c98362e',
+                '/item_types/4/update_filters?store_id=1&job_hash=6342e10bd7dca3240c698aa79c98362e',
                 headers=headers_without_content_type)
             if (await resp.json())['status'] != 'running':
                 break
@@ -2532,13 +2551,13 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
             'item_id': 3,
             'sku': 'test3'
         }]
-        await client.post('/items_types/4/items?store_id=1', headers=headers, data=ujson.dumps(products))
+        await client.post('/item_types/4/items?store_id=1', headers=headers, data=ujson.dumps(products))
 
-        await client.post('/items_types/4/update_filters?store_id=1', headers=headers_without_content_type)
+        await client.post('/item_types/4/update_filters?store_id=1', headers=headers_without_content_type)
         sleep(0.05)
         while True:
             resp = await client.get(
-                '/items_types/4/update_filters?store_id=1&job_hash=6342e10bd7dca3240c698aa79c98362e',
+                '/item_types/4/update_filters?store_id=1&job_hash=6342e10bd7dca3240c698aa79c98362e',
                 headers=headers_without_content_type)
             if (await resp.json())['status'] != 'running':
                 break
@@ -2583,13 +2602,13 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
             'item_id': 3,
             'sku': 'test3'
         }]
-        await client.post('/items_types/4/items?store_id=1', headers=headers, data=ujson.dumps(products))
+        await client.post('/item_types/4/items?store_id=1', headers=headers, data=ujson.dumps(products))
 
-        await client.post('/items_types/4/update_filters?store_id=1', headers=headers_without_content_type)
+        await client.post('/item_types/4/update_filters?store_id=1', headers=headers_without_content_type)
         sleep(0.05)
         while True:
             resp = await client.get(
-                '/items_types/4/update_filters?store_id=1&job_hash=6342e10bd7dca3240c698aa79c98362e',
+                '/item_types/4/update_filters?store_id=1&job_hash=6342e10bd7dca3240c698aa79c98362e',
                 headers=headers_without_content_type)
             if (await resp.json())['status'] != 'running':
                 break
@@ -2635,13 +2654,13 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
             'item_id': 3,
             'sku': 'test3'
         }]
-        await client.post('/items_types/4/items?store_id=1', headers=headers, data=ujson.dumps(products))
+        await client.post('/item_types/4/items?store_id=1', headers=headers, data=ujson.dumps(products))
 
-        await client.post('/items_types/4/update_filters?store_id=1', headers=headers_without_content_type)
+        await client.post('/item_types/4/update_filters?store_id=1', headers=headers_without_content_type)
         sleep(0.05)
         while True:
             resp = await client.get(
-                '/items_types/4/update_filters?store_id=1&job_hash=6342e10bd7dca3240c698aa79c98362e',
+                '/item_types/4/update_filters?store_id=1&job_hash=6342e10bd7dca3240c698aa79c98362e',
                 headers=headers_without_content_type)
             if (await resp.json())['status'] != 'running':
                 break
@@ -2688,13 +2707,13 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
             'item_id': 3,
             'sku': 'test3'
         }]
-        await client.post('/items_types/4/items?store_id=1', headers=headers, data=ujson.dumps(products))
+        await client.post('/item_types/4/items?store_id=1', headers=headers, data=ujson.dumps(products))
 
-        await client.post('/items_types/4/update_filters?store_id=1', headers=headers_without_content_type)
+        await client.post('/item_types/4/update_filters?store_id=1', headers=headers_without_content_type)
         sleep(0.05)
         while True:
             resp = await client.get(
-                '/items_types/4/update_filters?store_id=1&job_hash=6342e10bd7dca3240c698aa79c98362e',
+                '/item_types/4/update_filters?store_id=1&job_hash=6342e10bd7dca3240c698aa79c98362e',
                 headers=headers_without_content_type)
             if (await resp.json())['status'] != 'running':
                 break

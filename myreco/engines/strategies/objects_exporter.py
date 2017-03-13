@@ -21,7 +21,7 @@
 # SOFTWARE.
 
 
-from myreco.engines.strategies.base import EngineStrategyBase
+from myreco.engines.strategies.base import EngineCoreBase
 from myreco.exceptions import EngineError
 from abc import abstractmethod
 from glob import glob
@@ -30,7 +30,7 @@ import os.path
 import asyncio
 
 
-class EngineStrategyObjectsExporter(EngineStrategyBase):
+class EngineCoreObjectsExporter(EngineCoreBase):
 
     @abstractmethod
     def export_objects(self, session):

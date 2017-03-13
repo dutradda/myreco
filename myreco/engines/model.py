@@ -37,7 +37,6 @@ class EnginesModelBase(AbstractConcreteBase):
     id = sa.Column(sa.Integer, primary_key=True)
     name = sa.Column(sa.String(255), unique=True, nullable=False)
     configuration_json = sa.Column(sa.Text, nullable=False)
-    strategy_class_json = sa.Column(sa.Text, nullable=False)
 
     @property
     def configuration(self):
@@ -45,11 +44,9 @@ class EnginesModelBase(AbstractConcreteBase):
             self._configuration = ujson.loads(self.configuration_json)
         return self._configuration
 
-    @property
-    def strategy_class(self):
-        if not hasattr(self, '_strategy_class'):
-            self._strategy_class = ujson.loads(self.strategy_class_json)
-        return self._strategy_class
+    @declared_attr
+    def core_id(cls):
+        return sa.Column(sa.ForeignKey('engine_cores.id'), nullable=False)
 
     @declared_attr
     def store_id(cls):
@@ -57,26 +54,34 @@ class EnginesModelBase(AbstractConcreteBase):
 
     @declared_attr
     def item_type_id(cls):
-        return sa.Column(sa.ForeignKey('items_types.id'), nullable=False)
+        return sa.Column(sa.ForeignKey('item_types.id'), nullable=False)
 
     @declared_attr
     def item_type(cls):
-        return sa.orm.relationship('ItemsTypesModel')
+        return sa.orm.relationship('ItemTypesModel')
 
     @declared_attr
     def store(cls):
         return sa.orm.relationship('StoresModel')
 
+    @declared_attr
+    def core(cls):
+        return sa.orm.relationship('EngineCoresModel')
+
     @property
     def strategy(self):
         if not hasattr(self, '_strategy'):
-            self._strategy = self.get_strategy(self._build_self_dict())
+            self._strategy = type(self).get_strategy(self._build_self_dict())
 
         return self._strategy
 
     @classmethod
     def get_strategy(cls, engine_dict):
-        strategy_class = cls.get_strategy_class(engine_dict['strategy_class'])
+        core = engine_dict.get('core')
+        if core is None:
+            core = cls.get_model('engine_cores').get({'id': engine_dict['core_id']})
+
+        strategy_class = cls.get_strategy_class(core['strategy_class'])
         store_items_model = get_items_model(engine_dict)
         return strategy_class(engine_dict, store_items_model)
 
@@ -100,10 +105,6 @@ class EnginesModelBase(AbstractConcreteBase):
             value = ujson.dumps(value)
             attr_name = 'configuration_json'
 
-        if attr_name == 'strategy_class':
-            value = ujson.dumps(value)
-            attr_name = 'strategy_class_json'
-
         if attr_name == 'item_type_id':
             value = {'id': value}
             attr_name = 'item_type'
@@ -111,16 +112,13 @@ class EnginesModelBase(AbstractConcreteBase):
         await super()._setattr(attr_name, value, session, input_)
 
     def _validate(self):
-        self.strategy.validate_config()
+        if self.core is not None:
+            self.strategy.validate_config()
 
     def _format_output_json(self, dict_inst, schema):
         if schema.get('configuration') is not False:
             dict_inst.pop('configuration_json')
             dict_inst['configuration'] = self.configuration
-
-        if schema.get('strategy_class') is not False:
-            dict_inst.pop('strategy_class_json')
-            dict_inst['strategy_class'] = self.strategy_class
 
         if schema.get('variables') is not False:
             dict_inst['variables'] = self.variables

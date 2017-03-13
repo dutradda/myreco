@@ -24,7 +24,7 @@
 from unittest import mock
 from time import sleep
 from datetime import datetime
-from tests.integration.fixtures import EngineStrategyTest
+from tests.integration.fixtures import EngineCoreTest
 from swaggerit.models._base import _all_models
 import asyncio
 import tempfile
@@ -65,13 +65,13 @@ def init_db(models, session, api, monkeypatch):
         'stores': [{'id': 1}],
         'schema': schema
     }
-    session.loop.run_until_complete(models['items_types'].insert(session, item_type))
+    session.loop.run_until_complete(models['item_types'].insert(session, item_type))
     item_type = {
         'name': 'categories',
         'stores': [{'id': 1}],
         'schema': schema
     }
-    session.loop.run_until_complete(models['items_types'].insert(session, item_type))
+    session.loop.run_until_complete(models['item_types'].insert(session, item_type))
     item_type = {
         'name': 'invalid',
         'stores': [{'id': 1}],
@@ -81,7 +81,26 @@ def init_db(models, session, api, monkeypatch):
             'properties': {'item_id': {'type': 'string'}}
         }
     }
-    session.loop.run_until_complete(models['items_types'].insert(session, item_type))
+    session.loop.run_until_complete(models['item_types'].insert(session, item_type))
+
+
+    core = {
+        'name': 'test with vars',
+        'strategy_class': {
+            'module': 'tests.integration.fixtures',
+            'class_name': 'EngineCoreTestWithVars'
+        }
+    }
+    session.loop.run_until_complete(models['engine_cores'].insert(session, core))
+
+    core = {
+        'name': 'test',
+        'strategy_class': {
+            'module': 'tests.integration.fixtures',
+            'class_name': 'EngineCoreTest'
+        }
+    }
+    session.loop.run_until_complete(models['engine_cores'].insert(session, core))
 
     engine = {
         'name': 'Visual Similarity',
@@ -91,10 +110,7 @@ def init_db(models, session, api, monkeypatch):
             'data_importer_path': 'test.test'
         }),
         'store_id': 1,
-        'strategy_class': {
-            'module': 'tests.integration.fixtures',
-            'class_name': 'EngineStrategyTestWithVars'
-        },
+        'core_id': 1,
         'item_type_id': 1
     }
     session.loop.run_until_complete(models['engines'].insert(session, engine))
@@ -106,10 +122,7 @@ def init_db(models, session, api, monkeypatch):
             'data_importer_path': 'test.test'
         }),
         'store_id': 1,
-        'strategy_class': {
-            'module': 'tests.integration.fixtures',
-            'class_name': 'EngineStrategyTestWithVars'
-        },
+        'core_id': 1,
         'item_type_id': 2
     }
     session.loop.run_until_complete(models['engines'].insert(session, engine))
@@ -120,10 +133,7 @@ def init_db(models, session, api, monkeypatch):
             'data_importer_path': 'test.test'
         }),
         'store_id': 1,
-        'strategy_class': {
-            'module': 'tests.integration.fixtures',
-            'class_name': 'EngineStrategyTest'
-        },
+        'core_id': 2,
         'item_type_id': 3
     }
     session.loop.run_until_complete(models['engines'].insert(session, engine))
@@ -323,9 +333,14 @@ class TestSlotsModelPost(object):
                 'store_id': 1,
                 'name': 'Visual Similarity',
                 'item_type_id': 1,
-                'strategy_class': {
-                    'class_name': 'EngineStrategyTestWithVars',
-                    'module': 'tests.integration.fixtures'
+                'core_id': 1,
+                'core': {
+                    'id': 1,
+                    'name': 'test with vars',
+                    'strategy_class': {
+                        'class_name': 'EngineCoreTestWithVars',
+                        'module': 'tests.integration.fixtures'
+                    }
                 },
                 'id': 1,
                 'variables': [{
@@ -422,9 +437,14 @@ class TestSlotsModelPost(object):
                 'store_id': 1,
                 'name': 'Visual Similarity',
                 'item_type_id': 1,
-                'strategy_class': {
-                    'class_name': 'EngineStrategyTestWithVars',
-                    'module': 'tests.integration.fixtures'
+                'core_id': 1,
+                'core': {
+                    'id': 1,
+                    'name': 'test with vars',
+                    'strategy_class': {
+                        'class_name': 'EngineCoreTestWithVars',
+                        'module': 'tests.integration.fixtures'
+                    }
                 },
                 'id': 1,
                 'variables': [{
@@ -531,9 +551,14 @@ class TestSlotsModelPost(object):
                     'store_id': 1,
                     'name': 'Visual Similarity',
                     'item_type_id': 1,
-                    'strategy_class': {
-                        'class_name': 'EngineStrategyTestWithVars',
-                        'module': 'tests.integration.fixtures'
+                    'core_id': 1,
+                    'core': {
+                        'id': 1,
+                        'name': 'test with vars',
+                        'strategy_class': {
+                            'class_name': 'EngineCoreTestWithVars',
+                            'module': 'tests.integration.fixtures'
+                        }
                     },
                     'id': 1,
                     'variables': [{
@@ -605,9 +630,14 @@ class TestSlotsModelPost(object):
                 'store_id': 1,
                 'name': 'Visual Similarity',
                 'item_type_id': 1,
-                'strategy_class': {
-                    'class_name': 'EngineStrategyTestWithVars',
-                    'module': 'tests.integration.fixtures'
+                'core_id': 1,
+                'core': {
+                    'id': 1,
+                    'name': 'test with vars',
+                    'strategy_class': {
+                        'class_name': 'EngineCoreTestWithVars',
+                        'module': 'tests.integration.fixtures'
+                    }
                 },
                 'id': 1,
                 'variables': [{
@@ -732,9 +762,14 @@ class TestSlotsModelGet(object):
                 'store_id': 1,
                 'name': 'Visual Similarity',
                 'item_type_id': 1,
-                'strategy_class': {
-                    'class_name': 'EngineStrategyTestWithVars',
-                    'module': 'tests.integration.fixtures'
+                'core_id': 1,
+                'core': {
+                    'id': 1,
+                    'name': 'test with vars',
+                    'strategy_class': {
+                        'class_name': 'EngineCoreTestWithVars',
+                        'module': 'tests.integration.fixtures'
+                    }
                 },
                 'id': 1,
                 'variables': [{
@@ -1000,9 +1035,14 @@ class TestSlotsModelUriTemplatePatch(object):
                 'store_id': 1,
                 'name': 'Visual Similarity',
                 'item_type_id': 1,
-                'strategy_class': {
-                    'class_name': 'EngineStrategyTestWithVars',
-                    'module': 'tests.integration.fixtures'
+                'core_id': 1,
+                'core': {
+                    'id': 1,
+                    'name': 'test with vars',
+                    'strategy_class': {
+                        'class_name': 'EngineCoreTestWithVars',
+                        'module': 'tests.integration.fixtures'
+                    }
                 },
                 'id': 1,
                 'variables': [{
@@ -1143,9 +1183,14 @@ class TestSlotsModelUriTemplateGet(object):
                 'store_id': 1,
                 'name': 'Visual Similarity',
                 'item_type_id': 1,
-                'strategy_class': {
-                    'class_name': 'EngineStrategyTestWithVars',
-                    'module': 'tests.integration.fixtures'
+                'core_id': 1,
+                'core': {
+                    'id': 1,
+                    'name': 'test with vars',
+                    'strategy_class': {
+                        'class_name': 'EngineCoreTestWithVars',
+                        'module': 'tests.integration.fixtures'
+                    }
                 },
                 'id': 1,
                 'variables': [{

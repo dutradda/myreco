@@ -21,7 +21,7 @@
 # SOFTWARE.
 
 
-from myreco.items_types.model import ItemsTypesModelBase
+from myreco.item_types.model import ItemTypesModelBase
 from myreco.utils import extend_swagger_json
 from swaggerit.exceptions import SwaggerItModelError
 from jsonschema import Draft4Validator
@@ -36,9 +36,9 @@ import asyncio
 import gc
 
 
-class ItemsTypesDataFileImporterModelBase(ItemsTypesModelBase):
+class ItemTypesDataFileImporterModelBase(ItemTypesModelBase):
     __swagger_json__ = extend_swagger_json(
-        ItemsTypesModelBase.__swagger_json__,
+        ItemTypesModelBase.__swagger_json__,
         __file__
     )
 

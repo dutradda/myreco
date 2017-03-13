@@ -1,6 +1,6 @@
 {
     "paths": {
-        "/items_types/": {
+        "/item_types/": {
             "post": {
                 "operationId": "swagger_insert",
                 "parameters": [{
@@ -40,7 +40,7 @@
                 "responses": {"200": {"description": "Got"}}
             }
         },
-        "/items_types/{id}/": {
+        "/item_types/{id}/": {
             "parameters": [{
                 "name": "id",
                 "in": "path",
@@ -83,7 +83,7 @@
                 "responses": {"200": {"description": "Got"}}
             }
         },
-        "/items_types/{id}/items": {
+        "/item_types/{id}/items": {
             "parameters": [{
                 "name": "id",
                 "in": "path",
@@ -159,7 +159,7 @@
                 "responses": {"200": {"description": "Got"}}
             }
         },
-        "/items_types/{id}/items/{item_key}": {
+        "/item_types/{id}/items/{item_key}": {
             "parameters": [{
                 "name": "id",
                 "in": "path",
@@ -187,7 +187,7 @@
                 "responses": {"200": {"description": "Got"}}
             }
         },
-        "/items_types/{id}/items/search": {
+        "/item_types/{id}/items/search": {
             "parameters": [{
                 "name": "id",
                 "in": "path",

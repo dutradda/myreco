@@ -23,14 +23,14 @@
 
 from myreco.engines.strategies.filters.filters import BooleanFilterBy
 from myreco.engines.strategies.filters.factory import FiltersFactory
-from myreco.items_types.data_file_importer.model import ItemsTypesDataFileImporterModelBase
+from myreco.item_types.data_file_importer.model import ItemTypesDataFileImporterModelBase
 from myreco.utils import extend_swagger_json
 from swaggerit.exceptions import SwaggerItModelError
 
 
-class ItemsTypesFiltersUpdaterModelBase(ItemsTypesDataFileImporterModelBase):
+class ItemTypesFiltersUpdaterModelBase(ItemTypesDataFileImporterModelBase):
     __swagger_json__ = extend_swagger_json(
-        ItemsTypesDataFileImporterModelBase.__swagger_json__,
+        ItemTypesDataFileImporterModelBase.__swagger_json__,
         __file__
     )
 
@@ -53,7 +53,7 @@ class ItemsTypesFiltersUpdaterModelBase(ItemsTypesDataFileImporterModelBase):
         items_indices_map_ret = await store_items_model.items_indices_map.update(session)
         items_indices_map_len = await store_items_model.items_indices_map.get_length(session)
 
-        filters_factory = cls.get_model('slots_filters').__factory__
+        filters_factory = cls.get_model('slot_filters').__factory__
         enabled_filters = await cls._get_enabled_filters(store_items_model, session, store_id)
         filters_ret = dict()
         items_indices_map_dict = await store_items_model.items_indices_map.get_all(session)

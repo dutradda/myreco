@@ -22,11 +22,11 @@
 
 
 from myreco.engines.strategies.top_seller.redis_object import TopSellerRedisObject
-from myreco.engines.strategies.objects_exporter import EngineStrategyObjectsExporter
-from myreco.engines.strategies.recommender import EngineStrategyRecommender
+from myreco.engines.strategies.objects_exporter import EngineCoreObjectsExporter
+from myreco.engines.strategies.recommender import EngineCoreRecommender
 
 
-class TopSellerEngineStrategy(EngineStrategyObjectsExporter, EngineStrategyRecommender):
+class TopSellerEngineCore(EngineCoreObjectsExporter, EngineCoreRecommender):
     __configuration_schema__ = {
         "type": "object",
         "required": ["days_interval"],

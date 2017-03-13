@@ -21,11 +21,11 @@
 # SOFTWARE.
 
 
-from myreco.engines.strategies.base import EngineStrategyBase
+from myreco.engines.strategies.base import EngineCoreBase
 from abc import abstractmethod
 
 
-class EngineStrategyDataImporter(EngineStrategyBase):
+class EngineCoreDataImporter(EngineCoreBase):
 
     @abstractmethod
     def get_data(self, items_indices_map, session):

@@ -29,7 +29,6 @@ from unittest import mock
 from sqlalchemy import create_engine
 from aioredis import create_redis
 from base64 import b64encode
-from sqlalchemy.schema import DDL
 import sqlalchemy as sa
 import pytest
 import pymysql
@@ -177,8 +176,8 @@ def session(variables, redis, engine, pymysql_conn, base_model, loop, elsearch):
             except:
                 pass
         cursor.execute('SET FOREIGN_KEY_CHECKS = 1;')
-        cursor.execute('ALTER TABLE slots_filters CHANGE id id INT AUTO_INCREMENT;')
-        cursor.execute('ALTER TABLE slots_variables CHANGE id id INT AUTO_INCREMENT;')
+        cursor.execute('ALTER TABLE slot_filters CHANGE id id INT AUTO_INCREMENT;')
+        cursor.execute('ALTER TABLE slot_variables CHANGE id id INT AUTO_INCREMENT;')
 
     pymysql_conn.commit()
     loop.run_until_complete(redis.flushdb())

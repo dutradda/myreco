@@ -28,9 +28,7 @@ import re
 engine_key_prefix_regex = re.compile(r'(\w)(\W)(\w)')
 
 def build_engine_key_prefix(engine):
-    name = engine['strategy_class']['class_name']
-    name = engine_key_prefix_regex.sub(r'\1_\2\3', name)
-    return 'engine_{}_{}'.format(engine['id'], name.lower())
+    return 'engine_{}_{}'.format(engine['id'], engine['core']['name'])
 
 
 def build_engine_data_path(engine):

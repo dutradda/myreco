@@ -57,17 +57,17 @@ def init_db(models, session, api):
         api.remove_swagger_paths(_all_models.pop('test_collection'))
 
 
-class TestItemsTypesModelPost(object):
+class TestItemTypesModelPost(object):
 
     async def test_post_without_body(self, init_db, headers, client):
         client = await client
-        resp = await client.post('/items_types/', headers=headers)
+        resp = await client.post('/item_types/', headers=headers)
         assert resp.status == 400
         assert await resp.json() == {'message': 'Request body is missing'}
 
     async def test_post_with_invalid_body(self, init_db, headers, client):
         client = await client
-        resp = await client.post('/items_types/', headers=headers, data='[{}]')
+        resp = await client.post('/item_types/', headers=headers, data='[{}]')
         assert resp.status == 400
         assert await resp.json() ==  {
             'message': "'name' is a required property. "\
@@ -78,9 +78,9 @@ class TestItemsTypesModelPost(object):
                 'required': ['name', 'schema', 'stores'],
                 'properties': {
                     'name': {'type': 'string'},
-                    'stores': {'$ref': '#/definitions/ItemsTypesModel.stores'},
-                    'schema': {'$ref': '#/definitions/ItemsTypesModel.items'},
-                    'store_items_class': {'$ref': '#/definitions/ItemsTypesModel.store_items_class'}
+                    'stores': {'$ref': '#/definitions/ItemTypesModel.stores'},
+                    'schema': {'$ref': '#/definitions/ItemTypesModel.items'},
+                    'store_items_class': {'$ref': '#/definitions/ItemTypesModel.store_items_class'}
                 }
             }
         }
@@ -96,7 +96,7 @@ class TestItemsTypesModelPost(object):
                 'id_names': ['id']
             }
         }]
-        resp = await client.post('/items_types/', headers=headers, data=ujson.dumps(body))
+        resp = await client.post('/item_types/', headers=headers, data=ujson.dumps(body))
         body[0]['id'] = 1
         body[0]['available_filters'] = [{'name': 'id', 'schema': {'type': 'integer'}}]
         body[0]['stores'] = [{
@@ -117,7 +117,7 @@ class TestItemsTypesModelPost(object):
             'stores': [{'id': 1}],
             'schema': {'properties': {'id': {'type': 'integer'}}, 'type': 'object', 'id_names': ['id']}
         }]
-        resp = await client.post('/items_types/', headers={'Authorization': 'invalid'}, data=ujson.dumps(body))
+        resp = await client.post('/item_types/', headers={'Authorization': 'invalid'}, data=ujson.dumps(body))
         assert resp.status == 401
         assert await resp.json() ==  {'message': 'Invalid authorization'}
 
@@ -132,7 +132,7 @@ class TestItemsTypesModelPost(object):
                 }
             }
         }]
-        resp = await client.post('/items_types/', headers=headers, data=ujson.dumps(body))
+        resp = await client.post('/item_types/', headers=headers, data=ujson.dumps(body))
         assert resp.status == 400
         assert await resp.json() == {
             'instance': {
@@ -169,7 +169,7 @@ class TestItemsTypesModelPost(object):
                 }
             }
         }]
-        resp = await client.post('/items_types/', headers=headers, data=ujson.dumps(body))
+        resp = await client.post('/item_types/', headers=headers, data=ujson.dumps(body))
         assert resp.status == 400
         assert await resp.json() == {
             'instance': ['test'],
@@ -184,16 +184,16 @@ class TestItemsTypesModelPost(object):
         }
 
 
-class TestItemsTypesModelGet(object):
+class TestItemTypesModelGet(object):
 
     async def test_get_not_found(self, init_db, headers_without_content_type, client):
         client = await client
-        resp = await client.get('/items_types/?stores=id:1', headers=headers_without_content_type)
+        resp = await client.get('/item_types/?stores=id:1', headers=headers_without_content_type)
         assert resp.status == 404
 
     async def test_get_invalid_with_body(self, init_db, headers, client):
         client = await client
-        resp = await client.get('/items_types/?stores=id:1', headers=headers, data='{}')
+        resp = await client.get('/item_types/?stores=id:1', headers=headers, data='{}')
         assert resp.status == 400
         assert await resp.json() == {'message': 'Request body is not acceptable'}
 
@@ -204,7 +204,7 @@ class TestItemsTypesModelGet(object):
             'stores': [{'id': 1}],
             'schema': {'properties': {'test': {'type': 'string'}}, 'type': 'object', 'id_names': ['test']}
         }]
-        await client.post('/items_types/', headers=headers, data=ujson.dumps(body))
+        await client.post('/item_types/', headers=headers, data=ujson.dumps(body))
         body[0]['id'] = 1
         body[0]['available_filters'] = [{'name': 'test', 'schema': {'type': 'string'}}]
         body[0]['stores'] = [{
@@ -215,22 +215,22 @@ class TestItemsTypesModelGet(object):
         }]
         body[0]['store_items_class'] = None
 
-        resp = await client.get('/items_types/?stores=id:1', headers=headers_without_content_type)
+        resp = await client.get('/item_types/?stores=id:1', headers=headers_without_content_type)
         assert resp.status == 200
         assert await resp.json() ==  body
 
 
-class TestItemsTypesModelUriTemplatePatch(object):
+class TestItemTypesModelUriTemplatePatch(object):
 
     async def test_patch_without_body(self, init_db, headers, client):
         client = await client
-        resp = await client.patch('/items_types/1/', headers=headers, data='')
+        resp = await client.patch('/item_types/1/', headers=headers, data='')
         assert resp.status == 400
         assert await resp.json() == {'message': 'Request body is missing'}
 
     async def test_patch_with_invalid_body(self, init_db, headers, client):
         client = await client
-        resp = await client.patch('/items_types/1/', headers=headers, data='{}')
+        resp = await client.patch('/item_types/1/', headers=headers, data='{}')
         assert resp.status == 400
         assert await resp.json() ==  {
             'message': '{} does not have enough properties. '\
@@ -241,9 +241,9 @@ class TestItemsTypesModelUriTemplatePatch(object):
                 'minProperties': 1,
                 'properties': {
                     'name': {'type': 'string'},
-                    'stores': {'$ref': '#/definitions/ItemsTypesModel.stores'},
-                    'schema': {'$ref': '#/definitions/ItemsTypesModel.items'},
-                    'store_items_class': {'$ref': '#/definitions/ItemsTypesModel.store_items_class'}
+                    'stores': {'$ref': '#/definitions/ItemTypesModel.stores'},
+                    'schema': {'$ref': '#/definitions/ItemTypesModel.items'},
+                    'store_items_class': {'$ref': '#/definitions/ItemTypesModel.store_items_class'}
                 }
             }
         }
@@ -255,7 +255,7 @@ class TestItemsTypesModelUriTemplatePatch(object):
             'stores': [{'id': 1}],
             'schema': {'properties': {'test': {'type': 'string'}}, 'type': 'object', 'id_names': ['test']}
         }
-        resp = await client.patch('/items_types/1/', headers=headers, data=ujson.dumps(body))
+        resp = await client.patch('/item_types/1/', headers=headers, data=ujson.dumps(body))
         assert resp.status == 404
 
     async def test_patch_valid(self, init_db, headers, client):
@@ -265,13 +265,13 @@ class TestItemsTypesModelUriTemplatePatch(object):
             'stores': [{'id': 1}],
             'schema': {'properties': {'test': {'type': 'string'}}, 'type': 'object', 'id_names': ['test']}
         }]
-        resp = await client.post('/items_types/', headers=headers, data=ujson.dumps(body))
+        resp = await client.post('/item_types/', headers=headers, data=ujson.dumps(body))
         obj = (await resp.json())[0]
 
         body = {
             'name': 'test2'
         }
-        resp = await client.patch('/items_types/1/', headers=headers, data=ujson.dumps(body))
+        resp = await client.patch('/item_types/1/', headers=headers, data=ujson.dumps(body))
         obj['name'] = 'test2'
         obj['available_filters'] = [{'name': 'test', 'schema': {'type': 'string'}}]
 
@@ -279,11 +279,11 @@ class TestItemsTypesModelUriTemplatePatch(object):
         assert await resp.json() ==  obj
 
 
-class TestItemsTypesModelUriTemplateDelete(object):
+class TestItemTypesModelUriTemplateDelete(object):
 
     async def test_delete_with_body(self, init_db, headers, client):
         client = await client
-        resp = await client.delete('/items_types/1/', headers=headers, data='{}')
+        resp = await client.delete('/item_types/1/', headers=headers, data='{}')
         assert resp.status == 400
         assert await resp.json() == {'message': 'Request body is not acceptable'}
 
@@ -294,29 +294,29 @@ class TestItemsTypesModelUriTemplateDelete(object):
             'stores': [{'id': 1}],
             'schema': {'properties': {'test': {'type': 'string'}}, 'type': 'object', 'id_names': ['test']}
         }]
-        resp = await client.post('/items_types/', headers=headers, data=ujson.dumps(body))
+        resp = await client.post('/item_types/', headers=headers, data=ujson.dumps(body))
 
-        resp = await client.get('/items_types/1/', headers=headers_without_content_type)
+        resp = await client.get('/item_types/1/', headers=headers_without_content_type)
         assert resp.status == 200
 
-        resp = await client.delete('/items_types/1/', headers=headers_without_content_type)
+        resp = await client.delete('/item_types/1/', headers=headers_without_content_type)
         assert resp.status == 204
 
-        resp = await client.get('/items_types/1/', headers=headers_without_content_type)
+        resp = await client.get('/item_types/1/', headers=headers_without_content_type)
         assert resp.status == 404
 
 
-class TestItemsTypesModelUriTemplateGet(object):
+class TestItemTypesModelUriTemplateGet(object):
 
     async def test_get_with_body(self, init_db, headers, client):
         client = await client
-        resp = await client.get('/items_types/1/', headers=headers, data='{}')
+        resp = await client.get('/item_types/1/', headers=headers, data='{}')
         assert resp.status == 400
         assert await resp.json() == {'message': 'Request body is not acceptable'}
 
     async def test_get_not_found(self, init_db, headers_without_content_type, client):
         client = await client
-        resp = await client.get('/items_types/1/', headers=headers_without_content_type)
+        resp = await client.get('/item_types/1/', headers=headers_without_content_type)
         assert resp.status == 404
 
     async def test_get(self, init_db, headers, headers_without_content_type, client):
@@ -326,8 +326,8 @@ class TestItemsTypesModelUriTemplateGet(object):
             'stores': [{'id': 1}],
             'schema': {'properties': {'test': {'type': 'string'}}, 'type': 'object', 'id_names': ['test']}
         }]
-        await client.post('/items_types/', headers=headers, data=ujson.dumps(body))
-        resp = await client.get('/items_types/1/', headers=headers_without_content_type)
+        await client.post('/item_types/', headers=headers, data=ujson.dumps(body))
+        resp = await client.get('/item_types/1/', headers=headers_without_content_type)
         body[0]['id'] = 1
         body[0]['available_filters'] = [{'name': 'test', 'schema': {'type': 'string'}}]
         body[0]['stores'] = [{
@@ -351,10 +351,10 @@ class TestItemsModelPost(object):
             'stores': [{'id': 1}],
             'schema': {'properties': {'id': {'type': 'string'}}, 'type': 'object', 'id_names': ['id']}
         }]
-        await client.post('/items_types/', headers=headers, data=ujson.dumps(body))
+        await client.post('/item_types/', headers=headers, data=ujson.dumps(body))
 
         body = [{'id': 'test'}]
-        resp = await client.post('/items_types/1/items?store_id=1', headers=headers, data=ujson.dumps(body))
+        resp = await client.post('/item_types/1/items?store_id=1', headers=headers, data=ujson.dumps(body))
         assert resp.status == 201
         assert await resp.json() == body
 
@@ -365,10 +365,10 @@ class TestItemsModelPost(object):
             'stores': [{'id': 1}],
             'schema': {'properties': {'id': {'type': 'string'}}, 'type': 'object', 'id_names': ['id']}
         }]
-        await client.post('/items_types/', headers=headers, data=ujson.dumps(body))
+        await client.post('/item_types/', headers=headers, data=ujson.dumps(body))
 
         body = [{'id': 1}]
-        resp = await client.post('/items_types/1/items?store_id=1', headers=headers, data=ujson.dumps(body))
+        resp = await client.post('/item_types/1/items?store_id=1', headers=headers, data=ujson.dumps(body))
         assert resp.status == 400
         assert await resp.json() == {
             'instance': 1,
@@ -395,17 +395,17 @@ class TestItemsModelPatch(object):
                 'id_names': ['id']
             }
         }]
-        await client.post('/items_types/', headers=headers, data=ujson.dumps(body))
+        await client.post('/item_types/', headers=headers, data=ujson.dumps(body))
 
         body = [{'id': 'test', 't1': 1}]
-        resp = await client.post('/items_types/1/items?store_id=1', headers=headers, data=ujson.dumps(body))
+        resp = await client.post('/item_types/1/items?store_id=1', headers=headers, data=ujson.dumps(body))
 
         body = [{'id': 'test', 't1': 2}]
-        resp = await client.patch('/items_types/1/items?store_id=1', headers=headers, data=ujson.dumps(body))
+        resp = await client.patch('/item_types/1/items?store_id=1', headers=headers, data=ujson.dumps(body))
         assert resp.status == 200
         assert await resp.json() == body
 
-        resp = await client.get('/items_types/1/items?store_id=1', headers=headers_without_content_type)
+        resp = await client.get('/item_types/1/items?store_id=1', headers=headers_without_content_type)
         assert resp.status == 200
         assert await resp.json() == body
 
@@ -423,17 +423,17 @@ class TestItemsModelPatch(object):
                 'id_names': ['id']
             }
         }]
-        await client.post('/items_types/', headers=headers, data=ujson.dumps(body))
+        await client.post('/item_types/', headers=headers, data=ujson.dumps(body))
 
         body = [{'id': 'test', 't1': 1}, {'id': 'test2', 't1': 2}]
-        resp = await client.post('/items_types/1/items?store_id=1', headers=headers, data=ujson.dumps(body))
+        resp = await client.post('/item_types/1/items?store_id=1', headers=headers, data=ujson.dumps(body))
 
         body = [{'id': 'test', '_operation': 'delete'}]
-        resp = await client.patch('/items_types/1/items?store_id=1', headers=headers, data=ujson.dumps(body))
+        resp = await client.patch('/item_types/1/items?store_id=1', headers=headers, data=ujson.dumps(body))
         assert resp.status == 200
         assert await resp.json() == [{'id': 'test', '_operation': 'delete'}]
 
-        resp = await client.get('/test/items_types/1/items?store_id=1', headers=headers_without_content_type)
+        resp = await client.get('/test/item_types/1/items?store_id=1', headers=headers_without_content_type)
         assert resp.status == 404
 
     async def test_items_patch_invalid(self, init_db, headers, client):
@@ -449,10 +449,10 @@ class TestItemsModelPatch(object):
                 'id_names': ['id']
             }
         }]
-        await client.post('/items_types/', headers=headers, data=ujson.dumps(body))
+        await client.post('/item_types/', headers=headers, data=ujson.dumps(body))
 
         body = [{'id': 1}]
-        resp = await client.post('/items_types/1/items?store_id=1', headers=headers, data=ujson.dumps(body))
+        resp = await client.post('/item_types/1/items?store_id=1', headers=headers, data=ujson.dumps(body))
         assert resp.status == 400
         assert await resp.json() == {
             'instance': 1,
@@ -469,10 +469,10 @@ class TestItemsModelPatch(object):
             'schema': {'properties': {'id': {'type': 'string'}}, 'type': 'object', 'id_names': ['id']}
         }]
         client = await client
-        await client.post('/items_types/', headers=headers, data=ujson.dumps(body))
+        await client.post('/item_types/', headers=headers, data=ujson.dumps(body))
 
         body = [{'id': 'test'}]
-        resp = await client.post('/items_types/1/items?store_id=1', headers=headers, data=ujson.dumps(body))
+        resp = await client.post('/item_types/1/items?store_id=1', headers=headers, data=ujson.dumps(body))
         assert resp.status == 201
 
 
@@ -480,7 +480,7 @@ class TestItemsModelPatch(object):
         await ItemsIndicesMap(test_model).update(session)
 
         body = [{'id': 'test', '_operation': 'delete'}]
-        resp = await client.patch('/items_types/1/items?store_id=1', headers=headers, data=ujson.dumps(body))
+        resp = await client.patch('/item_types/1/items?store_id=1', headers=headers, data=ujson.dumps(body))
         stock_filter = np.fromstring(await redis.get('store_items_test_1_stock_filter'), dtype=np.bool).tolist()
         assert stock_filter == [False]
 
@@ -528,7 +528,16 @@ def update_filters_init_db(models, session, api, monkeypatch):
             }
         }
     }
-    types = session.loop.run_until_complete(models['items_types'].insert(session, item_type))
+    types = session.loop.run_until_complete(models['item_types'].insert(session, item_type))
+
+    core = {
+        'name': 'test',
+        'strategy_class': {
+            'module': 'myreco.engines.strategies.top_seller.core',
+            'class_name': 'TopSellerEngineCore'
+        }
+    }
+    session.loop.run_until_complete(models['engine_cores'].insert(session, core))
 
     engine = {
         'name': 'Top Seller',
@@ -538,10 +547,7 @@ def update_filters_init_db(models, session, api, monkeypatch):
         }),
         'store_id': 1,
         'item_type_id': 1,
-        'strategy_class': {
-                'module': 'myreco.engines.strategies.top_seller.core',
-                'class_name': 'TopSellerEngineStrategy'
-            }
+        'core_id': 1
     }
     session.loop.run_until_complete(models['engines'].insert(session, engine))
 
@@ -609,7 +615,7 @@ def set_patches(monkeypatch):
     monkeypatch.setattr('swaggerit.models.orm._jobs_meta.datetime', datetime_mock())
 
 
-class TestItemsTypesModelFiltersUpdater(object):
+class TestItemTypesModelFiltersUpdater(object):
 
     async def test_filters_updater_post(self, update_filters_init_db, headers, client, monkeypatch, headers_without_content_type):
         set_patches(monkeypatch)
@@ -617,11 +623,11 @@ class TestItemsTypesModelFiltersUpdater(object):
         products = [{
             'sku': 'test', 'filter1': 1, 'filter2': True,
             'filter3': 'test', 'filter4': {'id': 1}, 'filter5': [1]}]
-        resp = await client.post('/items_types/1/items?store_id=1',
+        resp = await client.post('/item_types/1/items?store_id=1',
                           data=ujson.dumps(products), headers=headers)
         assert resp.status == 201
 
-        resp = await client.post('/items_types/1/update_filters?store_id=1', headers=headers_without_content_type)
+        resp = await client.post('/item_types/1/update_filters?store_id=1', headers=headers_without_content_type)
         assert await resp.json() == {'job_hash': '6342e10bd7dca3240c698aa79c98362e'}
 
     async def test_filters_updater_get_done(self, update_filters_init_db, headers, client, monkeypatch, headers_without_content_type):
@@ -630,20 +636,20 @@ class TestItemsTypesModelFiltersUpdater(object):
         products = [{
             'sku': 'test', 'filter1': 1, 'filter2': True,
             'filter3': 'test', 'filter4': {'id': 1}, 'filter5': [1]}]
-        await client.post('/items_types/1/items?store_id=1',
+        await client.post('/item_types/1/items?store_id=1',
                                     data=ujson.dumps(products), headers=headers)
-        resp = await client.post('/items_types/1/update_filters?store_id=1', headers=headers_without_content_type)
+        resp = await client.post('/item_types/1/update_filters?store_id=1', headers=headers_without_content_type)
         sleep(0.05)
 
         while True:
             resp = await client.get(
-                '/items_types/1/update_filters?store_id=1&job_hash=6342e10bd7dca3240c698aa79c98362e',
+                '/item_types/1/update_filters?store_id=1&job_hash=6342e10bd7dca3240c698aa79c98362e',
                 headers=headers_without_content_type)
             if (await resp.json())['status'] != 'running':
                 break
 
         resp = await client.get(
-            '/items_types/1/update_filters?store_id=1&job_hash=6342e10bd7dca3240c698aa79c98362e',
+            '/item_types/1/update_filters?store_id=1&job_hash=6342e10bd7dca3240c698aa79c98362e',
             headers=headers_without_content_type)
         assert await resp.json() == {
             'status': 'done',
@@ -693,14 +699,14 @@ class TestItemsTypesModelFiltersUpdater(object):
                 'filter5': [2,3]
             }
         }
-        await client.post('/items_types/1/items?store_id=1',
+        await client.post('/item_types/1/items?store_id=1',
                                     data=ujson.dumps(list(products.values())), headers=headers)
-        await client.post('/items_types/1/update_filters?store_id=1', headers=headers_without_content_type)
+        await client.post('/item_types/1/update_filters?store_id=1', headers=headers_without_content_type)
         sleep(0.05)
 
         while True:
             resp = await client.get(
-                '/items_types/1/update_filters?store_id=1&job_hash=6342e10bd7dca3240c698aa79c98362e',
+                '/item_types/1/update_filters?store_id=1&job_hash=6342e10bd7dca3240c698aa79c98362e',
                 headers=headers_without_content_type)
             if (await resp.json())['status'] != 'running':
                 break
@@ -737,14 +743,14 @@ class TestItemsTypesModelFiltersUpdater(object):
                 'filter5': [2,3]
             }
         }
-        await client.post('/items_types/1/items?store_id=1',
+        await client.post('/item_types/1/items?store_id=1',
                                     data=ujson.dumps(list(products.values())), headers=headers)
-        await client.post('/items_types/1/update_filters?store_id=1', headers=headers_without_content_type)
+        await client.post('/item_types/1/update_filters?store_id=1', headers=headers_without_content_type)
         sleep(0.05)
 
         while True:
             resp = await client.get(
-                '/items_types/1/update_filters?store_id=1&job_hash=6342e10bd7dca3240c698aa79c98362e',
+                '/item_types/1/update_filters?store_id=1&job_hash=6342e10bd7dca3240c698aa79c98362e',
                 headers=headers_without_content_type)
             if (await resp.json())['status'] != 'running':
                 break
@@ -789,14 +795,14 @@ class TestItemsTypesModelFiltersUpdater(object):
                 'filter5': [2,3]
             }
         }
-        await client.post('/items_types/1/items?store_id=1',
+        await client.post('/item_types/1/items?store_id=1',
                                     data=ujson.dumps(list(products.values())), headers=headers)
-        await client.post('/items_types/1/update_filters?store_id=1', headers=headers_without_content_type)
+        await client.post('/item_types/1/update_filters?store_id=1', headers=headers_without_content_type)
         sleep(0.05)
 
         while True:
             resp = await client.get(
-                '/items_types/1/update_filters?store_id=1&job_hash=6342e10bd7dca3240c698aa79c98362e',
+                '/item_types/1/update_filters?store_id=1&job_hash=6342e10bd7dca3240c698aa79c98362e',
                 headers=headers_without_content_type)
             if (await resp.json())['status'] != 'running':
                 break
@@ -849,14 +855,14 @@ class TestItemsTypesModelFiltersUpdater(object):
                 'filter5': [2,3]
             }
         }
-        await client.post('/items_types/1/items?store_id=1',
+        await client.post('/item_types/1/items?store_id=1',
                                     data=ujson.dumps(list(products.values())), headers=headers)
-        await client.post('/items_types/1/update_filters?store_id=1', headers=headers_without_content_type)
+        await client.post('/item_types/1/update_filters?store_id=1', headers=headers_without_content_type)
         sleep(0.05)
 
         while True:
             resp = await client.get(
-                '/items_types/1/update_filters?store_id=1&job_hash=6342e10bd7dca3240c698aa79c98362e',
+                '/item_types/1/update_filters?store_id=1&job_hash=6342e10bd7dca3240c698aa79c98362e',
                 headers=headers_without_content_type)
             if (await resp.json())['status'] != 'running':
                 break
@@ -909,14 +915,14 @@ class TestItemsTypesModelFiltersUpdater(object):
                 'filter5': [2,3]
             }
         }
-        await client.post('/items_types/1/items?store_id=1',
+        await client.post('/item_types/1/items?store_id=1',
                                     data=ujson.dumps(list(products.values())), headers=headers)
-        await client.post('/items_types/1/update_filters?store_id=1', headers=headers_without_content_type)
+        await client.post('/item_types/1/update_filters?store_id=1', headers=headers_without_content_type)
         sleep(0.05)
 
         while True:
             resp = await client.get(
-                '/items_types/1/update_filters?store_id=1&job_hash=6342e10bd7dca3240c698aa79c98362e',
+                '/item_types/1/update_filters?store_id=1&job_hash=6342e10bd7dca3240c698aa79c98362e',
                 headers=headers_without_content_type)
             if (await resp.json())['status'] != 'running':
                 break
@@ -969,14 +975,14 @@ class TestItemsTypesModelFiltersUpdater(object):
                 'filter5': [2,3]
             }
         }
-        await client.post('/items_types/1/items?store_id=1',
+        await client.post('/item_types/1/items?store_id=1',
                                     data=ujson.dumps(list(products.values())), headers=headers)
-        await client.post('/items_types/1/update_filters?store_id=1', headers=headers_without_content_type)
+        await client.post('/item_types/1/update_filters?store_id=1', headers=headers_without_content_type)
         sleep(0.05)
 
         while True:
             resp = await client.get(
-                '/items_types/1/update_filters?store_id=1&job_hash=6342e10bd7dca3240c698aa79c98362e',
+                '/item_types/1/update_filters?store_id=1&job_hash=6342e10bd7dca3240c698aa79c98362e',
                 headers=headers_without_content_type)
             if (await resp.json())['status'] != 'running':
                 break

@@ -163,7 +163,7 @@ class PlacementsModelBase(AbstractConcreteBase):
     @classmethod
     def _get_slot_filters(cls, slot, input_external_variables, items_model):
         filters = dict()
-        factory = cls.get_model('slots_filters').__factory__
+        factory = cls.get_model('slot_filters').__factory__
 
         for slot_filter in slot['slot_filters']:
             var_name = slot_filter['external_variable']['name']

@@ -28,7 +28,7 @@ from jsonschema import Draft4Validator
 from abc import ABCMeta
 
 
-class EngineStrategyMetaBase(ABCMeta):
+class EngineCoreMetaBase(ABCMeta):
 
     def __init__(cls, name, bases_classes, attributes):
         if hasattr(cls, '__configuration_schema__'):
@@ -37,7 +37,7 @@ class EngineStrategyMetaBase(ABCMeta):
             cls.__config_validator__ = build_validator(schema, get_module_path(cls))
 
 
-class EngineStrategyBase(metaclass=EngineStrategyMetaBase):
+class EngineCoreBase(metaclass=EngineCoreMetaBase):
 
     def __init__(self, engine, items_model):
         self.engine = engine

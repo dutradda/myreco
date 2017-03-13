@@ -21,7 +21,7 @@
 # SOFTWARE.
 
 
-from myreco.engines.strategies.top_seller.core import TopSellerEngineStrategy
+from myreco.engines.strategies.top_seller.core import TopSellerEngineCore
 from myreco.engines.strategies.utils import build_engine_data_path
 from unittest import mock
 from jsonschema import ValidationError
@@ -39,7 +39,7 @@ def CoroMock():
     return corofunc
 
 
-class EngineStrategyTest(TopSellerEngineStrategy):
+class EngineCoreTest(TopSellerEngineCore):
 
     def get_data(self, session):
         asyncio.run_coroutine_threadsafe(asyncio.sleep(0.5), session.loop).result()
@@ -60,7 +60,7 @@ class EngineStrategyTest(TopSellerEngineStrategy):
         return {'lines_count': 3}
 
 
-class EngineStrategyTestWithVars(EngineStrategyTest):
+class EngineCoreTestWithVars(EngineCoreTest):
     __configuration_schema__ = {
         "type": "object",
         "required": ["item_id_name", "aggregators_ids_name"],

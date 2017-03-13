@@ -27,14 +27,15 @@ from myreco.stores.model import StoresModelBase
 from myreco.external_variables.model import ExternalVariablesModelBase
 from myreco.placements.models import (PlacementsModelBase, VariationsModelBase,
     ABTestUsersModelBase, build_variations_slots_table)
-from myreco.slots.models import (SlotsVariablesModelBase, SlotsFiltersModelBase,
+from myreco.slots.models import (SlotVariablesModelBase, SlotFiltersModelBase,
     SlotsModelBase, build_slots_fallbacks_table)
 from myreco.engines.model import EnginesModelBase
+from myreco.engine_cores.model import EngineCoresModelBase
 from myreco.engines.data_importer.model import EnginesDataImporterModelBase
 from myreco.engines.objects_exporter.model import EnginesObjectsExporterModelBase
-from myreco.items_types.model import ItemsTypesModelBase, build_items_types_stores_table
-from myreco.items_types.data_file_importer.model import ItemsTypesDataFileImporterModelBase
-from myreco.items_types.filters_updater.model import ItemsTypesFiltersUpdaterModelBase
+from myreco.item_types.model import ItemTypesModelBase, build_item_types_stores_table
+from myreco.item_types.data_file_importer.model import ItemTypesDataFileImporterModelBase
+from myreco.item_types.filters_updater.model import ItemTypesFiltersUpdaterModelBase
 from swaggerit.models.orm.factory import FactoryOrmModels
 
 
@@ -61,15 +62,16 @@ class ModelsFactory(object):
         return attrs
 
     def make_all_models(self, app_type='recommender',
+                        engine_cores_base=EngineCoresModelBase,
                         engines_recommender_base=EnginesModelBase,
                         engines_data_importer_base=EnginesDataImporterModelBase,
                         engines_objects_exporter_base=EnginesObjectsExporterModelBase,
                         slots_base=SlotsModelBase,
-                        slots_variables_base=SlotsVariablesModelBase,
-                        slots_filters_base=SlotsFiltersModelBase,
-                        items_types_recommender_base=ItemsTypesModelBase,
-                        items_types_data_importer_base=ItemsTypesDataFileImporterModelBase,
-                        items_types_objects_exporter_base=ItemsTypesFiltersUpdaterModelBase,
+                        slot_variables_base=SlotVariablesModelBase,
+                        slot_filters_base=SlotFiltersModelBase,
+                        item_types_recommender_base=ItemTypesModelBase,
+                        item_types_data_importer_base=ItemTypesDataFileImporterModelBase,
+                        item_types_objects_exporter_base=ItemTypesFiltersUpdaterModelBase,
                         placements_base=PlacementsModelBase,
                         variations_base=VariationsModelBase,
                         ab_test_users_base=ABTestUsersModelBase,
@@ -87,6 +89,7 @@ class ModelsFactory(object):
                     app_type, ', '.join(app_types)))
 
         return {
+            'engine_cores': self.make_engine_cores_model(engine_cores_base),
             'engines': self.make_engines_model(
                 app_type,
                 recommender_base=engines_recommender_base,
@@ -94,13 +97,13 @@ class ModelsFactory(object):
                 objects_exporter_base=engines_objects_exporter_base
             ),
             'slots': self.make_slots_model(slots_base),
-            'slots_variables': self.make_slots_variables_model(slots_variables_base),
-            'slots_filters': self.make_slots_filters_model(slots_filters_base),
-            'items_types': self.make_items_types_model(
+            'slot_variables': self.make_slot_variables_model(slot_variables_base),
+            'slot_filters': self.make_slot_filters_model(slot_filters_base),
+            'item_types': self.make_item_types_model(
                 app_type,
-                recommender_base=items_types_recommender_base,
-                data_importer_base=items_types_data_importer_base,
-                objects_exporter_base=items_types_objects_exporter_base
+                recommender_base=item_types_recommender_base,
+                data_importer_base=item_types_data_importer_base,
+                objects_exporter_base=item_types_objects_exporter_base
             ),
             'placements': self.make_placements_model(placements_base),
             'variations': self.make_variations_model(variations_base),
@@ -119,7 +122,7 @@ class ModelsFactory(object):
             'users_stores': self.make_users_stores_table(),
             'variations_slots': self.make_variations_slots_table(),
             'slots_fallbacks': self.make_slots_fallbacks_table(),
-            'items_types_stores': self.make_items_types_stores_table()
+            'item_types_stores': self.make_item_types_stores_table()
         }
 
     def make_users_grants_table(self, attributes=None):
@@ -138,9 +141,13 @@ class ModelsFactory(object):
         attributes = self._init_attributes(attributes, self._commons_tables_attrs)
         return build_slots_fallbacks_table(self.base_model.metadata, **attributes)
 
-    def make_items_types_stores_table(self, attributes=None):
+    def make_item_types_stores_table(self, attributes=None):
         attributes = self._init_attributes(attributes, self._commons_tables_attrs)
-        return build_items_types_stores_table(self.base_model.metadata, **attributes)
+        return build_item_types_stores_table(self.base_model.metadata, **attributes)
+
+    def make_engine_cores_model(self, base=EngineCoresModelBase, attributes=None):
+        attributes = self._init_attributes(attributes, self._commons_models_attrs)
+        return self.meta_class('EngineCoresModel', (base, self.base_model), attributes)
 
     def make_engines_model(self, app_type,
                            recommender_base=EnginesModelBase,
@@ -163,18 +170,18 @@ class ModelsFactory(object):
         return self.meta_class(
             'SlotsModel', (base, self.base_model), attributes)
 
-    def make_slots_variables_model(self, base=SlotsVariablesModelBase, attributes=None):
+    def make_slot_variables_model(self, base=SlotVariablesModelBase, attributes=None):
         attributes = self._init_attributes(attributes, self._commons_models_attrs)
-        return self.meta_class('SlotsVariablesModel', (base, self.base_model), attributes)
+        return self.meta_class('SlotVariablesModel', (base, self.base_model), attributes)
 
-    def make_slots_filters_model(self, base=SlotsFiltersModelBase, attributes=None):
+    def make_slot_filters_model(self, base=SlotFiltersModelBase, attributes=None):
         attributes = self._init_attributes(attributes, self._commons_models_attrs)
-        return self.meta_class('SlotsFiltersModel', (base, self.base_model), attributes)
+        return self.meta_class('SlotFiltersModel', (base, self.base_model), attributes)
 
-    def make_items_types_model(self, app_type,
-                               recommender_base=ItemsTypesModelBase,
-                               data_importer_base=ItemsTypesDataFileImporterModelBase,
-                               objects_exporter_base=ItemsTypesFiltersUpdaterModelBase,
+    def make_item_types_model(self, app_type,
+                               recommender_base=ItemTypesModelBase,
+                               data_importer_base=ItemTypesDataFileImporterModelBase,
+                               objects_exporter_base=ItemTypesFiltersUpdaterModelBase,
                                attributes=None):
         attributes = self._init_attributes(attributes, self._commons_models_attrs)
 
@@ -185,7 +192,7 @@ class ModelsFactory(object):
         elif app_type == 'objects_exporter':
             bases_classes = (objects_exporter_base, self.base_model)
 
-        return self.meta_class('ItemsTypesModel', bases_classes, attributes)
+        return self.meta_class('ItemTypesModel', bases_classes, attributes)
 
     def make_placements_model(self, base=PlacementsModelBase, attributes=None):
         attributes = self._init_attributes(attributes, self._commons_models_attrs)
