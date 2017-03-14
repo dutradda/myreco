@@ -106,7 +106,7 @@ class MyProducts(object):
     test = 1
 
     @classmethod
-    def insert(cls, session, prods):
+    def insert(cls, session, prods, **kwargs):
         for prod in prods:
             v = prod.get('filter_integer')
             if v is not None:

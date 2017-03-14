@@ -142,21 +142,13 @@ class ItemTypesDataFileImporterModelBase(ItemTypesModelBase):
         new_keys = set()
         success_lines = 0
         errors_lines = 0
-        new_keys = set()
-        success_lines = 0
-        errors_lines = 0
-        empty_lines = 0
-        validator = Draft4Validator(store_items_model.item_type['schema'])
-        new_keys = set()
-        success_lines = 0
-        errors_lines = 0
         empty_lines = 0
         old_keys = set(await session.redis_bind.hkeys(store_items_model.__key__))
         lines = []
 
         async for line in feed:
             try:
-                line = cls._try_to_process_line(line, validator)
+                line = cls._try_to_process_line(line, validator, store_items_model)
                 if line is None:
                     empty_lines += 1
                     continue
@@ -166,7 +158,7 @@ class ItemTypesDataFileImporterModelBase(ItemTypesModelBase):
                     lines.append(line)
 
                     if len(lines) == 1000:
-                        await store_items_model.insert(session, lines)
+                        await store_items_model.insert(session, lines, skip_validation=True)
                         lines = []
 
             except Exception as error:
@@ -176,7 +168,7 @@ class ItemTypesDataFileImporterModelBase(ItemTypesModelBase):
                 continue
 
         if lines:
-            await store_items_model.insert(session, lines)
+            await store_items_model.insert(session, lines, skip_validation=True)
 
         del lines
         await feed.close()
@@ -198,12 +190,15 @@ class ItemTypesDataFileImporterModelBase(ItemTypesModelBase):
         }
 
     @classmethod
-    def _try_to_process_line(cls, line, validator):
+    def _try_to_process_line(cls, line, validator, store_items_model):
         line = line.strip().decode()
         if not line:
             return None
 
         line = ujson.loads(line)
+        if hasattr(store_items_model, 'pre_process_item'):
+            store_items_model.pre_process_item(line)
+
         validator.validate(line)
 
         return line

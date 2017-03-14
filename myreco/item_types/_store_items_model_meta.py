@@ -31,8 +31,10 @@ class _StoreItemsModelBaseMeta(ModelRedisElSearchMeta):
         super().__init__(name, bases_classes, attributes)
         cls.items_indices_map = ItemsIndicesMap(cls)
 
-    async def insert(cls, session, objs, **kwargs):
-        cls._validate_objs(objs, 'insert')
+    async def insert(cls, session, objs, skip_validation=False, **kwargs):
+        if not skip_validation:
+            cls._validate_objs(objs, 'insert')
+
         return await ModelRedisElSearchMeta.insert(cls, session, objs, **kwargs)
 
     def _validate_objs(cls, objs, type_):
@@ -41,8 +43,10 @@ class _StoreItemsModelBaseMeta(ModelRedisElSearchMeta):
             validator = getattr(cls, validator_name)
             validator.validate(objs)
 
-    async def update(cls, session, objs, ids=None, **kwargs):
-        cls._validate_objs(objs, 'update')
+    async def update(cls, session, objs, ids=None, skip_validation=False, **kwargs):
+        if not skip_validation:
+            cls._validate_objs(objs, 'update')
+
         return await ModelRedisElSearchMeta.update(cls, session, objs, **kwargs)
 
     async def get(cls, session, ids=None, limit=None, offset=None, **kwargs):
