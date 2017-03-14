@@ -184,7 +184,8 @@ class PlacementsModelBase(AbstractConcreteBase):
     def _get_filter_and_input_schema(cls, engine, slot_filter):
         for var in engine['item_type']['available_filters']:
             if var['name'] == slot_filter['property_name']:
-                if slot_filter['type_id'] == 'item_property_value':
+                if slot_filter['type_id'] == 'item_property_value' or \
+                        slot_filter['type_id'] == 'item_property_value_index':
                     input_schema = {'type': 'array', 'items': {'type': 'string'}}
 
                 elif var['schema'].get('type') != 'array':
