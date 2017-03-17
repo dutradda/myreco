@@ -26,6 +26,7 @@ from myreco.utils import build_item_key, build_class_name, ModuleObjectLoader
 from myreco.engines.strategies.filters.filters import BooleanFilterBy
 from swaggerit.utils import get_swagger_json, get_dir_path
 from swaggerit.method import SwaggerMethod
+from swaggerit.request import SwaggerRequest
 from swaggerit.models.orm.factory import FactoryOrmModels
 from sqlalchemy.ext.declarative import declared_attr, AbstractConcreteBase
 from jsonschema import ValidationError, Draft4Validator
