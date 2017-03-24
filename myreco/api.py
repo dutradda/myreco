@@ -23,7 +23,7 @@
 
 from myreco.authorizer import MyrecoAuthorizer
 from myreco.factory import ModelsFactory
-from swaggerit.constants import SWAGGER_VALIDATOR
+from swaggerit.constants import SWAGGER_VALIDATOR, SWAGGER_SCHEMA
 from swaggerit.aiohttp_api import AioHttpAPI
 from swaggerit.exceptions import SwaggerItAPIError
 from swaggerit.utils import get_swagger_json
@@ -53,6 +53,7 @@ class MyrecoAPI(AioHttpAPI):
             loop=loop, debug=debug
         )
         self._set_items_metaschema_route('/doc')
+        self._set_swagger_schema_route('/doc')
 
     def _set_items_metaschema_route(self, swagger_doc_url):
         self.items_metaschema = \
@@ -68,3 +69,15 @@ class MyrecoAPI(AioHttpAPI):
 
         headers = {'content-type': 'application/json'}
         return SwaggerResponse(200, headers, ujson.dumps(self.items_metaschema))
+
+    def _set_swagger_schema_route(self, swagger_doc_url):
+        handler = self._set_handler_decorator(self._get_swagger_schema)
+        self._set_route('/doc/swagger_schema.json', 'GET', handler)
+
+    async def _get_swagger_schema(self, req, session):
+        deny = await self._authorize(req, session)
+        if deny is not None:
+            return deny
+
+        headers = {'content-type': 'application/json'}
+        return SwaggerResponse(200, headers, ujson.dumps(SWAGGER_SCHEMA))
