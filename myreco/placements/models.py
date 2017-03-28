@@ -213,7 +213,8 @@ class PlacementsModelBase(AbstractConcreteBase):
                     fallback, input_external_variables, session, show_details, max_items)
                 all_recos = cls._get_all_slot_recos(slot_recos)
                 fallback_recos = cls._unique_recos(fallback_recos, all_recos)
-                slot_recos['fallbacks'].append(fallback_recos)
+                if fallback_recos:
+                    slot_recos['fallbacks'].append(fallback_recos)
 
     @classmethod
     def _get_all_slot_recos(cls, slot_recos):

@@ -2741,3 +2741,53 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
         resp = await client.get('/placements/{}/items?index_exclusive_of=1|test1,2|test2'.format(obj['small_hash']), headers=headers_without_content_type)
         assert resp.status == 200
         assert (await resp.json())['slots'][0]['items'] == [{'sku': 'test3', 'item_id': 3}]
+
+    async def test_get_items_404(self, init_db, client, headers, monkeypatch, headers_without_content_type):
+        random_patch(monkeypatch)
+        client = await client
+        products = [{
+            'item_id': 1,
+            'sku': 'test1',
+            'filter_object': {'id': 1}
+        },{
+            'item_id': 2,
+            'sku': 'test2',
+            'filter_object': {'id': 2}
+        },{
+            'item_id': 3,
+            'sku': 'test3'
+        }]
+        await client.post('/item_types/4/items?store_id=1', headers=headers, data=ujson.dumps(products))
+
+        await client.post('/item_types/4/update_filters?store_id=1', headers=headers_without_content_type)
+        sleep(0.05)
+        while True:
+            resp = await client.get(
+                '/item_types/4/update_filters?store_id=1&job_hash=6342e10bd7dca3240c698aa79c98362e',
+                headers=headers_without_content_type)
+            if (await resp.json())['status'] != 'running':
+                break
+
+        await client.post('/engines/4/export_objects?import_data=true', headers=headers_without_content_type)
+        sleep(0.05)
+        while True:
+            resp = await client.get(
+                '/engines/4/export_objects?job_hash=6342e10bd7dca3240c698aa79c98362e',
+                headers=headers_without_content_type)
+            if (await resp.json())['status'] != 'running':
+                break
+
+        body = [{
+            'store_id': 1,
+            'name': 'Placement Test',
+            'variations': [{
+                '_operation': 'insert',
+                'slots': [{'id': 2}]
+            }]
+        }]
+        resp = await client.post('/placements/', headers=headers, data=ujson.dumps(body))
+        obj = (await resp.json())[0]
+
+        resp = await client.get('/placements/{}/items?index_exclusive_of=1|test1,2|test2,3|test3'.format(obj['small_hash']), headers=headers_without_content_type)
+        assert resp.status == 404
+        assert (await resp.json()) == None
