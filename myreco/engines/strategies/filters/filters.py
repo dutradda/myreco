@@ -125,8 +125,9 @@ class MultipleFilterBy(FilterBaseBy):
         return {'filters_quantity': len(set_data)}
 
     def _update_filter(self, filter_map, value, item):
-        if value is not None and self._not_skip_value(value):
-            filter_map[value].append(item['index'])
+        index = item.get('index')
+        if value is not None and self._not_skip_value(value) and index is not None:
+            filter_map[value].append(index)
 
     def _build_filter_array(self, items_indices, size):
         filter_ = self._build_empty_array(size)
