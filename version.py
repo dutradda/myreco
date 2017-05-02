@@ -21,4 +21,4 @@
 # SOFTWARE.
 
 
-VERSION = '0.41.0'
+VERSION = '0.41.1'

@@ -2,6 +2,11 @@
     "paths": {
         "/item_types/{id}/import_data_file": {
             "parameters": [{
+                "name": "id",
+                "in": "path",
+                "type": "integer",
+                "required": true
+            },{
                 "name": "store_id",
                 "in": "query",
                 "required": true,
