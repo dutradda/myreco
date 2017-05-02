@@ -149,7 +149,7 @@ class _StoreItemsOperationsMixin(object):
         base_class = cls._get_store_items_class(item_type)
         store_items_model = FactoryOrmModels.make_redis_elsearch(
             class_name, item_type['schema']['id_names'],
-            store_items_model_key, use_elsearch=True,
+            store_items_model_key, use_elsearch=False,
             metaclass=_StoreItemsModelBaseMeta,
             base=base_class,
             extra_attributes={
