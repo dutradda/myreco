@@ -21,7 +21,7 @@
 # SOFTWARE.
 
 
-from myreco.engines.strategies.filters.factory import FiltersFactory
+from myreco.engine_strategies.filters.factory import FiltersFactory
 from swaggerit.utils import get_swagger_json
 from swaggerit.exceptions import SwaggerItModelError
 from jsonschema import ValidationError
@@ -152,7 +152,7 @@ class SlotFiltersModelBase(AbstractConcreteBase):
     def type(self):
         return type(self).__factory__.get_filter_type(self.type_id)
 
-    def _validate(self):
+    async def _validate(self, session, input_):
         self.type
 
 

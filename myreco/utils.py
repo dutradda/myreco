@@ -26,6 +26,8 @@ from swaggerit.models.orm.factory import FactoryOrmModels
 from swaggerit.utils import get_model, get_swagger_json
 from importlib import import_module
 from copy import deepcopy
+import os
+import re
 
 
 class ModuleObjectLoader(object):
@@ -60,9 +62,9 @@ def build_item_key(name, *args):
     return name
 
 
-def get_items_model(engine):
+def get_items_model(item_type, store_id):
     item_types_model = get_model('item_types')
-    return item_types_model.get_store_items_model(engine['item_type'], engine['store_id'])
+    return item_types_model.get_store_items_model(item_type, store_id)
 
 
 def build_class_name(*names):
@@ -90,3 +92,19 @@ def extend_swagger_json(original, current_filename, swagger_json_name=None):
             swagger_json['definitions'] = additional_definitions
 
     return swagger_json
+
+
+def build_engine_object_key(engine_object):
+    return '{}_{}_{}'.format(
+        engine_object['strategy']['name'],
+        engine_object['type'],
+        engine_object['id']
+    )
+
+
+def makedirs(dir_):
+    try:
+        os.makedirs(dir_)
+    except OSError as e:
+        if os.errno.EEXIST != e.errno:
+            raise

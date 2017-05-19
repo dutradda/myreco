@@ -33,10 +33,10 @@ import ujson
 
 
 class MyrecoAPI(AioHttpAPI):
-    def __init__(self, *, type_='recommender', sqlalchemy_bind=None, redis_bind=None,
+    def __init__(self, data_path, *, type_='recommender', sqlalchemy_bind=None, redis_bind=None,
                  elsearch_bind=None, swagger_json_template=None, title=None, version='1.0.0',
                  get_swagger_req_auth=True, loop=None, debug=False, factory_class=ModelsFactory):
-        self.models_factory = factory_class()
+        self.models_factory = factory_class(data_path)
         self.all_models = self.models_factory.make_all_models(type_)
         authorizer = MyrecoAuthorizer(self.all_models['users'])
         models = [model for model in self.all_models.values() if hasattr(model, '__api__')]

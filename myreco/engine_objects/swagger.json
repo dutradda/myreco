@@ -1,0 +1,49 @@
+{
+    "paths": {
+        "/engine_objects/": {
+            "get": {
+                "parameters": [{
+                    "name": "Authorization",
+                    "in": "header",
+                    "required": true,
+                    "type": "string"
+                },{
+                    "name": "strategy_id",
+                    "in": "query",
+                    "required": true,
+                    "type": "integer"
+                },{
+                    "name": "store_id",
+                    "in": "query",
+                    "required": true,
+                    "type": "integer"
+                },{
+                    "name": "item_type_id",
+                    "in": "query",
+                    "required": true,
+                    "type": "integer"
+                }],
+                "operationId": "swagger_get_all",
+                "responses": {"200": {"description": "Got"}}
+            }
+        },
+        "/engine_objects/{id}/": {
+            "parameters": [{
+                "name": "id",
+                "in": "path",
+                "type": "integer",
+                "required": true
+            }],
+            "get": {
+                "parameters": [{
+                    "name": "Authorization",
+                    "in": "header",
+                    "required": true,
+                    "type": "string"
+                }],
+                "operationId": "swagger_get",
+                "responses": {"200": {"description": "Got"}}
+            }
+        }
+    }
+}

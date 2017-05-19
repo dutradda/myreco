@@ -137,6 +137,7 @@
                 "minProperties": 2,
                 "properties": {
                     "id": {"type": "integer"},
+                    "name": {"type": "string"},
                     "weight": {"oneOf": [{"type": "number"}, {"type": "null"}]},
                     "_operation": {"enum": ["insert", "delete", "update"]},
                     "slots": {

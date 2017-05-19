@@ -21,19 +21,51 @@
 # SOFTWARE.
 
 
-from myreco.engines.strategies.base import EngineCoreBase
+from swaggerit.utils import set_logger
+from myreco.utils import build_engine_object_key, makedirs
 from myreco.exceptions import EngineError
-from abc import abstractmethod
+from abc import abstractmethod, ABCMeta
 from glob import glob
 from aiofiles import gzip_open
 import os.path
 import asyncio
+import zlib
+import numpy as np
 
 
-class EngineCoreObjectsExporter(EngineCoreBase):
+class EngineObjectBase(metaclass=ABCMeta):
+
+    def __init__(self, engine_object, data_path=None):
+        self._engine_object = engine_object
+        self._set_redis_key()
+        set_logger(self, self._redis_key)
+        if data_path is not None:
+            self._set_data_path(data_path)
+
+    def _set_redis_key(self):
+        self._redis_key = build_engine_object_key(self._engine_object)
+
+    def _set_data_path(self, data_path):
+        self._data_path = os.path.join(data_path, self._redis_key)
+        makedirs(self._data_path)
+
+    def _pack_array(self, array, compress=True, level=-1):
+        if compress:
+            return zlib.compress(array.tobytes(), level)
+        else:
+            return array.tobytes()
+
+    def _unpack_array(self, array, dtype, compress=True):
+        if array is not None:
+            if compress:
+                return np.fromstring(zlib.decompress(array), dtype=dtype)
+            else:
+                return np.fromstring(array, dtype=dtype)
+        else:
+            return None
 
     @abstractmethod
-    def export_objects(self, session):
+    def export(self, items_model, session):
         pass
 
     async def _build_csv_readers(self, pattern=''):
@@ -46,13 +78,13 @@ class EngineCoreObjectsExporter(EngineCoreBase):
 
         return readers
 
-    async def _get_items_indices_map_dict(self, session):
-        items_indices_map_dict = await self._items_indices_map.get_all(session)
+    async def _get_items_indices_map_dict(self, items_indices_map, session):
+        items_indices_map_dict = await items_indices_map.get_all(session)
 
         if not items_indices_map_dict.values():
             raise EngineError(
                 "The Indices Map for '{}' is empty. Please update these items"
-                .format(self.engine['item_type']['name']))
+                .format(self._engine_object['item_type']['name']))
 
         return items_indices_map_dict
 
@@ -61,3 +93,13 @@ class EngineCoreObjectsExporter(EngineCoreBase):
             return asyncio.run_coroutine_threadsafe(coro, loop).result()
         else:
             return loop.run_until_complete(coro)
+    
+    @abstractmethod
+    def get_data(self, items_model, session):
+        pass
+
+    def _log_get_data_started(self):
+        self._logger.info("Started import data")
+
+    def _log_get_data_finished(self):
+        self._logger.info("Finished import data")

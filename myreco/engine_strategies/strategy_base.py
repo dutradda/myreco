@@ -21,14 +21,49 @@
 # SOFTWARE.
 
 
-from myreco.engines.strategies.base import EngineCoreBase
-from myreco.exceptions import EngineError
-from abc import abstractmethod
+from swaggerit.utils import build_validator, get_module_path
 from swaggerit.json_builder import JsonBuilder
+from jsonschema import Draft4Validator
 from numpy import argpartition
+from abc import ABCMeta, abstractmethod
 
 
-class EngineCoreRecommender(EngineCoreBase):
+class EngineStrategyMetaBase(ABCMeta):
+
+    def __init__(cls, name, bases_classes, attributes):
+        if hasattr(cls, '__configuration_schema__'):
+            schema = cls.__configuration_schema__
+            Draft4Validator.check_schema(schema)
+            cls.__config_validator__ = build_validator(schema, get_module_path(cls))
+
+
+class EngineStrategyBase(metaclass=EngineStrategyMetaBase):
+    object_types = {}
+
+    def __init__(self, engine, items_model=None):
+        self._engine = engine
+        self._set_objects(engine['objects'])
+        self._set_config(engine['objects'])
+        self._items_model = items_model
+
+    def _set_objects(self, objects):
+        self.objects = {
+            obj['type']: self._get_object_instance(obj) \
+                for obj in objects
+        }
+
+    def _get_object_instance(self, obj, data_path=None):
+        return self.object_types[obj['type']](obj, data_path)
+
+    def _set_config(self, objects):
+        self._config = {obj['type']: obj['configuration'] for obj in objects}
+
+    def validate_config(self):
+        type(self).__config_validator__.validate(self._config)
+        self._validate_config()
+
+    def _validate_config(self):
+        pass
 
     def get_variables(self):
         return []
@@ -50,7 +85,7 @@ class EngineCoreRecommender(EngineCoreBase):
 
     async def _build_rec_list(self, session, items_vector, max_items, show_details):
         best_indices = self._get_best_indices(items_vector, max_items)
-        best_items_keys = await self._items_indices_map.get_items(best_indices, session)
+        best_items_keys = await self._items_model.indices_map.get_items(best_indices, session)
 
         if show_details and best_items_keys:
             return await self._items_model.get(session, best_items_keys)
@@ -76,7 +111,7 @@ class EngineCoreRecommender(EngineCoreBase):
 
     def _set_item_values(self, item):
         for k in item:
-            schema = self.engine['item_type']['schema']['properties'].get(k)
+            schema = self._engine['item_type']['schema']['properties'].get(k)
             if schema is None:
                 raise EngineError('Invalid Item {}'.format(item))
 

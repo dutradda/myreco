@@ -1,6 +1,6 @@
 {
     "paths": {
-        "/engines/{id}/import_data": {
+        "/engine_objects/{id}/export": {
             "parameters": [{
                 "name": "id",
                 "in": "path",
@@ -13,8 +13,13 @@
                     "in": "header",
                     "required": true,
                     "type": "string"
+                },{
+                    "name": "import_data",
+                    "in": "query",
+                    "type": "boolean",
+                    "default": false
                 }],
-                "operationId": "post_import_data_job",
+                "operationId": "post_export_job",
                 "responses": {"201": {"description": "Executing"}}
             },
             "get": {
@@ -28,7 +33,7 @@
                     "in": "query",
                     "type": "string"
                 }],
-                "operationId": "get_import_data_job",
+                "operationId": "get_export_job",
                 "responses": {"200": {"description": "Got"}}
             }
         }

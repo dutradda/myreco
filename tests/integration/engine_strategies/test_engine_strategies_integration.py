@@ -37,17 +37,17 @@ def init_db(models, session):
     asyncio.run_coroutine_threadsafe(models['users'].insert(session, user), session.loop)
 
 
-class TestEngineCoresModelPost(object):
+class TestEngineStrategiesModelPost(object):
 
    async def test_post_without_body(self, init_db, client, headers):
         client = await client
-        resp = await client.post('/engine_cores/', headers=headers)
+        resp = await client.post('/engine_strategies/', headers=headers)
         assert resp.status == 400
         assert (await resp.json()) == {'message': 'Request body is missing'}
 
    async def test_post_with_invalid_body(self, init_db, client, headers):
         client = await client
-        resp = await client.post('/engine_cores/', headers=headers, data='[{}]')
+        resp = await client.post('/engine_strategies/', headers=headers, data='[{}]')
         assert resp.status == 400
         assert (await resp.json()) ==  {
             'message': "'name' is a required property. "\
@@ -55,10 +55,11 @@ class TestEngineCoresModelPost(object):
             'schema': {
                 'type': 'object',
                 'additionalProperties': False,
-                'required': ['name', 'strategy_class'],
+                'required': ['name', 'class_module', 'class_name'],
                 'properties': {
                     'name': {'type': 'string'},
-                    'strategy_class': {'$ref': '#/definitions/EngineCoresModel.strategy_class'}
+                    'class_module': {'type': 'string'},
+                    'class_name': {'type': 'string'}
                 }
             }
         }
@@ -69,10 +70,10 @@ class TestEngineCoresModelPost(object):
             'name': 'test',
             'strategy_class': {
                 'module': 'tests.integration.fixtures',
-                'class_name': 'EngineCoreTest'
+                'class_name': 'EngineStrategyTest'
             }
         }]
-        resp = await client.post('/engine_cores/', headers={'Authorization': 'invalid'}, data=ujson.dumps(body))
+        resp = await client.post('/engine_strategies/', headers={'Authorization': 'invalid'}, data=ujson.dumps(body))
         assert resp.status == 401
         assert (await resp.json()) ==  {'message': 'Invalid authorization'}
 
@@ -80,17 +81,15 @@ class TestEngineCoresModelPost(object):
         client = await client
         body = [{
             'name': 'test',
-            'strategy_class': {
-                'module': 'invalid',
-                'class_name': 'EngineCoreTest'
-            }
+            'class_module': 'invalid',
+            'class_name': 'EngineStrategyTest'
         }]
-        resp = await client.post('/engine_cores/', headers=headers, data=ujson.dumps(body))
+        resp = await client.post('/engine_strategies/', headers=headers, data=ujson.dumps(body))
 
         assert resp.status == 400
         assert (await resp.json()) ==  {
             'instance': {},
-            'message': "Error loading module 'invalid.EngineCoreTest'."\
+            'message': "Error loading module 'invalid.EngineStrategyTest'."\
                        "\nError Class: ImportError. Error Message: No module named 'invalid'"
         }
 
@@ -98,12 +97,10 @@ class TestEngineCoresModelPost(object):
         client = await client
         body = [{
             'name': 'test',
-            'strategy_class': {
-                'module': 'tests.integration.fixtures',
-                'class_name': 'invalid'
-            }
+            'class_module': 'tests.integration.fixtures',
+            'class_name': 'invalid'
         }]
-        resp = await client.post('/engine_cores/', headers=headers, data=ujson.dumps(body))
+        resp = await client.post('/engine_strategies/', headers=headers, data=ujson.dumps(body))
 
         assert resp.status == 400
         assert (await resp.json()) ==  {
@@ -117,28 +114,27 @@ class TestEngineCoresModelPost(object):
         client = await client
         body = [{
             'name': 'test',
-            'strategy_class': {
-                'module': 'tests.integration.fixtures',
-                'class_name': 'EngineCoreTest'
-            }
+            'class_module': 'tests.integration.fixtures',
+            'class_name': 'EngineStrategyTest'
         }]
-        resp = await client.post('/engine_cores/', headers=headers, data=ujson.dumps(body))
+        resp = await client.post('/engine_strategies/', headers=headers, data=ujson.dumps(body))
         body[0]['id'] = 1
+        body[0]['object_types'] = ['top_seller_array']
 
         assert resp.status == 201
         assert (await resp.json()) ==  body
 
 
-class TestEngineCoresModelGet(object):
+class TestEngineStrategiesModelGet(object):
 
    async def test_get_not_found(self, init_db, client, headers_without_content_type):
         client = await client
-        resp = await client.get('/engine_cores/', headers=headers_without_content_type)
+        resp = await client.get('/engine_strategies/', headers=headers_without_content_type)
         assert resp.status == 404
 
    async def test_get_invalid_with_body(self, init_db, client, headers):
         client = await client
-        resp = await client.get('/engine_cores/', headers=headers, data='{}')
+        resp = await client.get('/engine_strategies/', headers=headers, data='{}')
         assert resp.status == 400
         assert (await resp.json()) == {'message': 'Request body is not acceptable'}
 
@@ -146,30 +142,29 @@ class TestEngineCoresModelGet(object):
         client = await client
         body = [{
             'name': 'test',
-            'strategy_class': {
-                'module': 'tests.integration.fixtures',
-                'class_name': 'EngineCoreTest'
-            }
+            'class_module': 'tests.integration.fixtures',
+            'class_name': 'EngineStrategyTest'
         }]
-        await client.post('/engine_cores/', headers=headers, data=ujson.dumps(body))
+        await client.post('/engine_strategies/', headers=headers, data=ujson.dumps(body))
         body[0]['id'] = 1
+        body[0]['object_types'] = ['top_seller_array']
 
-        resp = await client.get('/engine_cores/', headers=headers_without_content_type)
+        resp = await client.get('/engine_strategies/', headers=headers_without_content_type)
         assert resp.status == 200
         assert (await resp.json()) ==  body
 
 
-class TestEngineCoresModelUriTemplatePatch(object):
+class TestEngineStrategiesModelUriTemplatePatch(object):
 
    async def test_patch_without_body(self, init_db, client, headers):
         client = await client
-        resp = await client.patch('/engine_cores/1/', headers=headers, data='')
+        resp = await client.patch('/engine_strategies/1/', headers=headers, data='')
         assert resp.status == 400
         assert (await resp.json()) == {'message': 'Request body is missing'}
 
    async def test_patch_with_invalid_body(self, init_db, client, headers):
         client = await client
-        resp = await client.patch('/engine_cores/1/', headers=headers, data='{}')
+        resp = await client.patch('/engine_strategies/1/', headers=headers, data='{}')
         assert resp.status == 400
         assert (await resp.json()) ==  {
             'message': '{} does not have enough properties. '\
@@ -180,7 +175,8 @@ class TestEngineCoresModelUriTemplatePatch(object):
                 'minProperties': 1,
                 'properties': {
                     'name': {'type': 'string'},
-                    'strategy_class': {'$ref': '#/definitions/EngineCoresModel.strategy_class'}
+                    'class_module': {'type': 'string'},
+                    'class_name': {'type': 'string'}
                 }
             }
         }
@@ -189,41 +185,37 @@ class TestEngineCoresModelUriTemplatePatch(object):
         client = await client
         body = {
             'name': 'test',
-            'strategy_class': {
-                'module': 'tests.integration.fixtures',
-                'class_name': 'EngineCoreTest'
-            }
+            'class_module': 'tests.integration.fixtures',
+            'class_name': 'EngineStrategyTest'
         }
-        resp = await client.patch('/engine_cores/1/', headers=headers, data=ujson.dumps(body))
+        resp = await client.patch('/engine_strategies/1/', headers=headers, data=ujson.dumps(body))
         assert resp.status == 404
 
    async def test_patch(self, init_db, client, headers):
         client = await client
         body = [{
             'name': 'test',
-            'strategy_class': {
-                'module': 'tests.integration.fixtures',
-                'class_name': 'EngineCoreTest'
-            }
+            'class_module': 'tests.integration.fixtures',
+            'class_name': 'EngineStrategyTest'
         }]
-        resp = await client.post('/engine_cores/', headers=headers, data=ujson.dumps(body))
+        resp = await client.post('/engine_strategies/', headers=headers, data=ujson.dumps(body))
         obj = (await resp.json())[0]
 
         body = {
             'name': 'test2'
         }
-        resp = await client.patch('/engine_cores/1/', headers=headers, data=ujson.dumps(body))
+        resp = await client.patch('/engine_strategies/1/', headers=headers, data=ujson.dumps(body))
         obj['name'] = 'test2'
 
         assert resp.status == 200
         assert (await resp.json()) ==  obj
 
 
-class TestEngineCoresModelUriTemplateDelete(object):
+class TestEngineStrategiesModelUriTemplateDelete(object):
 
    async def test_delete_with_body(self, init_db, client, headers):
         client = await client
-        resp = await client.delete('/engine_cores/1/', headers=headers, data='{}')
+        resp = await client.delete('/engine_strategies/1/', headers=headers, data='{}')
         assert resp.status == 400
         assert (await resp.json()) == {'message': 'Request body is not acceptable'}
 
@@ -231,18 +223,16 @@ class TestEngineCoresModelUriTemplateDelete(object):
         client = await client
         body = [{
             'name': 'test',
-            'strategy_class': {
-                'module': 'tests.integration.fixtures',
-                'class_name': 'EngineCoreTest'
-            }
+            'class_module': 'tests.integration.fixtures',
+            'class_name': 'EngineStrategyTest'
         }]
-        resp = await client.post('/engine_cores/', headers=headers, data=ujson.dumps(body))
+        resp = await client.post('/engine_strategies/', headers=headers, data=ujson.dumps(body))
 
-        resp = await client.get('/engine_cores/1/', headers=headers_without_content_type)
+        resp = await client.get('/engine_strategies/1/', headers=headers_without_content_type)
         assert resp.status == 200
 
-        resp = await client.delete('/engine_cores/1/', headers=headers_without_content_type)
+        resp = await client.delete('/engine_strategies/1/', headers=headers_without_content_type)
         assert resp.status == 204
 
-        resp = await client.get('/engine_cores/1/', headers=headers_without_content_type)
+        resp = await client.get('/engine_strategies/1/', headers=headers_without_content_type)
         assert resp.status == 404

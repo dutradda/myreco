@@ -21,7 +21,7 @@
 # SOFTWARE.
 
 
-from tests.integration.fixtures import EngineCoreTestWithVars, EngineCoreTest
+from tests.integration.fixtures import EngineStrategyTestWithVars, EngineStrategyTest
 from swaggerit.models._base import _all_models
 from tempfile import TemporaryDirectory
 from time import sleep
@@ -55,7 +55,7 @@ def init_db(models, session, api, temp_dir):
     store = {
         'name': 'test',
         'country': 'test',
-        'configuration': {'data_path': temp_dir.name}
+        'configuration': {}
     }
     session.loop.run_until_complete(models['stores'].insert(session, store))
 
@@ -124,77 +124,95 @@ def init_db(models, session, api, temp_dir):
     session.loop.run_until_complete(models['item_types'].insert(session, item_type))
 
 
-    core = {
-        'name': 'test with vars',
-        'strategy_class': {
-            'module': 'tests.integration.fixtures',
-            'class_name': 'EngineCoreTestWithVars'
-        }
+    strategy = {
+        'name': 'test_with_vars',
+        'class_module': 'tests.integration.fixtures',
+        'class_name': 'EngineStrategyTestWithVars'
     }
-    session.loop.run_until_complete(models['engine_cores'].insert(session, core))
+    session.loop.run_until_complete(models['engine_strategies'].insert(session, strategy))
 
-    core = {
+    strategy = {
         'name': 'test',
-        'strategy_class': {
-            'module': 'tests.integration.fixtures',
-            'class_name': 'EngineCoreTest'
-        }
+        'class_module': 'tests.integration.fixtures',
+        'class_name': 'EngineStrategyTest'
     }
-    session.loop.run_until_complete(models['engine_cores'].insert(session, core))
+    session.loop.run_until_complete(models['engine_strategies'].insert(session, strategy))
 
     engine = {
-        'name': 'Visual Similarity',
-        'configuration_json': ujson.dumps({
-            'item_id_name': 'item_id',
-            'aggregators_ids_name': 'filter_test',
-            'data_importer_path': 'test.test'
-        }),
+        'name': 'Engine products with vars',
+        'objects': [{
+            '_operation': 'insert',
+            'name': 'Object with vars',
+            'type': 'object_with_vars',
+            'configuration': {
+                'item_id_name': 'item_id',
+                'aggregators_ids_name': 'filter_test',
+                'data_importer_path': 'test.test'
+            }
+        }],
         'store_id': 1,
-        'item_type_id': 1,
-        'core_id': 1
+        'strategy_id': 1,
+        'item_type_id': 1
     }
     session.loop.run_until_complete(models['engines'].insert(session, engine))
     engine = {
-        'name': 'Categories Visual Similarity',
-        'configuration_json': ujson.dumps({
-            'item_id_name': 'item_id',
-            'aggregators_ids_name': 'filter_test'
-        }),
+        'name': 'Engine categories with vars',
+        'objects': [{
+            '_operation': 'insert',
+            'name': 'Object with vars 2',
+            'type': 'object_with_vars',
+            'configuration': {
+                'item_id_name': 'item_id',
+                'aggregators_ids_name': 'filter_test',
+                'data_importer_path': 'test.test'
+            }
+        }],
         'store_id': 1,
-        'item_type_id': 2,
-        'core_id': 1
+        'strategy_id': 1,
+        'item_type_id': 2
     }
     session.loop.run_until_complete(models['engines'].insert(session, engine))
     engine = {
         'name': 'Invalid Top Seller',
-        'configuration_json': ujson.dumps({
-            'days_interval': 7
-        }),
+        'objects': [{
+            '_operation': 'insert',
+            'name': 'Object Top Seller Invalid',
+            'type': 'top_seller_array',
+            'configuration': {'days_interval': 7}
+        }],
         'store_id': 1,
-        'item_type_id': 3,
-        'core_id': 2
+        'strategy_id': 2,
+        'item_type_id': 3
     }
     session.loop.run_until_complete(models['engines'].insert(session, engine))
     engine = {
         'name': 'Top Seller',
-        'configuration_json': ujson.dumps({
-            'days_interval': 7
-        }),
+        'objects': [{
+            '_operation': 'insert',
+            'name': 'Object Top Seller',
+            'type': 'top_seller_array',
+            'configuration': {'days_interval': 7}
+        }],
         'store_id': 1,
         'item_type_id': 4,
-        'core_id': 2
+        'strategy_id': 2
     }
     session.loop.run_until_complete(models['engines'].insert(session, engine))
     engine = {
         'name': 'With Fallback',
         'store_id': 1,
         'item_type_id': 4,
-        'configuration': {
-            'item_id_name': 'item_id',
-            'aggregators_ids_name': 'filter_string',
-            'data_importer_path': 'test.test'
-        },
-        'core_id': 1
+        'objects': [{
+            '_operation': 'insert',
+            'name': 'Object with vars 3',
+            'type': 'object_with_vars',
+            'configuration': {
+                'item_id_name': 'item_id',
+                'aggregators_ids_name': 'filter_string',
+                'data_importer_path': 'test.test'
+            }
+        }],
+        'strategy_id': 1
     }
     session.loop.run_until_complete(models['engines'].insert(session, engine))
 
@@ -441,10 +459,10 @@ def init_db(models, session, api, temp_dir):
 
     yield None
 
-    _all_models.pop('store_items_products_1')
-    _all_models.pop('store_items_categories_1')
-    _all_models.pop('store_items_invalid_1')
-    _all_models.pop('store_items_new_products_1')
+    _all_models.pop('store_items_products_1', None)
+    _all_models.pop('store_items_categories_1', None)
+    _all_models.pop('store_items_invalid_1', None)
+    _all_models.pop('store_items_new_products_1', None)
 
 
 class TestPlacementsModelPost(object):
@@ -484,11 +502,48 @@ class TestPlacementsModelPost(object):
             'name': 'Placement Test',
             'variations': [{
                 '_operation': 'insert',
+                'name': 'Var 1',
                 'slots': [{'id': 1}]
             }]
         }]
         resp = await client.post('/placements/', headers=headers, data=ujson.dumps(body))
         assert resp.status == 201
+
+        store = {
+            'country': 'test',
+            'id': 1,
+            'name': 'test',
+            'configuration': {}
+        }
+        item_type = {
+            'id': 1,
+            'store_items_class': None,
+            'stores': [store],
+            'schema': {
+                'type': 'object',
+                'id_names': ['item_id'],
+                'properties': {
+                    'filter_test': {'type': 'string'},
+                    'item_id': {'type': 'integer'}
+                }
+            },
+            'available_filters': [{
+                'name': 'filter_test',
+                'schema': {'type': 'string'}
+            },{
+                'name': 'item_id',
+                'schema': {'type': 'integer'}
+            }],
+            'name': 'products'
+        }
+        strategy = {
+            'id': 1,
+            'name': 'test_with_vars',
+            'class_module': 'tests.integration.fixtures',
+            'class_name': 'EngineStrategyTestWithVars',
+            'object_types': ['object_with_vars']
+        }
+
         assert (await resp.json()) ==  [{
             'ab_testing': False,
             'show_details': True,
@@ -498,60 +553,35 @@ class TestPlacementsModelPost(object):
             'small_hash': '941e0',
             'store_id': 1,
             'variations': [{
+                'name': 'Var 1',
                 'slots': [{
                     'max_items': 10,
                     'name': 'test',
                     'engine': {
-                        'configuration': {
-                            'aggregators_ids_name': 'filter_test',
-                            'item_id_name': 'item_id',
-                            'data_importer_path': 'test.test'
-                        },
-                        'id': 1,
-                        'item_type': {
+                        'objects': [{
                             'id': 1,
-                            'store_items_class': None,
-                            'stores': [{
-                                'configuration': {'data_path': temp_dir.name},
-                                'country': 'test',
-                                'id': 1,
-                                'name': 'test'
-                            }],
-                            'schema': {
-                                'type': 'object',
-                                'id_names': ['item_id'],
-                                'properties': {
-                                    'filter_test': {'type': 'string'},
-                                    'item_id': {'type': 'integer'}
-                                }
+                            'item_type_id': 1,
+                            'store_id': 1,
+                            'strategy_id': 1,
+                            'name': 'Object with vars',
+                            'type': 'object_with_vars',
+                            'configuration': {
+                                'aggregators_ids_name': 'filter_test',
+                                'item_id_name': 'item_id',
+                                'data_importer_path': 'test.test'
                             },
-                            'available_filters': [{
-                                'name': 'filter_test',
-                                'schema': {'type': 'string'}
-                            },{
-                                'name': 'item_id',
-                                'schema': {'type': 'integer'}
-                            }],
-                            'name': 'products'
-                        },
+                            'item_type': item_type,
+                            'store': store,
+                            'strategy': strategy
+                        }],
+                        'id': 1,
+                        'item_type': item_type,
                         'item_type_id': 1,
-                        'name': 'Visual Similarity',
-                        'store': {
-                            'country': 'test',
-                            'id': 1,
-                            'name': 'test',
-                            'configuration': {'data_path': temp_dir.name}
-                        },
+                        'name': 'Engine products with vars',
+                        'store': store,
                         'store_id': 1,
-                        'core_id': 1,
-                        'core': {
-                            'id': 1,
-                            'name': 'test with vars',
-                            'strategy_class': {
-                                'module': 'tests.integration.fixtures',
-                                'class_name': 'EngineCoreTestWithVars'
-                            }
-                        },
+                        'strategy_id': 1,
+                        'strategy': strategy,
                         'variables': [{
                             'name': 'item_id', 'schema': {'type': 'integer'}
                         },{
@@ -648,6 +678,7 @@ class TestPlacementsModelGet(object):
             'store_id': 1,
             'name': 'Placement Test',
             'variations': [{
+                'name': 'Var 1',
                 '_operation': 'insert',
                 'slots': [{'id': 1}]
             }]
@@ -656,129 +687,7 @@ class TestPlacementsModelGet(object):
 
         resp = await client.get('/placements/?store_id=1', headers=headers_without_content_type)
         assert resp.status == 200
-        assert (await resp.json()) ==  [{
-            'ab_testing': False,
-            'show_details': True,
-            'distribute_items': False,
-            'hash': '941e021d7ae6ca23f8969870ffe48b87a315e05c',
-            'name': 'Placement Test',
-            'small_hash': '941e0',
-            'store_id': 1,
-            'variations': [{
-                'slots': [{
-                    'max_items': 10,
-                    'name': 'test',
-                    'engine': {
-                        'configuration': {
-                            'aggregators_ids_name': 'filter_test',
-                            'item_id_name': 'item_id',
-                            'data_importer_path': 'test.test'
-                        },
-                        'id': 1,
-                        'item_type': {
-                            'id': 1,
-                            'store_items_class': None,
-                            'stores': [{
-                                'configuration': {'data_path': temp_dir.name},
-                                'country': 'test',
-                                'id': 1,
-                                'name': 'test'
-                            }],
-                            'schema': {
-                                'type': 'object',
-                                'id_names': ['item_id'],
-                                'properties': {
-                                    'filter_test': {'type': 'string'},
-                                    'item_id': {'type': 'integer'}
-                                }
-                            },
-                            'available_filters': [{
-                                'name': 'filter_test',
-                                'schema': {'type': 'string'}
-                            },{
-                                'name': 'item_id',
-                                'schema': {'type': 'integer'}
-                            }],
-                            'name': 'products'
-                        },
-                        'item_type_id': 1,
-                        'name': 'Visual Similarity',
-                        'store': {
-                            'country': 'test',
-                            'id': 1,
-                            'name': 'test',
-                            'configuration': {'data_path': temp_dir.name}
-                        },
-                        'store_id': 1,
-                        'core_id': 1,
-                        'core': {
-                            'id': 1,
-                            'name': 'test with vars',
-                            'strategy_class': {
-                                'module': 'tests.integration.fixtures',
-                                'class_name': 'EngineCoreTestWithVars'
-                            }
-                        },
-                        'variables': [{
-                            'name': 'item_id', 'schema': {'type': 'integer'}
-                        },{
-                            'name': 'filter_test', 'schema': {'type': 'string'}
-                        }],
-                    },
-                    'engine_id': 1,
-                    'slot_variables': [{
-                        'slot_id': 1,
-                        'id': 1,
-                        'engine_variable_name': 'item_id',
-                        'override': False,
-                        'override_value': None,
-                        'external_variable': {
-                            'name': 'test2',
-                            'store_id': 1
-                        },
-                        'external_variable_name': 'test2',
-                        'external_variable_store_id': 1
-                    }],
-                    'slot_filters': [{
-                        'is_inclusive': True,
-                        'type_id': 'item_property_value',
-                        'slot_id': 1,
-                        'id': 2,
-                        'property_name': 'filter_test',
-                        'override': False,
-                        'override_value': None,
-                        'skip_values': None,
-                        'external_variable': {
-                            'name': 'test3',
-                            'store_id': 1
-                        },
-                        'external_variable_name': 'test3',
-                        'external_variable_store_id': 1
-                    },{
-                        'is_inclusive': True,
-                        'type_id': 'property_value',
-                        'slot_id': 1,
-                        'id': 1,
-                        'property_name': 'filter_test',
-                        'override': False,
-                        'override_value': None,
-                        'skip_values': None,
-                        'external_variable': {
-                            'name': 'test',
-                            'store_id': 1
-                        },
-                        'external_variable_name': 'test',
-                        'external_variable_store_id': 1
-                    }],
-                    'fallbacks': [],
-                    'id': 1,
-                    'store_id': 1
-                }],
-                'id': 1,
-                'placement_hash': '941e021d7ae6ca23f8969870ffe48b87a315e05c',
-                'weight': None
-            }]
-        }]
+7
 
 
 class TestPlacementsModelUriTemplatePatch(object):
@@ -818,6 +727,7 @@ class TestPlacementsModelUriTemplatePatch(object):
             'name': 'Placement Test',
             'variations': [{
                 '_operation': 'insert',
+                'name': 'Var 1',
                 'slots': [{'id': 1}]
             }]
         }]
@@ -846,6 +756,7 @@ class TestPlacementsModelUriTemplatePatch(object):
             'variations': [{
                 'slots': [],
                 'id': 1,
+                'name': 'Var 1',
                 'placement_hash': '941e021d7ae6ca23f8969870ffe48b87a315e05c',
                 'weight': None
             }]
@@ -866,6 +777,7 @@ class TestPlacementsModelUriTemplateDelete(object):
             'store_id': 1,
             'name': 'Placement Test',
             'variations': [{
+                'name': 'Var 1',
                 '_operation': 'insert',
                 'slots': [{'id': 1}]
             }]
@@ -902,6 +814,7 @@ class TestPlacementsModelUriTemplateGet(object):
             'store_id': 1,
             'name': 'Placement Test',
             'variations': [{
+                'name': 'Var 1',
                 '_operation': 'insert',
                 'slots': [{'id': 1}]
             }]
@@ -912,7 +825,44 @@ class TestPlacementsModelUriTemplateGet(object):
         resp = await client.get('/placements/{}/'.format(obj['small_hash']), headers=headers_without_content_type)
 
         assert resp.status == 200
-        assert (await resp.json()) == {
+
+
+        store = {
+            'country': 'test',
+            'id': 1,
+            'name': 'test',
+            'configuration': {}
+        }
+        item_type = {
+            'id': 1,
+            'store_items_class': None,
+            'stores': [store],
+            'schema': {
+                'type': 'object',
+                'id_names': ['item_id'],
+                'properties': {
+                    'filter_test': {'type': 'string'},
+                    'item_id': {'type': 'integer'}
+                }
+            },
+            'available_filters': [{
+                'name': 'filter_test',
+                'schema': {'type': 'string'}
+            },{
+                'name': 'item_id',
+                'schema': {'type': 'integer'}
+            }],
+            'name': 'products'
+        }
+        strategy = {
+            'id': 1,
+            'name': 'test_with_vars',
+            'class_module': 'tests.integration.fixtures',
+            'class_name': 'EngineStrategyTestWithVars',
+            'object_types': ['object_with_vars']
+        }
+
+        assert (await resp.json()) ==  {
             'ab_testing': False,
             'show_details': True,
             'distribute_items': False,
@@ -921,60 +871,35 @@ class TestPlacementsModelUriTemplateGet(object):
             'small_hash': '941e0',
             'store_id': 1,
             'variations': [{
+                'name': 'Var 1',
                 'slots': [{
                     'max_items': 10,
                     'name': 'test',
                     'engine': {
-                        'configuration': {
-                            'aggregators_ids_name': 'filter_test',
-                            'item_id_name': 'item_id',
-                            'data_importer_path': 'test.test'
-                        },
-                        'id': 1,
-                        'item_type': {
+                        'objects': [{
                             'id': 1,
-                            'store_items_class': None,
-                            'stores': [{
-                                'configuration': {'data_path': temp_dir.name},
-                                'country': 'test',
-                                'id': 1,
-                                'name': 'test'
-                            }],
-                            'schema': {
-                                'type': 'object',
-                                'id_names': ['item_id'],
-                                'properties': {
-                                    'filter_test': {'type': 'string'},
-                                    'item_id': {'type': 'integer'}
-                                }
+                            'item_type_id': 1,
+                            'store_id': 1,
+                            'strategy_id': 1,
+                            'name': 'Object with vars',
+                            'type': 'object_with_vars',
+                            'configuration': {
+                                'aggregators_ids_name': 'filter_test',
+                                'item_id_name': 'item_id',
+                                'data_importer_path': 'test.test'
                             },
-                            'available_filters': [{
-                                'name': 'filter_test',
-                                'schema': {'type': 'string'}
-                            },{
-                                'name': 'item_id',
-                                'schema': {'type': 'integer'}
-                            }],
-                            'name': 'products'
-                        },
+                            'item_type': item_type,
+                            'store': store,
+                            'strategy': strategy
+                        }],
+                        'id': 1,
+                        'item_type': item_type,
                         'item_type_id': 1,
-                        'name': 'Visual Similarity',
-                        'store': {
-                            'country': 'test',
-                            'id': 1,
-                            'name': 'test',
-                            'configuration': {'data_path': temp_dir.name}
-                        },
+                        'name': 'Engine products with vars',
+                        'store': store,
                         'store_id': 1,
-                        'core_id': 1,
-                        'core': {
-                            'id': 1,
-                            'name': 'test with vars',
-                            'strategy_class': {
-                                'module': 'tests.integration.fixtures',
-                                'class_name': 'EngineCoreTestWithVars'
-                            }
-                        },
+                        'strategy_id': 1,
+                        'strategy': strategy,
                         'variables': [{
                             'name': 'item_id', 'schema': {'type': 'integer'}
                         },{
@@ -1058,6 +983,7 @@ class TestPlacementsGetRecomendations(object):
             'name': 'Placement Test',
             'variations': [{
                 '_operation': 'insert',
+                'name': 'Var 1',
                 'slots': [{'id': 2}]
             }]
         }]
@@ -1077,7 +1003,7 @@ class TestPlacementsGetRecomendations(object):
         client = await client
         class_loader = mock.MagicMock()
         monkeypatch.setattr('myreco.item_types.model.ModuleObjectLoader', class_loader)
-        monkeypatch.setattr('myreco.engines.model.ModuleObjectLoader', class_loader)
+        monkeypatch.setattr('myreco.engine_strategies.model.ModuleObjectLoader', class_loader)
 
         class_loader.load()().get_items = CoroMock()
         class_loader.load()().get_items.coro.return_value = [{'id': 1}, {'id': 2}, {'id': 3}]
@@ -1086,6 +1012,7 @@ class TestPlacementsGetRecomendations(object):
             'name': 'Placement Test',
             'variations': [{
                 '_operation': 'insert',
+                'name': 'Var 1',
                 'slots': [{'id': 1}]
             }]
         }]
@@ -1123,11 +1050,11 @@ class TestPlacementsGetRecomendations(object):
             if (await resp.json())['status'] != 'running':
                 break
 
-        await client.post('/engines/4/export_objects?import_data=true', headers=headers_without_content_type)
+        await client.post('/engine_objects/4/export?import_data=true', headers=headers_without_content_type)
         sleep(0.05)
         while True:
             resp = await client.get(
-                '/engines/4/export_objects?job_hash=6342e10bd7dca3240c698aa79c98362e',
+                '/engine_objects/4/export?job_hash=6342e10bd7dca3240c698aa79c98362e',
                 headers=headers_without_content_type)
             if (await resp.json())['status'] != 'running':
                 break
@@ -1137,6 +1064,7 @@ class TestPlacementsGetRecomendations(object):
             'name': 'Placement Test',
             'variations': [{
                 '_operation': 'insert',
+                'name': 'Var 1',
                 'slots': [{'id': 2}]
             }]
         }]
@@ -1175,11 +1103,11 @@ class TestPlacementsGetRecomendations(object):
             if (await resp.json())['status'] != 'running':
                 break
 
-        await client.post('/engines/4/export_objects?import_data=true', headers=headers_without_content_type)
+        await client.post('/engine_objects/4/export?import_data=true', headers=headers_without_content_type)
         sleep(0.05)
         while True:
             resp = await client.get(
-                '/engines/4/export_objects?job_hash=6342e10bd7dca3240c698aa79c98362e',
+                '/engine_objects/4/export?job_hash=6342e10bd7dca3240c698aa79c98362e',
                 headers=headers_without_content_type)
             if (await resp.json())['status'] != 'running':
                 break
@@ -1189,15 +1117,16 @@ class TestPlacementsGetRecomendations(object):
             'name': 'Placement Test',
             'variations': [{
                 '_operation': 'insert',
+                'name': 'Var 1',
                 'slots': [{'id': 3}]
             }]
         }]
         resp = await client.post('/placements/', headers=headers, data=ujson.dumps(body))
         obj = (await resp.json())[0]
 
-        EngineCoreTestWithVars.get_items.coro.return_value = []
+        EngineStrategyTestWithVars.get_items.coro.return_value = []
         resp = await client.get('/placements/{}/items'.format(obj['small_hash']), headers=headers_without_content_type)
-        EngineCoreTestWithVars.get_items.coro.reset_mock()
+        EngineStrategyTestWithVars.get_items.coro.reset_mock()
 
         assert resp.status == 200
         assert (await resp.json())['slots'][0]['items'] == [
@@ -1230,11 +1159,11 @@ class TestPlacementsGetRecomendations(object):
             if (await resp.json())['status'] != 'running':
                 break
 
-        await client.post('/engines/4/export_objects?import_data=true', headers=headers_without_content_type)
+        await client.post('/engine_objects/4/export?import_data=true', headers=headers_without_content_type)
         sleep(0.05)
         while True:
             resp = await client.get(
-                '/engines/4/export_objects?job_hash=6342e10bd7dca3240c698aa79c98362e',
+                '/engine_objects/4/export?job_hash=6342e10bd7dca3240c698aa79c98362e',
                 headers=headers_without_content_type)
             if (await resp.json())['status'] != 'running':
                 break
@@ -1244,6 +1173,7 @@ class TestPlacementsGetRecomendations(object):
             'name': 'Placement Test',
             'variations': [{
                 '_operation': 'insert',
+                'name': 'Var 1',
                 'slots': [{'id': 2}]
             }]
         }]
@@ -1309,11 +1239,11 @@ class TestPlacementsGetRecomendations(object):
             if (await resp.json())['status'] != 'running':
                 break
 
-        await client.post('/engines/4/export_objects?import_data=true', headers=headers_without_content_type)
+        await client.post('/engine_objects/4/export?import_data=true', headers=headers_without_content_type)
         sleep(0.05)
         while True:
             resp = await client.get(
-                '/engines/4/export_objects?job_hash=6342e10bd7dca3240c698aa79c98362e',
+                '/engine_objects/4/export?job_hash=6342e10bd7dca3240c698aa79c98362e',
                 headers=headers_without_content_type)
             if (await resp.json())['status'] != 'running':
                 break
@@ -1324,6 +1254,7 @@ class TestPlacementsGetRecomendations(object):
             'show_details': False,
             'variations': [{
                 '_operation': 'insert',
+                'name': 'Var 1',
                 'slots': [{'id': 2}]
             }]
         }]
@@ -1362,11 +1293,11 @@ class TestPlacementsGetRecomendations(object):
             if (await resp.json())['status'] != 'running':
                 break
 
-        await client.post('/engines/4/export_objects?import_data=true', headers=headers_without_content_type)
+        await client.post('/engine_objects/4/export?import_data=true', headers=headers_without_content_type)
         sleep(0.05)
         while True:
             resp = await client.get(
-                '/engines/4/export_objects?job_hash=6342e10bd7dca3240c698aa79c98362e',
+                '/engine_objects/4/export?job_hash=6342e10bd7dca3240c698aa79c98362e',
                 headers=headers_without_content_type)
             if (await resp.json())['status'] != 'running':
                 break
@@ -1377,6 +1308,7 @@ class TestPlacementsGetRecomendations(object):
             'name': 'Placement Test',
             'variations': [{
                 '_operation': 'insert',
+                'name': 'Var 1',
                 'slots': [{'id': 1}, {'id': 2}]
             }]
         }]
@@ -1384,9 +1316,9 @@ class TestPlacementsGetRecomendations(object):
         obj = (await resp.json())[0]
 
         random.seed(0)
-        EngineCoreTestWithVars.get_items.coro.return_value = [{'test': 1}, {'test': 2}]
+        EngineStrategyTestWithVars.get_items.coro.return_value = [{'test': 1}, {'test': 2}]
         resp = await client.get('/placements/{}/items'.format(obj['small_hash']), headers=headers_without_content_type)
-        EngineCoreTestWithVars.get_items.coro.reset_mock()
+        EngineStrategyTestWithVars.get_items.coro.reset_mock()
 
         assert resp.status == 200
         assert (await resp.json())['distributed_items'] == [
@@ -1426,11 +1358,11 @@ class TestPlacementsGetRecomendationsFilters(object):
             if (await resp.json())['status'] != 'running':
                 break
 
-        await client.post('/engines/4/export_objects?import_data=true', headers=headers_without_content_type)
+        await client.post('/engine_objects/4/export?import_data=true', headers=headers_without_content_type)
         sleep(0.05)
         while True:
             resp = await client.get(
-                '/engines/4/export_objects?job_hash=6342e10bd7dca3240c698aa79c98362e',
+                '/engine_objects/4/export?job_hash=6342e10bd7dca3240c698aa79c98362e',
                 headers=headers_without_content_type)
             if (await resp.json())['status'] != 'running':
                 break
@@ -1440,6 +1372,7 @@ class TestPlacementsGetRecomendationsFilters(object):
             'name': 'Placement Test',
             'variations': [{
                 '_operation': 'insert',
+                'name': 'Var 1',
                 'slots': [{'id': 2}]
             }]
         }]
@@ -1479,11 +1412,11 @@ class TestPlacementsGetRecomendationsFilters(object):
             if (await resp.json())['status'] != 'running':
                 break
 
-        await client.post('/engines/4/export_objects?import_data=true', headers=headers_without_content_type)
+        await client.post('/engine_objects/4/export?import_data=true', headers=headers_without_content_type)
         sleep(0.05)
         while True:
             resp = await client.get(
-                '/engines/4/export_objects?job_hash=6342e10bd7dca3240c698aa79c98362e',
+                '/engine_objects/4/export?job_hash=6342e10bd7dca3240c698aa79c98362e',
                 headers=headers_without_content_type)
             if (await resp.json())['status'] != 'running':
                 break
@@ -1493,6 +1426,7 @@ class TestPlacementsGetRecomendationsFilters(object):
             'name': 'Placement Test',
             'variations': [{
                 '_operation': 'insert',
+                'name': 'Var 1',
                 'slots': [{'id': 2}]
             }]
         }]
@@ -1529,11 +1463,11 @@ class TestPlacementsGetRecomendationsFilters(object):
             if (await resp.json())['status'] != 'running':
                 break
 
-        await client.post('/engines/4/export_objects?import_data=true', headers=headers_without_content_type)
+        await client.post('/engine_objects/4/export?import_data=true', headers=headers_without_content_type)
         sleep(0.05)
         while True:
             resp = await client.get(
-                '/engines/4/export_objects?job_hash=6342e10bd7dca3240c698aa79c98362e',
+                '/engine_objects/4/export?job_hash=6342e10bd7dca3240c698aa79c98362e',
                 headers=headers_without_content_type)
             if (await resp.json())['status'] != 'running':
                 break
@@ -1543,6 +1477,7 @@ class TestPlacementsGetRecomendationsFilters(object):
             'name': 'Placement Test',
             'variations': [{
                 '_operation': 'insert',
+                'name': 'Var 1',
                 'slots': [{'id': 2}]
             }]
         }]
@@ -1582,11 +1517,11 @@ class TestPlacementsGetRecomendationsFilters(object):
             if (await resp.json())['status'] != 'running':
                 break
 
-        await client.post('/engines/4/export_objects?import_data=true', headers=headers_without_content_type)
+        await client.post('/engine_objects/4/export?import_data=true', headers=headers_without_content_type)
         sleep(0.05)
         while True:
             resp = await client.get(
-                '/engines/4/export_objects?job_hash=6342e10bd7dca3240c698aa79c98362e',
+                '/engine_objects/4/export?job_hash=6342e10bd7dca3240c698aa79c98362e',
                 headers=headers_without_content_type)
             if (await resp.json())['status'] != 'running':
                 break
@@ -1596,6 +1531,7 @@ class TestPlacementsGetRecomendationsFilters(object):
             'name': 'Placement Test',
             'variations': [{
                 '_operation': 'insert',
+                'name': 'Var 1',
                 'slots': [{'id': 2}]
             }]
         }]
@@ -1632,11 +1568,11 @@ class TestPlacementsGetRecomendationsFilters(object):
             if (await resp.json())['status'] != 'running':
                 break
 
-        await client.post('/engines/4/export_objects?import_data=true', headers=headers_without_content_type)
+        await client.post('/engine_objects/4/export?import_data=true', headers=headers_without_content_type)
         sleep(0.05)
         while True:
             resp = await client.get(
-                '/engines/4/export_objects?job_hash=6342e10bd7dca3240c698aa79c98362e',
+                '/engine_objects/4/export?job_hash=6342e10bd7dca3240c698aa79c98362e',
                 headers=headers_without_content_type)
             if (await resp.json())['status'] != 'running':
                 break
@@ -1646,6 +1582,7 @@ class TestPlacementsGetRecomendationsFilters(object):
             'name': 'Placement Test',
             'variations': [{
                 '_operation': 'insert',
+                'name': 'Var 1',
                 'slots': [{'id': 2}]
             }]
         }]
@@ -1685,11 +1622,11 @@ class TestPlacementsGetRecomendationsFilters(object):
             if (await resp.json())['status'] != 'running':
                 break
 
-        await client.post('/engines/4/export_objects?import_data=true', headers=headers_without_content_type)
+        await client.post('/engine_objects/4/export?import_data=true', headers=headers_without_content_type)
         sleep(0.05)
         while True:
             resp = await client.get(
-                '/engines/4/export_objects?job_hash=6342e10bd7dca3240c698aa79c98362e',
+                '/engine_objects/4/export?job_hash=6342e10bd7dca3240c698aa79c98362e',
                 headers=headers_without_content_type)
             if (await resp.json())['status'] != 'running':
                 break
@@ -1699,6 +1636,7 @@ class TestPlacementsGetRecomendationsFilters(object):
             'name': 'Placement Test',
             'variations': [{
                 '_operation': 'insert',
+                'name': 'Var 1',
                 'slots': [{'id': 2}]
             }]
         }]
@@ -1735,11 +1673,11 @@ class TestPlacementsGetRecomendationsFilters(object):
             if (await resp.json())['status'] != 'running':
                 break
 
-        await client.post('/engines/4/export_objects?import_data=true', headers=headers_without_content_type)
+        await client.post('/engine_objects/4/export?import_data=true', headers=headers_without_content_type)
         sleep(0.05)
         while True:
             resp = await client.get(
-                '/engines/4/export_objects?job_hash=6342e10bd7dca3240c698aa79c98362e',
+                '/engine_objects/4/export?job_hash=6342e10bd7dca3240c698aa79c98362e',
                 headers=headers_without_content_type)
             if (await resp.json())['status'] != 'running':
                 break
@@ -1749,6 +1687,7 @@ class TestPlacementsGetRecomendationsFilters(object):
             'name': 'Placement Test',
             'variations': [{
                 '_operation': 'insert',
+                'name': 'Var 1',
                 'slots': [{'id': 2}]
             }]
         }]
@@ -1788,11 +1727,11 @@ class TestPlacementsGetRecomendationsFilters(object):
             if (await resp.json())['status'] != 'running':
                 break
 
-        await client.post('/engines/4/export_objects?import_data=true', headers=headers_without_content_type)
+        await client.post('/engine_objects/4/export?import_data=true', headers=headers_without_content_type)
         sleep(0.05)
         while True:
             resp = await client.get(
-                '/engines/4/export_objects?job_hash=6342e10bd7dca3240c698aa79c98362e',
+                '/engine_objects/4/export?job_hash=6342e10bd7dca3240c698aa79c98362e',
                 headers=headers_without_content_type)
             if (await resp.json())['status'] != 'running':
                 break
@@ -1802,6 +1741,7 @@ class TestPlacementsGetRecomendationsFilters(object):
             'name': 'Placement Test',
             'variations': [{
                 '_operation': 'insert',
+                'name': 'Var 1',
                 'slots': [{'id': 2}]
             }]
         }]
@@ -1838,11 +1778,11 @@ class TestPlacementsGetRecomendationsFilters(object):
             if (await resp.json())['status'] != 'running':
                 break
 
-        await client.post('/engines/4/export_objects?import_data=true', headers=headers_without_content_type)
+        await client.post('/engine_objects/4/export?import_data=true', headers=headers_without_content_type)
         sleep(0.05)
         while True:
             resp = await client.get(
-                '/engines/4/export_objects?job_hash=6342e10bd7dca3240c698aa79c98362e',
+                '/engine_objects/4/export?job_hash=6342e10bd7dca3240c698aa79c98362e',
                 headers=headers_without_content_type)
             if (await resp.json())['status'] != 'running':
                 break
@@ -1852,6 +1792,7 @@ class TestPlacementsGetRecomendationsFilters(object):
             'name': 'Placement Test',
             'variations': [{
                 '_operation': 'insert',
+                'name': 'Var 1',
                 'slots': [{'id': 2}]
             }]
         }]
@@ -1891,11 +1832,11 @@ class TestPlacementsGetRecomendationsFilters(object):
             if (await resp.json())['status'] != 'running':
                 break
 
-        await client.post('/engines/4/export_objects?import_data=true', headers=headers_without_content_type)
+        await client.post('/engine_objects/4/export?import_data=true', headers=headers_without_content_type)
         sleep(0.05)
         while True:
             resp = await client.get(
-                '/engines/4/export_objects?job_hash=6342e10bd7dca3240c698aa79c98362e',
+                '/engine_objects/4/export?job_hash=6342e10bd7dca3240c698aa79c98362e',
                 headers=headers_without_content_type)
             if (await resp.json())['status'] != 'running':
                 break
@@ -1905,6 +1846,7 @@ class TestPlacementsGetRecomendationsFilters(object):
             'name': 'Placement Test',
             'variations': [{
                 '_operation': 'insert',
+                'name': 'Var 1',
                 'slots': [{'id': 2}]
             }]
         }]
@@ -1965,11 +1907,11 @@ class TestPlacementsGetRecomendationsFilters(object):
             if (await resp.json())['status'] != 'running':
                 break
 
-        await client.post('/engines/4/export_objects?import_data=true', headers=headers_without_content_type)
+        await client.post('/engine_objects/4/export?import_data=true', headers=headers_without_content_type)
         sleep(0.05)
         while True:
             resp = await client.get(
-                '/engines/4/export_objects?job_hash=6342e10bd7dca3240c698aa79c98362e',
+                '/engine_objects/4/export?job_hash=6342e10bd7dca3240c698aa79c98362e',
                 headers=headers_without_content_type)
             if (await resp.json())['status'] != 'running':
                 break
@@ -1979,6 +1921,7 @@ class TestPlacementsGetRecomendationsFilters(object):
             'name': 'Placement Test',
             'variations': [{
                 '_operation': 'insert',
+                'name': 'Var 1',
                 'slots': [{'id': 2}]
             }]
         }]
@@ -2040,11 +1983,11 @@ class TestPlacementsGetRecomendationsFilters(object):
             if (await resp.json())['status'] != 'running':
                 break
 
-        await client.post('/engines/4/export_objects?import_data=true', headers=headers_without_content_type)
+        await client.post('/engine_objects/4/export?import_data=true', headers=headers_without_content_type)
         sleep(0.05)
         while True:
             resp = await client.get(
-                '/engines/4/export_objects?job_hash=6342e10bd7dca3240c698aa79c98362e',
+                '/engine_objects/4/export?job_hash=6342e10bd7dca3240c698aa79c98362e',
                 headers=headers_without_content_type)
             if (await resp.json())['status'] != 'running':
                 break
@@ -2054,6 +1997,7 @@ class TestPlacementsGetRecomendationsFilters(object):
             'name': 'Placement Test',
             'variations': [{
                 '_operation': 'insert',
+                'name': 'Var 1',
                 'slots': [{'id': 2}]
             }]
         }]
@@ -2094,11 +2038,11 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
             if (await resp.json())['status'] != 'running':
                 break
 
-        await client.post('/engines/4/export_objects?import_data=true', headers=headers_without_content_type)
+        await client.post('/engine_objects/4/export?import_data=true', headers=headers_without_content_type)
         sleep(0.05)
         while True:
             resp = await client.get(
-                '/engines/4/export_objects?job_hash=6342e10bd7dca3240c698aa79c98362e',
+                '/engine_objects/4/export?job_hash=6342e10bd7dca3240c698aa79c98362e',
                 headers=headers_without_content_type)
             if (await resp.json())['status'] != 'running':
                 break
@@ -2108,6 +2052,7 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
             'name': 'Placement Test',
             'variations': [{
                 '_operation': 'insert',
+                'name': 'Var 1',
                 'slots': [{'id': 2}]
             }]
         }]
@@ -2145,11 +2090,11 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
             if (await resp.json())['status'] != 'running':
                 break
 
-        await client.post('/engines/4/export_objects?import_data=true', headers=headers_without_content_type)
+        await client.post('/engine_objects/4/export?import_data=true', headers=headers_without_content_type)
         sleep(0.05)
         while True:
             resp = await client.get(
-                '/engines/4/export_objects?job_hash=6342e10bd7dca3240c698aa79c98362e',
+                '/engine_objects/4/export?job_hash=6342e10bd7dca3240c698aa79c98362e',
                 headers=headers_without_content_type)
             if (await resp.json())['status'] != 'running':
                 break
@@ -2159,6 +2104,7 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
             'name': 'Placement Test',
             'variations': [{
                 '_operation': 'insert',
+                'name': 'Var 1',
                 'slots': [{'id': 2}]
             }]
         }]
@@ -2197,11 +2143,11 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
             if (await resp.json())['status'] != 'running':
                 break
 
-        await client.post('/engines/4/export_objects?import_data=true', headers=headers_without_content_type)
+        await client.post('/engine_objects/4/export?import_data=true', headers=headers_without_content_type)
         sleep(0.05)
         while True:
             resp = await client.get(
-                '/engines/4/export_objects?job_hash=6342e10bd7dca3240c698aa79c98362e',
+                '/engine_objects/4/export?job_hash=6342e10bd7dca3240c698aa79c98362e',
                 headers=headers_without_content_type)
             if (await resp.json())['status'] != 'running':
                 break
@@ -2211,6 +2157,7 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
             'name': 'Placement Test',
             'variations': [{
                 '_operation': 'insert',
+                'name': 'Var 1',
                 'slots': [{'id': 2}]
             }]
         }]
@@ -2248,11 +2195,11 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
             if (await resp.json())['status'] != 'running':
                 break
 
-        await client.post('/engines/4/export_objects?import_data=true', headers=headers_without_content_type)
+        await client.post('/engine_objects/4/export?import_data=true', headers=headers_without_content_type)
         sleep(0.05)
         while True:
             resp = await client.get(
-                '/engines/4/export_objects?job_hash=6342e10bd7dca3240c698aa79c98362e',
+                '/engine_objects/4/export?job_hash=6342e10bd7dca3240c698aa79c98362e',
                 headers=headers_without_content_type)
             if (await resp.json())['status'] != 'running':
                 break
@@ -2262,6 +2209,7 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
             'name': 'Placement Test',
             'variations': [{
                 '_operation': 'insert',
+                'name': 'Var 1',
                 'slots': [{'id': 2}]
             }]
         }]
@@ -2301,11 +2249,11 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
             if (await resp.json())['status'] != 'running':
                 break
 
-        await client.post('/engines/4/export_objects?import_data=true', headers=headers_without_content_type)
+        await client.post('/engine_objects/4/export?import_data=true', headers=headers_without_content_type)
         sleep(0.05)
         while True:
             resp = await client.get(
-                '/engines/4/export_objects?job_hash=6342e10bd7dca3240c698aa79c98362e',
+                '/engine_objects/4/export?job_hash=6342e10bd7dca3240c698aa79c98362e',
                 headers=headers_without_content_type)
             if (await resp.json())['status'] != 'running':
                 break
@@ -2315,6 +2263,7 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
             'name': 'Placement Test',
             'variations': [{
                 '_operation': 'insert',
+                'name': 'Var 1',
                 'slots': [{'id': 2}]
             }]
         }]
@@ -2355,11 +2304,11 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
             if (await resp.json())['status'] != 'running':
                 break
 
-        await client.post('/engines/4/export_objects?import_data=true', headers=headers_without_content_type)
+        await client.post('/engine_objects/4/export?import_data=true', headers=headers_without_content_type)
         sleep(0.05)
         while True:
             resp = await client.get(
-                '/engines/4/export_objects?job_hash=6342e10bd7dca3240c698aa79c98362e',
+                '/engine_objects/4/export?job_hash=6342e10bd7dca3240c698aa79c98362e',
                 headers=headers_without_content_type)
             if (await resp.json())['status'] != 'running':
                 break
@@ -2369,6 +2318,7 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
             'name': 'Placement Test',
             'variations': [{
                 '_operation': 'insert',
+                'name': 'Var 1',
                 'slots': [{'id': 2}]
             }]
         }]
@@ -2408,11 +2358,11 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
             if (await resp.json())['status'] != 'running':
                 break
 
-        await client.post('/engines/4/export_objects?import_data=true', headers=headers_without_content_type)
+        await client.post('/engine_objects/4/export?import_data=true', headers=headers_without_content_type)
         sleep(0.05)
         while True:
             resp = await client.get(
-                '/engines/4/export_objects?job_hash=6342e10bd7dca3240c698aa79c98362e',
+                '/engine_objects/4/export?job_hash=6342e10bd7dca3240c698aa79c98362e',
                 headers=headers_without_content_type)
             if (await resp.json())['status'] != 'running':
                 break
@@ -2422,6 +2372,7 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
             'name': 'Placement Test',
             'variations': [{
                 '_operation': 'insert',
+                'name': 'Var 1',
                 'slots': [{'id': 2}]
             }]
         }]
@@ -2459,11 +2410,11 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
             if (await resp.json())['status'] != 'running':
                 break
 
-        await client.post('/engines/4/export_objects?import_data=true', headers=headers_without_content_type)
+        await client.post('/engine_objects/4/export?import_data=true', headers=headers_without_content_type)
         sleep(0.05)
         while True:
             resp = await client.get(
-                '/engines/4/export_objects?job_hash=6342e10bd7dca3240c698aa79c98362e',
+                '/engine_objects/4/export?job_hash=6342e10bd7dca3240c698aa79c98362e',
                 headers=headers_without_content_type)
             if (await resp.json())['status'] != 'running':
                 break
@@ -2473,6 +2424,7 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
             'name': 'Placement Test',
             'variations': [{
                 '_operation': 'insert',
+                'name': 'Var 1',
                 'slots': [{'id': 2}]
             }]
         }]
@@ -2511,11 +2463,11 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
             if (await resp.json())['status'] != 'running':
                 break
 
-        await client.post('/engines/4/export_objects?import_data=true', headers=headers_without_content_type)
+        await client.post('/engine_objects/4/export?import_data=true', headers=headers_without_content_type)
         sleep(0.05)
         while True:
             resp = await client.get(
-                '/engines/4/export_objects?job_hash=6342e10bd7dca3240c698aa79c98362e',
+                '/engine_objects/4/export?job_hash=6342e10bd7dca3240c698aa79c98362e',
                 headers=headers_without_content_type)
             if (await resp.json())['status'] != 'running':
                 break
@@ -2525,6 +2477,7 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
             'name': 'Placement Test',
             'variations': [{
                 '_operation': 'insert',
+                'name': 'Var 1',
                 'slots': [{'id': 2}]
             }]
         }]
@@ -2562,11 +2515,11 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
             if (await resp.json())['status'] != 'running':
                 break
 
-        await client.post('/engines/4/export_objects?import_data=true', headers=headers_without_content_type)
+        await client.post('/engine_objects/4/export?import_data=true', headers=headers_without_content_type)
         sleep(0.05)
         while True:
             resp = await client.get(
-                '/engines/4/export_objects?job_hash=6342e10bd7dca3240c698aa79c98362e',
+                '/engine_objects/4/export?job_hash=6342e10bd7dca3240c698aa79c98362e',
                 headers=headers_without_content_type)
             if (await resp.json())['status'] != 'running':
                 break
@@ -2576,6 +2529,7 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
             'name': 'Placement Test',
             'variations': [{
                 '_operation': 'insert',
+                'name': 'Var 1',
                 'slots': [{'id': 2}]
             }]
         }]
@@ -2613,11 +2567,11 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
             if (await resp.json())['status'] != 'running':
                 break
 
-        await client.post('/engines/4/export_objects?import_data=true', headers=headers_without_content_type)
+        await client.post('/engine_objects/4/export?import_data=true', headers=headers_without_content_type)
         sleep(0.05)
         while True:
             resp = await client.get(
-                '/engines/4/export_objects?job_hash=6342e10bd7dca3240c698aa79c98362e',
+                '/engine_objects/4/export?job_hash=6342e10bd7dca3240c698aa79c98362e',
                 headers=headers_without_content_type)
             if (await resp.json())['status'] != 'running':
                 break
@@ -2627,6 +2581,7 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
             'name': 'Placement Test',
             'variations': [{
                 '_operation': 'insert',
+                'name': 'Var 1',
                 'slots': [{'id': 2}]
             }]
         }]
@@ -2665,11 +2620,11 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
             if (await resp.json())['status'] != 'running':
                 break
 
-        await client.post('/engines/4/export_objects?import_data=true', headers=headers_without_content_type)
+        await client.post('/engine_objects/4/export?import_data=true', headers=headers_without_content_type)
         sleep(0.05)
         while True:
             resp = await client.get(
-                '/engines/4/export_objects?job_hash=6342e10bd7dca3240c698aa79c98362e',
+                '/engine_objects/4/export?job_hash=6342e10bd7dca3240c698aa79c98362e',
                 headers=headers_without_content_type)
             if (await resp.json())['status'] != 'running':
                 break
@@ -2679,6 +2634,7 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
             'name': 'Placement Test',
             'variations': [{
                 '_operation': 'insert',
+                'name': 'Var 1',
                 'slots': [{'id': 2}]
             }]
         }]
@@ -2718,11 +2674,11 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
             if (await resp.json())['status'] != 'running':
                 break
 
-        await client.post('/engines/4/export_objects?import_data=true', headers=headers_without_content_type)
+        await client.post('/engine_objects/4/export?import_data=true', headers=headers_without_content_type)
         sleep(0.05)
         while True:
             resp = await client.get(
-                '/engines/4/export_objects?job_hash=6342e10bd7dca3240c698aa79c98362e',
+                '/engine_objects/4/export?job_hash=6342e10bd7dca3240c698aa79c98362e',
                 headers=headers_without_content_type)
             if (await resp.json())['status'] != 'running':
                 break
@@ -2732,6 +2688,7 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
             'name': 'Placement Test',
             'variations': [{
                 '_operation': 'insert',
+                'name': 'Var 1',
                 'slots': [{'id': 2}]
             }]
         }]
@@ -2768,11 +2725,11 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
             if (await resp.json())['status'] != 'running':
                 break
 
-        await client.post('/engines/4/export_objects?import_data=true', headers=headers_without_content_type)
+        await client.post('/engine_objects/4/export?import_data=true', headers=headers_without_content_type)
         sleep(0.05)
         while True:
             resp = await client.get(
-                '/engines/4/export_objects?job_hash=6342e10bd7dca3240c698aa79c98362e',
+                '/engine_objects/4/export?job_hash=6342e10bd7dca3240c698aa79c98362e',
                 headers=headers_without_content_type)
             if (await resp.json())['status'] != 'running':
                 break
@@ -2782,6 +2739,7 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
             'name': 'Placement Test',
             'variations': [{
                 '_operation': 'insert',
+                'name': 'Var 1',
                 'slots': [{'id': 2}]
             }]
         }]

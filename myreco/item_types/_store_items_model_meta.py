@@ -21,7 +21,7 @@
 # SOFTWARE.
 
 
-from myreco.engines.strategies.items_indices_map import ItemsIndicesMap
+from myreco.item_types.indices_map import ItemsIndicesMap
 from swaggerit.models.orm.redis_elsearch import ModelRedisElSearchMeta
 
 
@@ -29,7 +29,7 @@ class _StoreItemsModelBaseMeta(ModelRedisElSearchMeta):
 
     def __init__(cls, name, bases_classes, attributes):
         super().__init__(name, bases_classes, attributes)
-        cls.items_indices_map = ItemsIndicesMap(cls)
+        cls.indices_map = ItemsIndicesMap(cls)
 
     async def insert(cls, session, objs, skip_validation=False, **kwargs):
         if not skip_validation:

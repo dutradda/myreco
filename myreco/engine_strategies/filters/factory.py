@@ -21,7 +21,7 @@
 # SOFTWARE.
 
 
-from myreco.engines.strategies.filters.filters import (BooleanFilterBy, SimpleFilterBy, ObjectFilterBy,
+from myreco.engine_strategies.filters.filters import (BooleanFilterBy, SimpleFilterBy, ObjectFilterBy,
     ArrayFilterBy, SimpleFilterOf, ObjectFilterOf,
     ArrayFilterOf, IndexFilterOf, IndexFilterByPropertyOf)
 

@@ -21,33 +21,26 @@
 # SOFTWARE.
 
 
-from swaggerit.utils import set_logger
-from myreco.engines.strategies.utils import build_engine_key_prefix
-import zlib
-import numpy as np
+from myreco.engine_strategies.top_seller.array import TopSellerArray
+from myreco.engine_strategies.strategy_base import EngineStrategyBase
 
 
-class RedisObjectBase(object):
+class TopSellerEngineStrategy(EngineStrategyBase):
+    __configuration_schema__ = {
+        'type': 'object',
+        'required': ['top_seller_array'],
+        'additionalProperties': False,
+        'properties': {
+            'top_seller_array': {
+                'required': ['days_interval'],
+                'additionalProperties': False,
+                'properties': {
+                    'days_interval': {'type': 'integer'}
+                }
+            }
+        }
+    }
+    object_types = {'top_seller_array': TopSellerArray}
 
-    def __init__(self, engine_core):
-        self._engine_core = engine_core
-        self._set_redis_key()
-        set_logger(self, self._redis_key)
-
-    def _set_redis_key(self):
-        self._redis_key = build_engine_key_prefix(self._engine_core.engine)
-
-    def _pack_array(self, array, compress=True, level=-1):
-        if compress:
-            return zlib.compress(array.tobytes(), level)
-        else:
-            return array.tobytes()
-
-    def _unpack_array(self, array, dtype, compress=True):
-        if array is not None:
-            if compress:
-                return np.fromstring(zlib.decompress(array), dtype=dtype)
-            else:
-                return np.fromstring(array, dtype=dtype)
-        else:
-            return None
+    async def _build_items_vector(self, session, **external_variables):
+        return await self.objects['top_seller_array'].get_numpy_array(session)

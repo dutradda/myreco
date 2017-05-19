@@ -123,13 +123,14 @@ class PlacementsModelBase(AbstractConcreteBase):
     async def _get_recos_by_slot(cls, slot, input_external_variables, session, show_details, max_items=None):
         try:
             engine = slot['engine']
-            items_model = get_items_model(engine)
+            items_model = get_items_model(engine['item_type'], engine['store_id'])
             engine_vars = cls._get_slot_variables(slot, input_external_variables)
             filters = cls._get_slot_filters(slot, input_external_variables, items_model)
-            engine_strategy = cls.get_model('engines').get_strategy(engine)
+            engine_strategy_model = cls.get_model('engine_strategies')
+            strategy_instance = engine_strategy_model.get_instance(engine, items_model)
             max_items = slot['max_items'] if max_items is None else max_items
 
-            return await engine_strategy.get_items(
+            return await strategy_instance.get_items(
                 session, filters, max_items, show_details, **engine_vars)
 
         except Exception as error:
@@ -276,6 +277,7 @@ class VariationsModelBase(AbstractConcreteBase):
     __use_redis__ = False
 
     id = sa.Column(sa.Integer, primary_key=True)
+    name = sa.Column(sa.String(255), unique=True, nullable=False)
     weight = sa.Column(sa.Float)
 
     @declared_attr

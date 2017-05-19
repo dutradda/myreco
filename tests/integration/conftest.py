@@ -105,7 +105,7 @@ def elsearch(variables, loop):
 
 @pytest.fixture(scope='session')
 def api(engine, redis, elsearch, loop):
-    api = MyrecoAPI(sqlalchemy_bind=engine, redis_bind=redis,
+    api = MyrecoAPI('/tmp', sqlalchemy_bind=engine, redis_bind=redis,
                     elsearch_bind=elsearch, title='Myreco API',
                     loop=loop, debug=True, type_='objects_exporter')
 

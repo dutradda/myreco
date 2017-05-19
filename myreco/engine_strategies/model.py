@@ -28,35 +28,40 @@ import sqlalchemy as sa
 import ujson
 
 
-class EngineCoresModelBase(AbstractConcreteBase):
-    __tablename__ = 'engine_cores'
+class EngineStrategiesModelBase(AbstractConcreteBase):
+    __tablename__ = 'engine_strategies'
     __swagger_json__ = get_swagger_json(__file__)
     _jobs = dict()
 
     id = sa.Column(sa.Integer, primary_key=True)
     name = sa.Column(sa.String(255), unique=True, nullable=False)
-    strategy_class_json = sa.Column(sa.Text, nullable=False)
+    class_name = sa.Column(sa.String(255), nullable=False)
+    class_module = sa.Column(sa.String(255), nullable=False)
+
+    async def _validate(self, session, input_):
+        self.get_class()
+
+    @classmethod
+    def _get_class(cls, strategy):
+        return ModuleObjectLoader.load({
+            'path': strategy['class_module'],
+            'object_name': strategy['class_name']
+        })
+
+    def get_class(self):
+        if not hasattr(self, '_class'):
+            self._class = type(self)._get_class(self.todict({'object_types': False}))
+
+        return self._class
 
     @property
-    def strategy_class(self):
-        if not hasattr(self, '_strategy_class'):
-            self._strategy_class = ujson.loads(self.strategy_class_json)
-        return self._strategy_class
-
-    async def _setattr(self, attr_name, value, session, input_):
-        if attr_name == 'strategy_class':
-            value = ujson.dumps(value)
-            attr_name = 'strategy_class_json'
-
-        await super()._setattr(attr_name, value, session, input_)
+    def object_types(self):
+        return self.get_class().object_types.keys()
 
     def _format_output_json(self, dict_inst, schema):
-        if schema.get('strategy_class') is not False:
-            dict_inst.pop('strategy_class_json')
-            dict_inst['strategy_class'] = self.strategy_class
+        if schema.get('object_types') is not False:
+            dict_inst['object_types'] = self.object_types
 
-    def _validate(self):
-        ModuleObjectLoader.load({
-            'path': self.strategy_class['module'],
-            'object_name': self.strategy_class['class_name']
-        })
+    @classmethod
+    def get_instance(cls, engine, items_model=None):
+        return cls._get_class(engine['strategy'])(engine, items_model)

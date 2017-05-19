@@ -22,7 +22,7 @@
 
 
 from swaggerit.models._base import _all_models
-from myreco.engines.strategies.items_indices_map import ItemsIndicesMap
+from myreco.item_types.indices_map import ItemsIndicesMap
 from myreco.authorizer import MyrecoAuthorizer
 from base64 import b64encode
 from unittest import mock
@@ -487,7 +487,7 @@ class TestItemsModelPatch(object):
 
 @pytest.fixture
 def update_filters_init_db(models, session, api, monkeypatch):
-    monkeypatch.setattr('myreco.engines.strategies.base.makedirs', mock.MagicMock())
+    monkeypatch.setattr('myreco.engine_objects.object_base.makedirs', mock.MagicMock())
 
     user = {
         'name': 'test',
@@ -530,24 +530,24 @@ def update_filters_init_db(models, session, api, monkeypatch):
     }
     types = session.loop.run_until_complete(models['item_types'].insert(session, item_type))
 
-    core = {
+    strategy = {
         'name': 'test',
-        'strategy_class': {
-            'module': 'myreco.engines.strategies.top_seller.core',
-            'class_name': 'TopSellerEngineCore'
-        }
+        'class_module': 'tests.integration.fixtures',
+        'class_name': 'EngineStrategyTest'
     }
-    session.loop.run_until_complete(models['engine_cores'].insert(session, core))
+    session.loop.run_until_complete(models['engine_strategies'].insert(session, strategy))
 
     engine = {
         'name': 'Top Seller',
-        'configuration_json': ujson.dumps({
-            'days_interval': 7,
-            'data_importer_path': 'myreco.engines.strategies.base.AbstractDataImporter'
-        }),
+        'objects': [{
+            '_operation': 'insert',
+            'name': 'Top Seller Array',
+            'type': 'top_seller_array',
+            'configuration': {'days_interval': 7}
+        }],
         'store_id': 1,
         'item_type_id': 1,
-        'core_id': 1
+        'strategy_id': 1
     }
     session.loop.run_until_complete(models['engines'].insert(session, engine))
 

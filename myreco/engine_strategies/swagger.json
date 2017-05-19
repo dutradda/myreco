@@ -1,6 +1,6 @@
 {
     "paths": {
-        "/engine_cores/": {
+        "/engine_strategies/": {
             "post": {
                 "operationId": "swagger_insert",
                 "parameters": [{
@@ -27,7 +27,7 @@
                 "responses": {"200": {"description": "Got"}}
             }
         },
-        "/engine_cores/{id}/": {
+        "/engine_strategies/{id}/": {
             "parameters": [{
                 "name": "id",
                 "in": "path",
@@ -78,7 +78,8 @@
             "additionalProperties": false,
             "properties": {
                 "name": {"type": "string"},
-                "strategy_class": {"$ref": "#/definitions/strategy_class"}
+                "class_module": {"type": "string"},
+                "class_name": {"type": "string"}
             }
         },
         "schema_array": {
@@ -87,19 +88,12 @@
             "items": {
                 "type": "object",
                 "additionalProperties": false,
-                "required": ["name", "strategy_class"],
+                "required": ["name", "class_module", "class_name"],
                 "properties": {
                     "name": {"type": "string"},
-                    "strategy_class": {"$ref": "#/definitions/strategy_class"}
+                    "class_module": {"type": "string"},
+                    "class_name": {"type": "string"}
                 }
-            }
-        },
-        "strategy_class": {
-            "type": "object",
-            "required": ["module", "class_name"],
-            "properties": {
-                "module": {"type": "string"},
-                "class_name": {"type": "string"}
             }
         }
     }

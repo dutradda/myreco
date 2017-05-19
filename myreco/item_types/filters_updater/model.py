@@ -21,8 +21,8 @@
 # SOFTWARE.
 
 
-from myreco.engines.strategies.filters.filters import BooleanFilterBy
-from myreco.engines.strategies.filters.factory import FiltersFactory
+from myreco.engine_strategies.filters.filters import BooleanFilterBy
+from myreco.engine_strategies.filters.factory import FiltersFactory
 from myreco.item_types.data_file_importer.model import ItemTypesDataFileImporterModelBase
 from myreco.utils import extend_swagger_json
 from swaggerit.exceptions import SwaggerItModelError
@@ -50,13 +50,14 @@ class ItemTypesFiltersUpdaterModelBase(ItemTypesDataFileImporterModelBase):
 
     @classmethod
     async def _update_enabled_filters(cls, store_items_model, session, store_id):
-        items_indices_map_ret = await store_items_model.items_indices_map.update(session)
-        items_indices_map_len = await store_items_model.items_indices_map.get_length(session)
+        items_indices_map = store_items_model.indices_map
+        items_indices_map_ret = await items_indices_map.update(session)
+        items_indices_map_len = await items_indices_map.get_length(session)
 
         filters_factory = cls.get_model('slot_filters').__factory__
         enabled_filters = await cls._get_enabled_filters(store_items_model, session, store_id)
         filters_ret = dict()
-        items_indices_map_dict = await store_items_model.items_indices_map.get_all(session)
+        items_indices_map_dict = await items_indices_map.get_all(session)
         items = await cls._get_items_with_indices_and_stock(
             store_items_model, session, items_indices_map_dict
         )

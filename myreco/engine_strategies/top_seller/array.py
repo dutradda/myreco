@@ -21,13 +21,34 @@
 # SOFTWARE.
 
 
-from myreco.engines.strategies.redis_object import RedisObjectBase
+from myreco.engine_objects.object_base import EngineObjectBase
 from myreco.exceptions import EngineError
 import numpy as np
 import ujson
 
 
-class TopSellerRedisObject(RedisObjectBase):
+class TopSellerArray(EngineObjectBase):
+
+    def export(self, items_model, session):
+        self._logger.info("Started export objects")
+
+        readers = self._run_coro(
+            self._build_csv_readers(),
+            session.loop
+        )
+
+        items_indices_map_dict = self._run_coro(
+            self._get_items_indices_map_dict(items_model.indices_map, session),
+            session.loop
+        )
+
+        ret = self._run_coro(
+            self.update(readers, session, items_indices_map_dict),
+            session.loop
+        )
+
+        self._logger.info("Finished export objects")
+        return ret
 
     async def update(self, readers, session, items_indices_map_dict):
         await self._build_top_seller_vector(readers, session, items_indices_map_dict)
@@ -43,7 +64,7 @@ class TopSellerRedisObject(RedisObjectBase):
         }
 
     async def _build_top_seller_vector(self, readers, session, items_indices_map_dict):
-        error_message = "No data found for engine '{}'".format(self._engine_core.engine['name'])
+        error_message = "No data found for engine object '{}'".format(self._engine_object['name'])
         if not len(readers):
             raise EngineError(error_message)
 

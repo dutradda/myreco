@@ -21,12 +21,10 @@
 # SOFTWARE.
 
 
-from myreco.utils import ModuleObjectLoader, get_items_model
 from swaggerit.utils import get_swagger_json
 from swaggerit.exceptions import SwaggerItModelError
 from sqlalchemy.ext.declarative import AbstractConcreteBase, declared_attr
 import sqlalchemy as sa
-import ujson
 
 
 class EnginesModelBase(AbstractConcreteBase):
@@ -36,17 +34,10 @@ class EnginesModelBase(AbstractConcreteBase):
 
     id = sa.Column(sa.Integer, primary_key=True)
     name = sa.Column(sa.String(255), unique=True, nullable=False)
-    configuration_json = sa.Column(sa.Text, nullable=False)
-
-    @property
-    def configuration(self):
-        if not hasattr(self, '_configuration'):
-            self._configuration = ujson.loads(self.configuration_json)
-        return self._configuration
 
     @declared_attr
-    def core_id(cls):
-        return sa.Column(sa.ForeignKey('engine_cores.id'), nullable=False)
+    def strategy_id(cls):
+        return sa.Column(sa.ForeignKey('engine_strategies.id'), nullable=False)
 
     @declared_attr
     def store_id(cls):
@@ -65,74 +56,99 @@ class EnginesModelBase(AbstractConcreteBase):
         return sa.orm.relationship('StoresModel')
 
     @declared_attr
-    def core(cls):
-        return sa.orm.relationship('EngineCoresModel')
+    def strategy(cls):
+        return sa.orm.relationship('EngineStrategiesModel')
 
-    @property
-    def strategy(self):
-        if not hasattr(self, '_strategy'):
-            self._strategy = type(self).get_strategy(self._build_self_dict())
-
-        return self._strategy
-
-    @classmethod
-    def get_strategy(cls, engine_dict):
-        core = engine_dict.get('core')
-        if core is None:
-            core = cls.get_model('engine_cores').get({'id': engine_dict['core_id']})
-
-        strategy_class = cls.get_strategy_class(core['strategy_class'])
-        store_items_model = get_items_model(engine_dict)
-        return strategy_class(engine_dict, store_items_model)
-
-    @classmethod
-    def get_strategy_class(cls, strategy_class):
-        return ModuleObjectLoader.load({
-            'path': strategy_class['module'],
-            'object_name': strategy_class['class_name']
-        })
-
-    def _build_self_dict(self):
-        todict_schema = {'variables': False}
-        return self.todict(todict_schema)
+    @declared_attr
+    def objects(cls):
+        return sa.orm.relationship('EngineObjectsModel', uselist=True,
+                                   secondary='engines_objects')
 
     @property
     def variables(self):
-        return self.strategy.get_variables()
+        return self.strategy_instance.get_variables()
+
+    @property
+    def strategy_instance(self):
+        if not hasattr(self, '_strategy_instance'):
+            self._strategy_instance = \
+                type(self.strategy).get_instance(self._todict_when_new())
+
+        return self._strategy_instance
+
+    def _todict_when_new(self):
+        objects = []
+        self_dict = self.todict({'variables': False})
+        strategy_dict = self_dict['strategy']
+
+        for obj in self.objects:
+            obj_dict = obj.todict()
+            obj_dict['strategy'] = strategy_dict
+            objects.append(obj_dict)
+
+        self_dict['objects'] = objects
+        return self_dict
 
     async def _setattr(self, attr_name, value, session, input_):
-        if attr_name == 'configuration':
-            value = ujson.dumps(value)
-            attr_name = 'configuration_json'
-
         if attr_name == 'item_type_id':
             value = {'id': value}
             attr_name = 'item_type'
 
+        if attr_name == 'strategy_id':
+            value = {'id': value}
+            attr_name = 'strategy'
+
+        if attr_name == 'store_id':
+            value = {'id': value}
+            attr_name = 'store'
+
         await super()._setattr(attr_name, value, session, input_)
 
-    def _validate(self):
-        if self.core is not None:
-            self.strategy.validate_config()
+    async def _validate(self, session, input_):
+        strategy_class = self.strategy.get_class()
+
+        for obj in self.objects:
+            if obj.type not in strategy_class.object_types:
+                raise SwaggerItModelError(
+                    "Invalid object type '{}'".format(obj.type),
+                    instance=input_
+                )
+
+        props_sequence = [
+            ('strategy_id', self.strategy.id),
+            ('item_type_id',self.item_type.id),
+            ('store_id', self.store.id)
+        ]
+
+        for obj in self.objects:
+            for obj_prop_name, self_prop_value in props_sequence:
+                value = getattr(obj, obj_prop_name)
+
+                if value is None:
+                    setattr(obj, obj_prop_name, self_prop_value)
+                elif value != self_prop_value:
+                    raise SwaggerItModelError(
+                    "Invalid object '{}' with value '{}'. "\
+                    "This value must be the same as '{}'".format(
+                        obj_prop_name,
+                        value,
+                        self_prop_value
+                    ),
+                    instance=input_
+                )
+
+
+        self.strategy_instance.validate_config()
+
 
     def _format_output_json(self, dict_inst, schema):
-        if schema.get('configuration') is not False:
-            dict_inst.pop('configuration_json')
-            dict_inst['configuration'] = self.configuration
-
         if schema.get('variables') is not False:
             dict_inst['variables'] = self.variables
 
-    async def init(self, session, input_=None, **kwargs):
-        store = kwargs.get('store')
-        store_id = kwargs.get('store_id')
 
-        if store is None and store_id is not None:
-            store = await type(self).get_model('stores').get(session, {'id': store_id})
-
-            if not store:
-                raise SwaggerItModelError("Invalid store_id {}".format(store_id), instance=input_)
-            else:
-                kwargs['store'] = store[0]
-
-        await super().init(session, input_=input_, **kwargs)
+def build_engines_objects_table(metadata, **kwargs):
+    return sa.Table(
+        'engines_objects', metadata,
+        sa.Column('engine_id', sa.Integer, sa.ForeignKey('engines.id', onupdate='CASCADE'), primary_key=True),
+        sa.Column('object_id', sa.Integer, sa.ForeignKey('engine_objects.id', onupdate='CASCADE'), primary_key=True),
+        **kwargs)

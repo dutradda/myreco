@@ -23,7 +23,7 @@
 
 from myreco.item_types._store_items_model_meta import _StoreItemsModelBaseMeta
 from myreco.utils import build_item_key, build_class_name, ModuleObjectLoader
-from myreco.engines.strategies.filters.filters import BooleanFilterBy
+from myreco.engine_strategies.filters.filters import BooleanFilterBy
 from swaggerit.utils import get_swagger_json, get_dir_path
 from swaggerit.method import SwaggerMethod
 from swaggerit.request import SwaggerRequest
@@ -147,7 +147,7 @@ class _StoreItemsOperationsMixin(object):
     def _set_store_items_model(cls, item_type, store_items_model_key, store_id):
         class_name = build_class_name(item_type['name'], str(store_id))
         base_class = cls._get_store_items_class(item_type)
-        store_items_model = FactoryOrmModels.make_redis_elsearch(
+        return FactoryOrmModels.make_redis_elsearch(
             class_name, item_type['schema']['id_names'],
             store_items_model_key, use_elsearch=False,
             metaclass=_StoreItemsModelBaseMeta,
@@ -158,7 +158,6 @@ class _StoreItemsOperationsMixin(object):
                 'item_type': item_type
             }
         )
-        return store_items_model
 
     @classmethod
     def _get_store_items_class(cls, item_type):
@@ -233,8 +232,8 @@ class _StoreItemsOperationsMixin(object):
 
     @classmethod
     async def _set_stock_filter(cls, store_items_model, session):
-        items_indices_map_dict = await store_items_model.items_indices_map.get_all(session)
-        items_indices_map_len = await store_items_model.items_indices_map.get_length(session)
+        items_indices_map_dict = await store_items_model.indices_map.get_all(session)
+        items_indices_map_len = await store_items_model.indices_map.get_length(session)
 
         if items_indices_map_dict.values():
             items_keys = set(await session.redis_bind.hkeys(store_items_model.__key__))

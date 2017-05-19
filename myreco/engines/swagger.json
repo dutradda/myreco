@@ -12,7 +12,7 @@
                     "name": "body",
                     "in": "body",
                     "required": true,
-                    "schema": {"$ref": "#/definitions/schema_array"}
+                    "schema": {"$ref": "#/definitions/insert_schema"}
                 }],
                 "responses": {"201": {"description": "Created"}}
             },
@@ -50,7 +50,7 @@
                     "name": "body",
                     "in": "body",
                     "required": true,
-                    "schema": {"$ref": "#/definitions/schema_without_required"}
+                    "schema": {"$ref": "#/definitions/update_schema"}
                 }],
                 "responses": {"200": {"description": "Got"}}
             },
@@ -77,31 +77,107 @@
         }
     },
     "definitions": {
-        "schema_without_required": {
-            "type": "object",
-            "minProperties": 1,
-            "additionalProperties": false,
-            "properties": {
-                "name": {"type": "string"},
-                "configuration": {},
-                "store_id": {"type": "integer"},
-                "item_type_id": {"type": "integer"},
-                "core_id": {"type": "integer"}
-            }
-        },
-        "schema_array": {
+        "insert_schema": {
             "type": "array",
             "minItems": 1,
             "items": {
                 "type": "object",
                 "additionalProperties": false,
-                "required": ["configuration", "store_id", "item_type_id", "core_id"],
+                "required": ["store_id", "item_type_id", "strategy_id"],
                 "properties": {
                     "name": {"type": "string"},
-                    "configuration": {},
                     "store_id": {"type": "integer"},
                     "item_type_id": {"type": "integer"},
-                    "core_id": {"type": "integer"}
+                    "strategy_id": {"type": "integer"},
+                    "objects": {
+                        "oneOf": [{
+                            "$ref": "#/definitions/insert_objects_schema"
+                        },{
+                            "$ref": "#/definitions/update_objects_schema"
+                        },{
+                            "$ref": "#/definitions/get_objects_schema"
+                        }]
+                    }
+                }
+            }
+        },
+        "update_schema": {
+            "type": "object",
+            "additionalProperties": false,
+            "minProperties": 1,
+            "properties": {
+                "name": {"type": "string"},
+                "store_id": {"type": "integer"},
+                "item_type_id": {"type": "integer"},
+                "strategy_id": {"type": "integer"},
+                "objects": {
+                    "oneOf": [{
+                        "$ref": "#/definitions/insert_objects_schema"
+                    },{
+                        "$ref": "#/definitions/update_objects_schema"
+                    },{
+                        "$ref": "#/definitions/get_objects_schema"
+                    },{
+                        "$ref": "#/definitions/delete_remove_objects_schema"
+                    }]
+                }
+            }
+        },
+        "insert_objects_schema": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["_operation", "name", "type", "configuration"],
+                "properties": {
+                    "_operation": {"enum": ["insert"]},
+                    "name": {"type": "string"},
+                    "type": {"type": "string"},
+                    "configuration": {}
+                }
+            }
+        },
+        "update_objects_schema": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "minProperties": 2,
+                "required": ["id"],
+                "properties": {
+                    "_operation": {"enum": ["update"]},
+                    "id": {"type": "integer"},
+                    "name": {"type": "string"},
+                    "type": {"type": "string"},
+                    "configuration": {}
+                }
+            }
+        },
+        "get_objects_schema": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["id"],
+                "properties": {
+                    "_operation": {"enum": ["get"]},
+                    "id": {"type": "integer"}
+                }
+            }
+        },
+        "delete_remove_objects_schema": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["id"],
+                "properties": {
+                    "_operation": {"enum": ["delete", "remove"]},
+                    "id": {"type": "integer"}
                 }
             }
         }

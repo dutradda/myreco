@@ -21,8 +21,8 @@
 # SOFTWARE.
 
 
-from myreco.engines.strategies.top_seller.core import TopSellerEngineCore
-from myreco.engines.strategies.utils import build_engine_data_path
+from myreco.engine_strategies.top_seller.strategy import TopSellerEngineStrategy
+from myreco.engine_strategies.top_seller.array import TopSellerArray
 from unittest import mock
 from jsonschema import ValidationError
 from os import makedirs
@@ -39,13 +39,9 @@ def CoroMock():
     return corofunc
 
 
-class EngineCoreTest(TopSellerEngineCore):
-
-    def get_data(self, session):
+class TopSellerArrayTest(TopSellerArray):
+    def get_data(self, items_model, session):
         asyncio.run_coroutine_threadsafe(asyncio.sleep(0.5), session.loop).result()
-        data_path = build_engine_data_path(self.engine)
-        if not os.path.isdir(data_path):
-            makedirs(data_path)
 
         data = [{'item_key': '2|test2', 'value': 1},
                 {'item_key': '1|test1', 'value': 3},
@@ -54,26 +50,46 @@ class EngineCoreTest(TopSellerEngineCore):
         data = '\n'.join(data)
 
         filename_prefix = 'top_seller'
-        file_ = gzip.open(os.path.join(data_path, filename_prefix) + '-000000001.gz', 'wt')
+        file_ = gzip.open(os.path.join(self._data_path, filename_prefix) + '-000000001.gz', 'wt')
         file_.write(data)
         file_.close()
         return {'lines_count': 3}
 
 
-class EngineCoreTestWithVars(EngineCoreTest):
+class EngineStrategyTest(TopSellerEngineStrategy):
+    object_types = {
+        'top_seller_array': TopSellerArrayTest
+    }
+
+
+class EngineObjectWithVars(TopSellerArrayTest):
+    pass
+
+
+class EngineStrategyTestWithVars(EngineStrategyTest):
     __configuration_schema__ = {
-        "type": "object",
-        "required": ["item_id_name", "aggregators_ids_name"],
-        "properties": {
-            "item_id_name": {"type": "string"},
-            "aggregators_ids_name": {"type": "string"}
+        'type': 'object',
+        'required': ['object_with_vars'],
+        'additionalProperties': False,
+        'properties': {
+            'object_with_vars': {
+                "type": "object",
+                "required": ["item_id_name", "aggregators_ids_name"],
+                "properties": {
+                    "item_id_name": {"type": "string"},
+                    "aggregators_ids_name": {"type": "string"}
+                }
+            }
         }
+    }
+    object_types = {
+        'object_with_vars': EngineObjectWithVars
     }
 
     def get_variables(self):
-        item_id_name = self.engine['configuration']['item_id_name']
-        aggregators_ids_name = self.engine['configuration']['aggregators_ids_name']
-        item_type_schema_props = self.engine['item_type']['schema']['properties']
+        item_id_name = self._config['object_with_vars']['item_id_name']
+        aggregators_ids_name = self._config['object_with_vars']['aggregators_ids_name']
+        item_type_schema_props = self._engine['item_type']['schema']['properties']
         return [{
             'name': item_id_name,
             'schema': item_type_schema_props[item_id_name]
@@ -83,24 +99,23 @@ class EngineCoreTestWithVars(EngineCoreTest):
         }]
 
     def _validate_config(self):
-        item_id_name = self.engine['configuration']['item_id_name']
-        aggregators_ids_name = self.engine['configuration']['aggregators_ids_name']
-        item_type_schema_props = self.engine['item_type']['schema']['properties']
+        item_id_name = self._config['object_with_vars']['item_id_name']
+        aggregators_ids_name = self._config['object_with_vars']['aggregators_ids_name']
+        item_type_schema_props = self._engine['item_type']['schema']['properties']
         message = "Configuration key '{}' not in item_type schema"
 
         if item_id_name not in item_type_schema_props:
             raise ValidationError(message.format('item_id_name'),
-                instance=self.engine['configuration'], schema=item_type_schema_props)
+                instance=self._config, schema=item_type_schema_props)
 
         elif aggregators_ids_name not in item_type_schema_props:
             raise ValidationError(message.format('aggregators_ids_name'),
-                instance=self.engine['configuration'], schema=item_type_schema_props)
+                instance=self._config, schema=item_type_schema_props)
 
     async def _build_items_vector(self):
         pass
 
     get_items = CoroMock()
-
 
 class MyProducts(object):
     test = 1

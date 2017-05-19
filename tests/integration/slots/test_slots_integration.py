@@ -24,7 +24,7 @@
 from unittest import mock
 from time import sleep
 from datetime import datetime
-from tests.integration.fixtures import EngineCoreTest
+from tests.integration.fixtures import EngineStrategyTest
 from swaggerit.models._base import _all_models
 import asyncio
 import tempfile
@@ -34,7 +34,7 @@ import ujson
 
 @pytest.fixture
 def init_db(models, session, api, monkeypatch):
-    monkeypatch.setattr('myreco.engines.strategies.base.makedirs', mock.MagicMock())
+    monkeypatch.setattr('myreco.engine_objects.object_base.makedirs', mock.MagicMock())
 
     user = {
         'name': 'test',
@@ -47,7 +47,7 @@ def init_db(models, session, api, monkeypatch):
     store = {
         'name': 'test',
         'country': 'test',
-        'configuration': {'data_path': '/test'}
+        'configuration': {}
     }
     session.loop.run_until_complete(models['stores'].insert(session, store))
 
@@ -84,56 +84,64 @@ def init_db(models, session, api, monkeypatch):
     session.loop.run_until_complete(models['item_types'].insert(session, item_type))
 
 
-    core = {
-        'name': 'test with vars',
-        'strategy_class': {
-            'module': 'tests.integration.fixtures',
-            'class_name': 'EngineCoreTestWithVars'
-        }
+    strategy = {
+        'name': 'test_with_vars',
+        'class_module': 'tests.integration.fixtures',
+        'class_name': 'EngineStrategyTestWithVars'
     }
-    session.loop.run_until_complete(models['engine_cores'].insert(session, core))
+    session.loop.run_until_complete(models['engine_strategies'].insert(session, strategy))
 
-    core = {
+    strategy = {
         'name': 'test',
-        'strategy_class': {
-            'module': 'tests.integration.fixtures',
-            'class_name': 'EngineCoreTest'
-        }
+        'class_module': 'tests.integration.fixtures',
+        'class_name': 'EngineStrategyTest'
     }
-    session.loop.run_until_complete(models['engine_cores'].insert(session, core))
+    session.loop.run_until_complete(models['engine_strategies'].insert(session, strategy))
 
     engine = {
-        'name': 'Visual Similarity',
-        'configuration_json': ujson.dumps({
-            'item_id_name': 'item_id',
-            'aggregators_ids_name': 'filter_test',
-            'data_importer_path': 'test.test'
-        }),
+        'name': 'Engine products with vars',
+        'objects': [{
+            '_operation': 'insert',
+            'name': 'Object with vars',
+            'type': 'object_with_vars',
+            'configuration': {
+                'item_id_name': 'item_id',
+                'aggregators_ids_name': 'filter_test',
+                'data_importer_path': 'test.test'
+            }
+        }],
         'store_id': 1,
-        'core_id': 1,
+        'strategy_id': 1,
         'item_type_id': 1
     }
     session.loop.run_until_complete(models['engines'].insert(session, engine))
     engine = {
-        'name': 'Categories Visual Similarity',
-        'configuration_json': ujson.dumps({
-            'item_id_name': 'item_id',
-            'aggregators_ids_name': 'filter_test',
-            'data_importer_path': 'test.test'
-        }),
+        'name': 'Engine categories with vars',
+        'objects': [{
+            '_operation': 'insert',
+            'name': 'Object with vars 2',
+            'type': 'object_with_vars',
+            'configuration': {
+                'item_id_name': 'item_id',
+                'aggregators_ids_name': 'filter_test',
+                'data_importer_path': 'test.test'
+            }
+        }],
         'store_id': 1,
-        'core_id': 1,
+        'strategy_id': 1,
         'item_type_id': 2
     }
     session.loop.run_until_complete(models['engines'].insert(session, engine))
     engine = {
         'name': 'Invalid Top Seller',
-        'configuration_json': ujson.dumps({
-            'days_interval': 7,
-            'data_importer_path': 'test.test'
-        }),
+        'objects': [{
+            '_operation': 'insert',
+            'name': 'Object',
+            'type': 'top_seller_array',
+            'configuration': {'days_interval': 7}
+        }],
         'store_id': 1,
-        'core_id': 2,
+        'strategy_id': 2,
         'item_type_id': 3
     }
     session.loop.run_until_complete(models['engines'].insert(session, engine))
@@ -143,9 +151,9 @@ def init_db(models, session, api, monkeypatch):
 
     yield None
 
-    _all_models.pop('store_items_products_1')
-    _all_models.pop('store_items_categories_1')
-    _all_models.pop('store_items_invalid_1')
+    _all_models.pop('store_items_products_1', None)
+    _all_models.pop('store_items_categories_1', None)
+    _all_models.pop('store_items_invalid_1', None)
 
 
 class TestSlotsModelPost(object):
@@ -283,10 +291,12 @@ class TestSlotsModelPost(object):
 
         assert resp.status == 201
         assert await resp.json() == [{
+            'id': 1,
             'max_items': 10,
             'name': 'test',
+            'store_id': 1,
+            'engine_id': 1,
             'fallbacks': [],
-            'id': 1,
             'slot_filters':[],
             'slot_variables': [
                 {
@@ -304,11 +314,15 @@ class TestSlotsModelPost(object):
                 }
             ],
             'engine': {
+                'id': 1,
+                'store_id': 1,
+                'item_type_id': 1,
+                'strategy_id': 1,
                 'item_type': {
                     'id': 1,
                     'store_items_class': None,
                     'stores': [{
-                        'configuration': {'data_path': '/test'},
+                        'configuration': {},
                         'country': 'test',
                         'id': 1,
                         'name': 'test'
@@ -330,38 +344,78 @@ class TestSlotsModelPost(object):
                     }],
                     'name': 'products'
                 },
-                'store_id': 1,
-                'name': 'Visual Similarity',
-                'item_type_id': 1,
-                'core_id': 1,
-                'core': {
+                'name': 'Engine products with vars',
+                'strategy': {
                     'id': 1,
-                    'name': 'test with vars',
-                    'strategy_class': {
-                        'class_name': 'EngineCoreTestWithVars',
-                        'module': 'tests.integration.fixtures'
-                    }
+                    'name': 'test_with_vars',
+                    'class_name': 'EngineStrategyTestWithVars',
+                    'class_module': 'tests.integration.fixtures',
+                    'object_types': ['object_with_vars']
                 },
-                'id': 1,
                 'variables': [{
                     'name': 'item_id', 'schema': {'type': 'integer'}
                 },{
                     'name': 'filter_test', 'schema': {'type': 'string'}
                 }],
-                'configuration': {
-                    'aggregators_ids_name': 'filter_test',
-                    'item_id_name': 'item_id',
-                    'data_importer_path': 'test.test'
-                },
                 'store': {
                     'id': 1,
                     'country': 'test',
                     'name': 'test',
-                    'configuration': {'data_path': '/test'}
-                }
-            },
-            'store_id': 1,
-            'engine_id': 1
+                    'configuration': {}
+                },
+                'objects': [{
+                    'id': 1,
+                    'item_type_id': 1,
+                    'store_id': 1,
+                    'strategy_id': 1,
+                    'name': 'Object with vars',
+                    'type': 'object_with_vars',
+                    'configuration': {
+                        'item_id_name': 'item_id',
+                        'aggregators_ids_name': 'filter_test',
+                        'data_importer_path': 'test.test'
+                    },
+                    'item_type': {
+                        'id': 1,
+                        'store_items_class': None,
+                        'stores': [{
+                            'configuration': {},
+                            'country': 'test',
+                            'id': 1,
+                            'name': 'test'
+                        }],
+                        'schema': {
+                            'type': 'object',
+                            'id_names': ['item_id'],
+                            'properties': {
+                                'filter_test': {'type': 'string'},
+                                'item_id': {'type': 'integer'}
+                            }
+                        },
+                        'available_filters': [{
+                            'name': 'filter_test',
+                            'schema': {'type': 'string'}
+                        },{
+                            'name': 'item_id',
+                            'schema': {'type': 'integer'}
+                        }],
+                        'name': 'products'
+                    },
+                    'strategy': {
+                        'id': 1,
+                        'name': 'test_with_vars',
+                        'class_name': 'EngineStrategyTestWithVars',
+                        'class_module': 'tests.integration.fixtures',
+                        'object_types': ['object_with_vars']
+                    },
+                    'store': {
+                        'id': 1,
+                        'country': 'test',
+                        'name': 'test',
+                        'configuration': {}
+                    }
+                }]
+            }
         }]
 
    async def test_post_with_insert_engine_external_variable_engine_filter(self, init_db, client, headers, headers_without_content_type):
@@ -384,10 +438,12 @@ class TestSlotsModelPost(object):
 
         assert resp.status == 201
         assert await resp.json() == [{
-            'fallbacks': [],
             'id': 1,
             'max_items': 10,
             'name': 'test',
+            'store_id': 1,
+            'engine_id': 1,
+            'fallbacks': [],
             'slot_variables': [],
             'slot_filters': [
                 {
@@ -408,11 +464,15 @@ class TestSlotsModelPost(object):
                 }
             ],
             'engine': {
+                'id': 1,
+                'store_id': 1,
+                'item_type_id': 1,
+                'strategy_id': 1,
                 'item_type': {
                     'id': 1,
                     'store_items_class': None,
                     'stores': [{
-                        'configuration': {'data_path': '/test'},
+                        'configuration': {},
                         'country': 'test',
                         'id': 1,
                         'name': 'test'
@@ -434,38 +494,78 @@ class TestSlotsModelPost(object):
                     }],
                     'name': 'products'
                 },
-                'store_id': 1,
-                'name': 'Visual Similarity',
-                'item_type_id': 1,
-                'core_id': 1,
-                'core': {
+                'name': 'Engine products with vars',
+                'strategy': {
                     'id': 1,
-                    'name': 'test with vars',
-                    'strategy_class': {
-                        'class_name': 'EngineCoreTestWithVars',
-                        'module': 'tests.integration.fixtures'
-                    }
+                    'name': 'test_with_vars',
+                    'class_name': 'EngineStrategyTestWithVars',
+                    'class_module': 'tests.integration.fixtures',
+                    'object_types': ['object_with_vars']
                 },
-                'id': 1,
                 'variables': [{
                     'name': 'item_id', 'schema': {'type': 'integer'}
                 },{
                     'name': 'filter_test', 'schema': {'type': 'string'}
                 }],
-                'configuration': {
-                    'aggregators_ids_name': 'filter_test',
-                    'item_id_name': 'item_id',
-                    'data_importer_path': 'test.test'
-                },
                 'store': {
                     'id': 1,
                     'country': 'test',
                     'name': 'test',
-                    'configuration': {'data_path': '/test'}
-                }
-            },
-            'store_id': 1,
-            'engine_id': 1
+                    'configuration': {}
+                },
+                'objects': [{
+                    'id': 1,
+                    'item_type_id': 1,
+                    'store_id': 1,
+                    'strategy_id': 1,
+                    'name': 'Object with vars',
+                    'type': 'object_with_vars',
+                    'configuration': {
+                        'item_id_name': 'item_id',
+                        'aggregators_ids_name': 'filter_test',
+                        'data_importer_path': 'test.test'
+                    },
+                    'item_type': {
+                        'id': 1,
+                        'store_items_class': None,
+                        'stores': [{
+                            'configuration': {},
+                            'country': 'test',
+                            'id': 1,
+                            'name': 'test'
+                        }],
+                        'schema': {
+                            'type': 'object',
+                            'id_names': ['item_id'],
+                            'properties': {
+                                'filter_test': {'type': 'string'},
+                                'item_id': {'type': 'integer'}
+                            }
+                        },
+                        'available_filters': [{
+                            'name': 'filter_test',
+                            'schema': {'type': 'string'}
+                        },{
+                            'name': 'item_id',
+                            'schema': {'type': 'integer'}
+                        }],
+                        'name': 'products'
+                    },
+                    'strategy': {
+                        'id': 1,
+                        'name': 'test_with_vars',
+                        'class_name': 'EngineStrategyTestWithVars',
+                        'class_module': 'tests.integration.fixtures',
+                        'object_types': ['object_with_vars']
+                    },
+                    'store': {
+                        'id': 1,
+                        'country': 'test',
+                        'name': 'test',
+                        'configuration': {}
+                    }
+                }]
+            }
         }]
 
    async def test_post_with_fallback(self, init_db, client, headers, headers_without_content_type):
@@ -522,11 +622,15 @@ class TestSlotsModelPost(object):
                     }
                 ],
                 'engine': {
+                    'id': 1,
+                    'store_id': 1,
+                    'item_type_id': 1,
+                    'strategy_id': 1,
                     'item_type': {
                         'id': 1,
                         'store_items_class': None,
                         'stores': [{
-                            'configuration': {'data_path': '/test'},
+                            'configuration': {},
                             'country': 'test',
                             'id': 1,
                             'name': 'test'
@@ -548,35 +652,77 @@ class TestSlotsModelPost(object):
                         }],
                         'name': 'products'
                     },
-                    'store_id': 1,
-                    'name': 'Visual Similarity',
-                    'item_type_id': 1,
-                    'core_id': 1,
-                    'core': {
+                    'name': 'Engine products with vars',
+                    'strategy': {
                         'id': 1,
-                        'name': 'test with vars',
-                        'strategy_class': {
-                            'class_name': 'EngineCoreTestWithVars',
-                            'module': 'tests.integration.fixtures'
-                        }
+                        'name': 'test_with_vars',
+                        'class_name': 'EngineStrategyTestWithVars',
+                        'class_module': 'tests.integration.fixtures',
+                        'object_types': ['object_with_vars']
                     },
-                    'id': 1,
                     'variables': [{
                         'name': 'item_id', 'schema': {'type': 'integer'}
                     },{
                         'name': 'filter_test', 'schema': {'type': 'string'}
                     }],
-                    'configuration': {
-                        'aggregators_ids_name': 'filter_test',
-                        'item_id_name': 'item_id',
-                        'data_importer_path': 'test.test'
-                    },
                     'store': {
                         'id': 1,
                         'country': 'test',
                         'name': 'test',
-                        'configuration': {'data_path': '/test'}
-                    }
+                        'configuration': {}
+                    },
+                    'objects': [{
+                        'id': 1,
+                        'item_type_id': 1,
+                        'store_id': 1,
+                        'strategy_id': 1,
+                        'name': 'Object with vars',
+                        'type': 'object_with_vars',
+                        'configuration': {
+                            'item_id_name': 'item_id',
+                            'aggregators_ids_name': 'filter_test',
+                            'data_importer_path': 'test.test'
+                        },
+                        'item_type': {
+                            'id': 1,
+                            'store_items_class': None,
+                            'stores': [{
+                                'configuration': {},
+                                'country': 'test',
+                                'id': 1,
+                                'name': 'test'
+                            }],
+                            'schema': {
+                                'type': 'object',
+                                'id_names': ['item_id'],
+                                'properties': {
+                                    'filter_test': {'type': 'string'},
+                                    'item_id': {'type': 'integer'}
+                                }
+                            },
+                            'available_filters': [{
+                                'name': 'filter_test',
+                                'schema': {'type': 'string'}
+                            },{
+                                'name': 'item_id',
+                                'schema': {'type': 'integer'}
+                            }],
+                            'name': 'products'
+                        },
+                        'strategy': {
+                            'id': 1,
+                            'name': 'test_with_vars',
+                            'class_name': 'EngineStrategyTestWithVars',
+                            'class_module': 'tests.integration.fixtures',
+                            'object_types': ['object_with_vars']
+                        },
+                        'store': {
+                            'id': 1,
+                            'country': 'test',
+                            'name': 'test',
+                            'configuration': {}
+                        }
+                    }]
                 },
                 'store_id': 1,
                 'engine_id': 1
@@ -601,11 +747,15 @@ class TestSlotsModelPost(object):
                 }
             ],
             'engine': {
+                'id': 1,
+                'store_id': 1,
+                'item_type_id': 1,
+                'strategy_id': 1,
                 'item_type': {
                     'id': 1,
                     'store_items_class': None,
                     'stores': [{
-                        'configuration': {'data_path': '/test'},
+                        'configuration': {},
                         'country': 'test',
                         'id': 1,
                         'name': 'test'
@@ -627,35 +777,77 @@ class TestSlotsModelPost(object):
                     }],
                     'name': 'products'
                 },
-                'store_id': 1,
-                'name': 'Visual Similarity',
-                'item_type_id': 1,
-                'core_id': 1,
-                'core': {
+                'name': 'Engine products with vars',
+                'strategy': {
                     'id': 1,
-                    'name': 'test with vars',
-                    'strategy_class': {
-                        'class_name': 'EngineCoreTestWithVars',
-                        'module': 'tests.integration.fixtures'
-                    }
+                    'name': 'test_with_vars',
+                    'class_name': 'EngineStrategyTestWithVars',
+                    'class_module': 'tests.integration.fixtures',
+                    'object_types': ['object_with_vars']
                 },
-                'id': 1,
                 'variables': [{
                     'name': 'item_id', 'schema': {'type': 'integer'}
                 },{
                     'name': 'filter_test', 'schema': {'type': 'string'}
                 }],
-                'configuration': {
-                    'aggregators_ids_name': 'filter_test',
-                    'item_id_name': 'item_id',
-                    'data_importer_path': 'test.test'
-                },
                 'store': {
                     'id': 1,
                     'country': 'test',
                     'name': 'test',
-                    'configuration': {'data_path': '/test'}
-                }
+                    'configuration': {}
+                },
+                'objects': [{
+                    'id': 1,
+                    'item_type_id': 1,
+                    'store_id': 1,
+                    'strategy_id': 1,
+                    'name': 'Object with vars',
+                    'type': 'object_with_vars',
+                    'configuration': {
+                        'item_id_name': 'item_id',
+                        'aggregators_ids_name': 'filter_test',
+                        'data_importer_path': 'test.test'
+                    },
+                    'item_type': {
+                        'id': 1,
+                        'store_items_class': None,
+                        'stores': [{
+                            'configuration': {},
+                            'country': 'test',
+                            'id': 1,
+                            'name': 'test'
+                        }],
+                        'schema': {
+                            'type': 'object',
+                            'id_names': ['item_id'],
+                            'properties': {
+                                'filter_test': {'type': 'string'},
+                                'item_id': {'type': 'integer'}
+                            }
+                        },
+                        'available_filters': [{
+                            'name': 'filter_test',
+                            'schema': {'type': 'string'}
+                        },{
+                            'name': 'item_id',
+                            'schema': {'type': 'integer'}
+                        }],
+                        'name': 'products'
+                    },
+                    'strategy': {
+                        'id': 1,
+                        'name': 'test_with_vars',
+                        'class_name': 'EngineStrategyTestWithVars',
+                        'class_module': 'tests.integration.fixtures',
+                        'object_types': ['object_with_vars']
+                    },
+                    'store': {
+                        'id': 1,
+                        'country': 'test',
+                        'name': 'test',
+                        'configuration': {}
+                    }
+                }]
             },
             'store_id': 1,
             'engine_id': 1
@@ -733,11 +925,15 @@ class TestSlotsModelGet(object):
                 }
             ],
             'engine': {
+                'id': 1,
+                'store_id': 1,
+                'item_type_id': 1,
+                'strategy_id': 1,
                 'item_type': {
                     'id': 1,
                     'store_items_class': None,
                     'stores': [{
-                        'configuration': {'data_path': '/test'},
+                        'configuration': {},
                         'country': 'test',
                         'id': 1,
                         'name': 'test'
@@ -759,35 +955,77 @@ class TestSlotsModelGet(object):
                     }],
                     'name': 'products'
                 },
-                'store_id': 1,
-                'name': 'Visual Similarity',
-                'item_type_id': 1,
-                'core_id': 1,
-                'core': {
+                'name': 'Engine products with vars',
+                'strategy': {
                     'id': 1,
-                    'name': 'test with vars',
-                    'strategy_class': {
-                        'class_name': 'EngineCoreTestWithVars',
-                        'module': 'tests.integration.fixtures'
-                    }
+                    'name': 'test_with_vars',
+                    'class_name': 'EngineStrategyTestWithVars',
+                    'class_module': 'tests.integration.fixtures',
+                    'object_types': ['object_with_vars']
                 },
-                'id': 1,
                 'variables': [{
                     'name': 'item_id', 'schema': {'type': 'integer'}
                 },{
                     'name': 'filter_test', 'schema': {'type': 'string'}
                 }],
-                'configuration': {
-                    'aggregators_ids_name': 'filter_test',
-                    'item_id_name': 'item_id',
-                    'data_importer_path': 'test.test'
-                },
                 'store': {
                     'id': 1,
                     'country': 'test',
                     'name': 'test',
-                    'configuration': {'data_path': '/test'}
-                }
+                    'configuration': {}
+                },
+                'objects': [{
+                    'id': 1,
+                    'item_type_id': 1,
+                    'store_id': 1,
+                    'strategy_id': 1,
+                    'name': 'Object with vars',
+                    'type': 'object_with_vars',
+                    'configuration': {
+                        'item_id_name': 'item_id',
+                        'aggregators_ids_name': 'filter_test',
+                        'data_importer_path': 'test.test'
+                    },
+                    'item_type': {
+                        'id': 1,
+                        'store_items_class': None,
+                        'stores': [{
+                            'configuration': {},
+                            'country': 'test',
+                            'id': 1,
+                            'name': 'test'
+                        }],
+                        'schema': {
+                            'type': 'object',
+                            'id_names': ['item_id'],
+                            'properties': {
+                                'filter_test': {'type': 'string'},
+                                'item_id': {'type': 'integer'}
+                            }
+                        },
+                        'available_filters': [{
+                            'name': 'filter_test',
+                            'schema': {'type': 'string'}
+                        },{
+                            'name': 'item_id',
+                            'schema': {'type': 'integer'}
+                        }],
+                        'name': 'products'
+                    },
+                    'strategy': {
+                        'id': 1,
+                        'name': 'test_with_vars',
+                        'class_name': 'EngineStrategyTestWithVars',
+                        'class_module': 'tests.integration.fixtures',
+                        'object_types': ['object_with_vars']
+                    },
+                    'store': {
+                        'id': 1,
+                        'country': 'test',
+                        'name': 'test',
+                        'configuration': {}
+                    }
+                }]
             },
             'store_id': 1,
             'engine_id': 1
@@ -1006,11 +1244,15 @@ class TestSlotsModelUriTemplatePatch(object):
                 }
             ],
             'engine': {
+                'id': 1,
+                'store_id': 1,
+                'item_type_id': 1,
+                'strategy_id': 1,
                 'item_type': {
                     'id': 1,
                     'store_items_class': None,
                     'stores': [{
-                        'configuration': {'data_path': '/test'},
+                        'configuration': {},
                         'country': 'test',
                         'id': 1,
                         'name': 'test'
@@ -1032,35 +1274,77 @@ class TestSlotsModelUriTemplatePatch(object):
                     }],
                     'name': 'products'
                 },
-                'store_id': 1,
-                'name': 'Visual Similarity',
-                'item_type_id': 1,
-                'core_id': 1,
-                'core': {
+                'name': 'Engine products with vars',
+                'strategy': {
                     'id': 1,
-                    'name': 'test with vars',
-                    'strategy_class': {
-                        'class_name': 'EngineCoreTestWithVars',
-                        'module': 'tests.integration.fixtures'
-                    }
+                    'name': 'test_with_vars',
+                    'class_name': 'EngineStrategyTestWithVars',
+                    'class_module': 'tests.integration.fixtures',
+                    'object_types': ['object_with_vars']
                 },
-                'id': 1,
                 'variables': [{
                     'name': 'item_id', 'schema': {'type': 'integer'}
                 },{
                     'name': 'filter_test', 'schema': {'type': 'string'}
                 }],
-                'configuration': {
-                    'aggregators_ids_name': 'filter_test',
-                    'item_id_name': 'item_id',
-                    'data_importer_path': 'test.test'
-                },
                 'store': {
                     'id': 1,
                     'country': 'test',
                     'name': 'test',
-                    'configuration': {'data_path': '/test'}
-                }
+                    'configuration': {}
+                },
+                'objects': [{
+                    'id': 1,
+                    'item_type_id': 1,
+                    'store_id': 1,
+                    'strategy_id': 1,
+                    'name': 'Object with vars',
+                    'type': 'object_with_vars',
+                    'configuration': {
+                        'item_id_name': 'item_id',
+                        'aggregators_ids_name': 'filter_test',
+                        'data_importer_path': 'test.test'
+                    },
+                    'item_type': {
+                        'id': 1,
+                        'store_items_class': None,
+                        'stores': [{
+                            'configuration': {},
+                            'country': 'test',
+                            'id': 1,
+                            'name': 'test'
+                        }],
+                        'schema': {
+                            'type': 'object',
+                            'id_names': ['item_id'],
+                            'properties': {
+                                'filter_test': {'type': 'string'},
+                                'item_id': {'type': 'integer'}
+                            }
+                        },
+                        'available_filters': [{
+                            'name': 'filter_test',
+                            'schema': {'type': 'string'}
+                        },{
+                            'name': 'item_id',
+                            'schema': {'type': 'integer'}
+                        }],
+                        'name': 'products'
+                    },
+                    'strategy': {
+                        'id': 1,
+                        'name': 'test_with_vars',
+                        'class_name': 'EngineStrategyTestWithVars',
+                        'class_module': 'tests.integration.fixtures',
+                        'object_types': ['object_with_vars']
+                    },
+                    'store': {
+                        'id': 1,
+                        'country': 'test',
+                        'name': 'test',
+                        'configuration': {}
+                    }
+                }]
             },
             'store_id': 1,
             'engine_id': 1
@@ -1154,11 +1438,15 @@ class TestSlotsModelUriTemplateGet(object):
                 }
             ],
             'engine': {
+                'id': 1,
+                'store_id': 1,
+                'item_type_id': 1,
+                'strategy_id': 1,
                 'item_type': {
                     'id': 1,
                     'store_items_class': None,
                     'stores': [{
-                        'configuration': {'data_path': '/test'},
+                        'configuration': {},
                         'country': 'test',
                         'id': 1,
                         'name': 'test'
@@ -1180,35 +1468,77 @@ class TestSlotsModelUriTemplateGet(object):
                     }],
                     'name': 'products'
                 },
-                'store_id': 1,
-                'name': 'Visual Similarity',
-                'item_type_id': 1,
-                'core_id': 1,
-                'core': {
+                'name': 'Engine products with vars',
+                'strategy': {
                     'id': 1,
-                    'name': 'test with vars',
-                    'strategy_class': {
-                        'class_name': 'EngineCoreTestWithVars',
-                        'module': 'tests.integration.fixtures'
-                    }
+                    'name': 'test_with_vars',
+                    'class_name': 'EngineStrategyTestWithVars',
+                    'class_module': 'tests.integration.fixtures',
+                    'object_types': ['object_with_vars']
                 },
-                'id': 1,
                 'variables': [{
                     'name': 'item_id', 'schema': {'type': 'integer'}
                 },{
                     'name': 'filter_test', 'schema': {'type': 'string'}
                 }],
-                'configuration': {
-                    'aggregators_ids_name': 'filter_test',
-                    'item_id_name': 'item_id',
-                    'data_importer_path': 'test.test'
-                },
                 'store': {
                     'id': 1,
                     'country': 'test',
                     'name': 'test',
-                    'configuration': {'data_path': '/test'}
-                }
+                    'configuration': {}
+                },
+                'objects': [{
+                    'id': 1,
+                    'item_type_id': 1,
+                    'store_id': 1,
+                    'strategy_id': 1,
+                    'name': 'Object with vars',
+                    'type': 'object_with_vars',
+                    'configuration': {
+                        'item_id_name': 'item_id',
+                        'aggregators_ids_name': 'filter_test',
+                        'data_importer_path': 'test.test'
+                    },
+                    'item_type': {
+                        'id': 1,
+                        'store_items_class': None,
+                        'stores': [{
+                            'configuration': {},
+                            'country': 'test',
+                            'id': 1,
+                            'name': 'test'
+                        }],
+                        'schema': {
+                            'type': 'object',
+                            'id_names': ['item_id'],
+                            'properties': {
+                                'filter_test': {'type': 'string'},
+                                'item_id': {'type': 'integer'}
+                            }
+                        },
+                        'available_filters': [{
+                            'name': 'filter_test',
+                            'schema': {'type': 'string'}
+                        },{
+                            'name': 'item_id',
+                            'schema': {'type': 'integer'}
+                        }],
+                        'name': 'products'
+                    },
+                    'strategy': {
+                        'id': 1,
+                        'name': 'test_with_vars',
+                        'class_name': 'EngineStrategyTestWithVars',
+                        'class_module': 'tests.integration.fixtures',
+                        'object_types': ['object_with_vars']
+                    },
+                    'store': {
+                        'id': 1,
+                        'country': 'test',
+                        'name': 'test',
+                        'configuration': {}
+                    }
+                }]
             },
             'store_id': 1,
             'engine_id': 1

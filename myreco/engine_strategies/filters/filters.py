@@ -21,7 +21,6 @@
 # SOFTWARE.
 
 
-from myreco.engines.strategies.items_indices_map import ItemsIndicesMap
 from zlib import decompress, compress
 from collections import defaultdict
 import numpy as np
@@ -198,8 +197,7 @@ class IndexFilterOf(FilterBaseBy):
         return 'OK'
 
     async def filter(self, session, items_vector, items_keys):
-        items_indices_map = ItemsIndicesMap(self.items_model)
-        indices = await items_indices_map.get_indices(items_keys, session)
+        indices = await self.items_model.indices_map.get_indices(items_keys, session)
         if indices:
             indices = np.array(indices, dtype=np.int32)
             self._filter_by_indices(items_vector, indices)
