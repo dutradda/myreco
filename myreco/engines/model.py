@@ -149,6 +149,6 @@ class EnginesModelBase(AbstractConcreteBase):
 def build_engines_objects_table(metadata, **kwargs):
     return sa.Table(
         'engines_objects', metadata,
-        sa.Column('engine_id', sa.Integer, sa.ForeignKey('engines.id', onupdate='CASCADE'), primary_key=True),
-        sa.Column('object_id', sa.Integer, sa.ForeignKey('engine_objects.id', onupdate='CASCADE'), primary_key=True),
+        sa.Column('engine_id', sa.Integer, sa.ForeignKey('engines.id', onupdate='CASCADE', ondelete='CASCADE'), primary_key=True),
+        sa.Column('object_id', sa.Integer, sa.ForeignKey('engine_objects.id', onupdate='CASCADE', ondelete='CASCADE'), primary_key=True),
         **kwargs)
