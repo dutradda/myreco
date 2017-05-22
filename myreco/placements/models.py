@@ -275,9 +275,10 @@ class PlacementsModelBase(AbstractConcreteBase):
 class VariationsModelBase(AbstractConcreteBase):
     __tablename__ = 'variations'
     __use_redis__ = False
+    __table_args__ = (sa.UniqueConstraint('name', 'placement_hash'),)
 
     id = sa.Column(sa.Integer, primary_key=True)
-    name = sa.Column(sa.String(255), unique=True, nullable=False)
+    name = sa.Column(sa.String(255), nullable=False)
     weight = sa.Column(sa.Float)
 
     @declared_attr
