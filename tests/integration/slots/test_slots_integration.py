@@ -196,8 +196,7 @@ class TestSlotsModelPost(object):
             'engine_id': 1,
             'slot_variables': [{
                 '_operation': 'insert',
-                'external_variable_name': 'test',
-                'external_variable_store_id': 1,
+                'external_variable_id': 1,
                 'engine_variable_name': 'test'
             }]
         }]
@@ -212,9 +211,8 @@ class TestSlotsModelPost(object):
                 'store_id': 1,
                 'slot_variables': [{
                     '_operation': 'insert',
-                    'engine_variable_name': 'test',
-                    'external_variable_name': 'test',
-                    'external_variable_store_id': 1
+                    'external_variable_id': 1,
+                    'engine_variable_name': 'test'
                 }]
             }],
             'schema': {
@@ -237,8 +235,7 @@ class TestSlotsModelPost(object):
             'engine_id': 1,
             'slot_filters': [{
                 '_operation': 'insert',
-                'external_variable_name': 'test',
-                'external_variable_store_id': 1,
+                'external_variable_id': 1,
                 'property_name': 'test',
                 'type_id': 'property_value',
                 'is_inclusive': True
@@ -258,8 +255,7 @@ class TestSlotsModelPost(object):
                     'property_name': 'test',
                     'is_inclusive': True,
                     'type_id': 'property_value',
-                    'external_variable_name': 'test',
-                    'external_variable_store_id': 1
+                    'external_variable_id': 1
                 }]
             }],
             'schema': {
@@ -282,8 +278,7 @@ class TestSlotsModelPost(object):
             'engine_id': 1,
             'slot_variables': [{
                 '_operation': 'insert',
-                'external_variable_name': 'test',
-                'external_variable_store_id': 1,
+                'external_variable_id': 1,
                 'engine_variable_name': 'filter_test'
             }]
         }]
@@ -301,6 +296,7 @@ class TestSlotsModelPost(object):
             'slot_variables': [
                 {
                     'external_variable': {
+                        'id': 1,
                         'name': 'test',
                         'store_id': 1
                     },
@@ -309,8 +305,7 @@ class TestSlotsModelPost(object):
                     'slot_id': 1,
                     'override': False,
                     'override_value': None,
-                    'external_variable_name': 'test',
-                    'external_variable_store_id': 1
+                    'external_variable_id': 1
                 }
             ],
             'engine': {
@@ -427,8 +422,7 @@ class TestSlotsModelPost(object):
             'engine_id': 1,
             'slot_filters': [{
                 '_operation': 'insert',
-                'external_variable_name': 'test',
-                'external_variable_store_id': 1,
+                'external_variable_id': 1,
                 'is_inclusive': True,
                 'type_id': 'property_value',
                 'property_name': 'filter_test'
@@ -448,6 +442,7 @@ class TestSlotsModelPost(object):
             'slot_filters': [
                 {
                     'external_variable': {
+                        'id': 1,
                         'name': 'test',
                         'store_id': 1
                     },
@@ -457,8 +452,7 @@ class TestSlotsModelPost(object):
                     'override': False,
                     'override_value': None,
                     'skip_values': None,
-                    'external_variable_name': 'test',
-                    'external_variable_store_id': 1,
+                    'external_variable_id': 1,
                     'is_inclusive': True,
                     'type_id': 'property_value'
                 }
@@ -577,8 +571,7 @@ class TestSlotsModelPost(object):
             'engine_id': 1,
             'slot_variables': [{
                 '_operation': 'insert',
-                'external_variable_name': 'test',
-                'external_variable_store_id': 1,
+                'external_variable_id': 1,
                 'engine_variable_name': 'item_id'
             }]
         }]
@@ -591,8 +584,7 @@ class TestSlotsModelPost(object):
             'engine_id': 1,
             'slot_variables': [{
                 '_operation': 'insert',
-                'external_variable_name': 'test',
-                'external_variable_store_id': 1,
+                'external_variable_id': 1,
                 'engine_variable_name': 'item_id'
             }],
             'fallbacks': [{'id': 1}]
@@ -609,6 +601,7 @@ class TestSlotsModelPost(object):
                 'slot_variables': [
                     {
                         'external_variable': {
+                            'id': 1,
                             'name': 'test',
                             'store_id': 1
                         },
@@ -617,8 +610,7 @@ class TestSlotsModelPost(object):
                         'slot_id': 1,
                         'override': False,
                         'override_value': None,
-                        'external_variable_name': 'test',
-                        'external_variable_store_id': 1
+                        'external_variable_id': 1
                     }
                 ],
                 'engine': {
@@ -734,6 +726,7 @@ class TestSlotsModelPost(object):
             'slot_variables': [
                 {
                     'external_variable': {
+                        'id': 1,
                         'name': 'test',
                         'store_id': 1
                     },
@@ -742,8 +735,7 @@ class TestSlotsModelPost(object):
                     'slot_id': 2,
                     'override': False,
                     'override_value': None,
-                    'external_variable_name': 'test',
-                    'external_variable_store_id': 1
+                    'external_variable_id': 1
                 }
             ],
             'engine': {
@@ -862,8 +854,7 @@ class TestSlotsModelPost(object):
             'engine_id': 1,
             'slot_variables': [{
                 '_operation': 'insert',
-                'external_variable_name': 'test',
-                'external_variable_store_id': 1,
+                'external_variable_id': 1,
                 'engine_variable_name': 'item_id'
             }]
         }]
@@ -894,8 +885,7 @@ class TestSlotsModelGet(object):
             'engine_id': 1,
             'slot_variables': [{
                 '_operation': 'insert',
-                'external_variable_name': 'test',
-                'external_variable_store_id': 1,
+                'external_variable_id': 1,
                 'engine_variable_name': 'filter_test'
             }]
         }]
@@ -912,6 +902,7 @@ class TestSlotsModelGet(object):
             'slot_variables': [
                 {
                     'external_variable': {
+                        'id': 1,
                         'name': 'test',
                         'store_id': 1
                     },
@@ -920,8 +911,7 @@ class TestSlotsModelGet(object):
                     'slot_id': 1,
                     'override': False,
                     'override_value': None,
-                    'external_variable_name': 'test',
-                    'external_variable_store_id': 1
+                    'external_variable_id': 1
                 }
             ],
             'engine': {
@@ -1086,8 +1076,7 @@ class TestSlotsModelUriTemplatePatch(object):
             'engine_id': 1,
             'slot_variables': [{
                 '_operation': 'insert',
-                'external_variable_name': 'test',
-                'external_variable_store_id': 1,
+                'external_variable_id': 1,
                 'engine_variable_name': 'filter_test'
             }]
         }]
@@ -1132,8 +1121,7 @@ class TestSlotsModelUriTemplatePatch(object):
             'engine_id': 1,
             'slot_variables': [{
                 '_operation': 'insert',
-                'external_variable_name': 'test',
-                'external_variable_store_id': 1,
+                'external_variable_id': 1,
                 'engine_variable_name': 'filter_test'
             }]
         }]
@@ -1158,8 +1146,7 @@ class TestSlotsModelUriTemplatePatch(object):
             'engine_id': 1,
             'slot_variables': [{
                 '_operation': 'insert',
-                'external_variable_name': 'test',
-                'external_variable_store_id': 1,
+                'external_variable_id': 1,
                 'engine_variable_name': 'filter_test'
             }]
         },{
@@ -1169,8 +1156,7 @@ class TestSlotsModelUriTemplatePatch(object):
             'engine_id': 2,
             'slot_variables': [{
                 '_operation': 'insert',
-                'external_variable_name': 'test',
-                'external_variable_store_id': 1,
+                'external_variable_id': 1,
                 'engine_variable_name': 'item_id'
             }]
         }]
@@ -1204,8 +1190,7 @@ class TestSlotsModelUriTemplatePatch(object):
             'engine_id': 1,
             'slot_variables': [{
                 '_operation': 'insert',
-                'external_variable_name': 'test',
-                'external_variable_store_id': 1,
+                'external_variable_id': 1,
                 'engine_variable_name': 'item_id'
             }]
         }]
@@ -1231,6 +1216,7 @@ class TestSlotsModelUriTemplatePatch(object):
             'slot_variables': [
                 {
                     'external_variable': {
+                        'id': 1,
                         'name': 'test',
                         'store_id': 1
                     },
@@ -1239,8 +1225,7 @@ class TestSlotsModelUriTemplatePatch(object):
                     'slot_id': 1,
                     'override': False,
                     'override_value': None,
-                    'external_variable_name': 'test',
-                    'external_variable_store_id': 1
+                    'external_variable_id': 1
                 }
             ],
             'engine': {
@@ -1368,8 +1353,7 @@ class TestSlotsModelUriTemplateDelete(object):
             'engine_id': 1,
             'slot_variables': [{
                 '_operation': 'insert',
-                'external_variable_name': 'test',
-                'external_variable_store_id': 1,
+                'external_variable_id': 1,
                 'engine_variable_name': 'filter_test'
             }]
         }]
@@ -1406,8 +1390,7 @@ class TestSlotsModelUriTemplateGet(object):
             'engine_id': 1,
             'slot_variables': [{
                 '_operation': 'insert',
-                'external_variable_name': 'test',
-                'external_variable_store_id': 1,
+                'external_variable_id': 1,
                 'engine_variable_name': 'filter_test'
             }]
         }]
@@ -1425,6 +1408,7 @@ class TestSlotsModelUriTemplateGet(object):
             'slot_variables': [
                 {
                     'external_variable': {
+                        'id': 1,
                         'name': 'test',
                         'store_id': 1
                     },
@@ -1433,8 +1417,7 @@ class TestSlotsModelUriTemplateGet(object):
                     'slot_id': 1,
                     'override': False,
                     'override_value': None,
-                    'external_variable_name': 'test',
-                    'external_variable_store_id': 1
+                    'external_variable_id': 1
                 }
             ],
             'engine': {

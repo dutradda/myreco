@@ -560,36 +560,31 @@ def update_filters_init_db(models, session, api, monkeypatch):
         'engine_id': 1,
         'slot_filters': [{
             '_operation': 'insert',
-            'external_variable_name': 'test',
-            'external_variable_store_id': 1,
+            'external_variable_id': 1,
             'is_inclusive': True,
             'type_id': 'property_value',
             'property_name': 'filter1'
         },{
             '_operation': 'insert',
-            'external_variable_name': 'test',
-            'external_variable_store_id': 1,
+            'external_variable_id': 1,
             'is_inclusive': True,
             'type_id': 'property_value',
             'property_name': 'filter2'
         },{
             '_operation': 'insert',
-            'external_variable_name': 'test',
-            'external_variable_store_id': 1,
+            'external_variable_id': 1,
             'is_inclusive': True,
             'type_id': 'property_value',
             'property_name': 'filter3'
         },{
             '_operation': 'insert',
-            'external_variable_name': 'test',
-            'external_variable_store_id': 1,
+            'external_variable_id': 1,
             'is_inclusive': True,
             'type_id': 'property_value',
             'property_name': 'filter4'
         },{
             '_operation': 'insert',
-            'external_variable_name': 'test',
-            'external_variable_store_id': 1,
+            'external_variable_id': 1,
             'is_inclusive': True,
             'type_id': 'property_value',
             'property_name': 'filter5'

@@ -29,9 +29,11 @@ import sqlalchemy as sa
 class ExternalVariablesModelBase(AbstractConcreteBase):
     __tablename__ = 'external_variables'
     __swagger_json__ = get_swagger_json(__file__)
+    __table_args__ = (sa.UniqueConstraint('name', 'store_id'),)
 
-    name = sa.Column(sa.String(255), primary_key=True)
+    id = sa.Column(sa.Integer, primary_key=True)
+    name = sa.Column(sa.String(255), nullable=False)
 
     @declared_attr
     def store_id(cls):
-        return sa.Column(sa.ForeignKey('stores.id'), primary_key=True)
+        return sa.Column(sa.ForeignKey('stores.id'), nullable=False)

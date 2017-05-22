@@ -33,13 +33,12 @@ import ujson
 class SlotVariablesModelBase(AbstractConcreteBase):
     __tablename__ = 'slot_variables'
     __use_redis__ = False
-    __id_names__ = ['id']
+    __table_args__ = (sa.UniqueConstraint('engine_variable_name', 'slot_id'),)
 
-    # To autoincrement works a alter table with autoincrement is necessary
-    id = sa.Column(sa.Integer, nullable=False, unique=True, autoincrement=True, index=True)
+    id = sa.Column(sa.Integer, primary_key=True)
     override = sa.Column(sa.Boolean, default=False)
     override_value_json = sa.Column(sa.Text)
-    engine_variable_name = sa.Column(sa.String(255), primary_key=True)
+    engine_variable_name = sa.Column(sa.String(255), nullable=False)
 
     @property
     def override_value(self):
@@ -61,36 +60,28 @@ class SlotVariablesModelBase(AbstractConcreteBase):
             dict_inst['override_value'] = self.override_value
 
     @declared_attr
-    def external_variable_name(cls):
-        return sa.Column(sa.ForeignKey('external_variables.name', ondelete='CASCADE', onupdate='CASCADE'), nullable=False)
-
-    @declared_attr
-    def external_variable_store_id(cls):
-        return sa.Column(sa.ForeignKey('external_variables.store_id', ondelete='CASCADE', onupdate='CASCADE'), nullable=False)
+    def external_variable_id(cls):
+        return sa.Column(sa.ForeignKey('external_variables.id', ondelete='CASCADE', onupdate='CASCADE'), nullable=False)
 
     @declared_attr
     def slot_id(cls):
-        return sa.Column(sa.ForeignKey('slots.id', ondelete='CASCADE', onupdate='CASCADE'), primary_key=True)
+        return sa.Column(sa.ForeignKey('slots.id', ondelete='CASCADE', onupdate='CASCADE'), nullable=False)
 
     @declared_attr
     def external_variable(cls):
-        return sa.orm.relationship('ExternalVariablesModel',
-            foreign_keys=[cls.external_variable_name, cls.external_variable_store_id],
-            primaryjoin='and_(SlotVariablesModel.external_variable_name == ExternalVariablesModel.name, '\
-                        'SlotVariablesModel.external_variable_store_id == ExternalVariablesModel.store_id)')
+        return sa.orm.relationship('ExternalVariablesModel')
 
 
 class SlotFiltersModelBase(AbstractConcreteBase):
     __tablename__ = 'slot_filters'
     __use_redis__ = False
     __factory__ = FiltersFactory
-    __id_names__ = ['id']
+    __table_args__ = (sa.UniqueConstraint('is_inclusive', 'property_name', 'type_id', 'slot_id'),)
 
-    # To autoincrement works a alter table with autoincrement is necessary
-    id = sa.Column(sa.Integer, nullable=False, unique=True, autoincrement=True, index=True)
-    is_inclusive = sa.Column(sa.Boolean, default=True, primary_key=True)
-    property_name = sa.Column(sa.String(255), nullable=False, primary_key=True)
-    type_id = sa.Column(sa.String(255), primary_key=True)
+    id = sa.Column(sa.Integer, primary_key=True)
+    is_inclusive = sa.Column(sa.Boolean, default=True, nullable=False)
+    property_name = sa.Column(sa.String(255), nullable=False)
+    type_id = sa.Column(sa.String(255), nullable=False)
     override = sa.Column(sa.Boolean, default=False)
     override_value_json = sa.Column(sa.Text)
     skip_values_json = sa.Column(sa.Text)
@@ -130,23 +121,16 @@ class SlotFiltersModelBase(AbstractConcreteBase):
             dict_inst['override_value'] = self.override_value
 
     @declared_attr
-    def external_variable_name(cls):
-        return sa.Column(sa.ForeignKey('external_variables.name', ondelete='CASCADE', onupdate='CASCADE'), nullable=False)
-
-    @declared_attr
-    def external_variable_store_id(cls):
-        return sa.Column(sa.ForeignKey('external_variables.store_id', ondelete='CASCADE', onupdate='CASCADE'), nullable=False)
+    def external_variable_id(cls):
+        return sa.Column(sa.ForeignKey('external_variables.id', ondelete='CASCADE', onupdate='CASCADE'), nullable=False)
 
     @declared_attr
     def slot_id(cls):
-        return sa.Column(sa.ForeignKey('slots.id', ondelete='CASCADE', onupdate='CASCADE'), primary_key=True)
+        return sa.Column(sa.ForeignKey('slots.id', ondelete='CASCADE', onupdate='CASCADE'), nullable=False)
 
     @declared_attr
     def external_variable(cls):
-        return sa.orm.relationship('ExternalVariablesModel',
-            foreign_keys=[cls.external_variable_name, cls.external_variable_store_id],
-            primaryjoin='and_(SlotFiltersModel.external_variable_name == ExternalVariablesModel.name, '\
-                        'SlotFiltersModel.external_variable_store_id == ExternalVariablesModel.store_id)')
+        return sa.orm.relationship('ExternalVariablesModel')
 
     @property
     def type(self):

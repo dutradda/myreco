@@ -216,33 +216,33 @@ def init_db(models, session, api, temp_dir):
     }
     session.loop.run_until_complete(models['engines'].insert(session, engine))
 
-    session.loop.run_until_complete(models['external_variables'].insert(session, {'name': 'test', 'store_id': 1}))
-    session.loop.run_until_complete(models['external_variables'].insert(session, {'name': 'test2', 'store_id': 1}))
-    session.loop.run_until_complete(models['external_variables'].insert(session, {'name': 'test3', 'store_id': 1}))
-    session.loop.run_until_complete(models['external_variables'].insert(session, {'name': 'filter_string_inclusive', 'store_id': 1}))
-    session.loop.run_until_complete(models['external_variables'].insert(session, {'name': 'filter_integer_inclusive', 'store_id': 1}))
-    session.loop.run_until_complete(models['external_variables'].insert(session, {'name': 'filter_base_prop_inclusive', 'store_id': 1}))
-    session.loop.run_until_complete(models['external_variables'].insert(session, {'name': 'filter_boolean_inclusive', 'store_id': 1}))
-    session.loop.run_until_complete(models['external_variables'].insert(session, {'name': 'filter_array_inclusive', 'store_id': 1}))
-    session.loop.run_until_complete(models['external_variables'].insert(session, {'name': 'filter_object_inclusive', 'store_id': 1}))
-    session.loop.run_until_complete(models['external_variables'].insert(session, {'name': 'filter_string_exclusive', 'store_id': 1}))
-    session.loop.run_until_complete(models['external_variables'].insert(session, {'name': 'filter_integer_exclusive', 'store_id': 1}))
-    session.loop.run_until_complete(models['external_variables'].insert(session, {'name': 'filter_base_prop_exclusive', 'store_id': 1}))
-    session.loop.run_until_complete(models['external_variables'].insert(session, {'name': 'filter_boolean_exclusive', 'store_id': 1}))
-    session.loop.run_until_complete(models['external_variables'].insert(session, {'name': 'filter_array_exclusive', 'store_id': 1}))
-    session.loop.run_until_complete(models['external_variables'].insert(session, {'name': 'filter_object_exclusive', 'store_id': 1}))
-    session.loop.run_until_complete(models['external_variables'].insert(session, {'name': 'filter_string_inclusive_of', 'store_id': 1}))
-    session.loop.run_until_complete(models['external_variables'].insert(session, {'name': 'filter_integer_inclusive_of', 'store_id': 1}))
-    session.loop.run_until_complete(models['external_variables'].insert(session, {'name': 'filter_boolean_inclusive_of', 'store_id': 1}))
-    session.loop.run_until_complete(models['external_variables'].insert(session, {'name': 'filter_array_inclusive_of', 'store_id': 1}))
-    session.loop.run_until_complete(models['external_variables'].insert(session, {'name': 'filter_object_inclusive_of', 'store_id': 1}))
-    session.loop.run_until_complete(models['external_variables'].insert(session, {'name': 'filter_string_exclusive_of', 'store_id': 1}))
-    session.loop.run_until_complete(models['external_variables'].insert(session, {'name': 'filter_integer_exclusive_of', 'store_id': 1}))
-    session.loop.run_until_complete(models['external_variables'].insert(session, {'name': 'filter_boolean_exclusive_of', 'store_id': 1}))
-    session.loop.run_until_complete(models['external_variables'].insert(session, {'name': 'filter_array_exclusive_of', 'store_id': 1}))
-    session.loop.run_until_complete(models['external_variables'].insert(session, {'name': 'filter_object_exclusive_of', 'store_id': 1}))
-    session.loop.run_until_complete(models['external_variables'].insert(session, {'name': 'index_inclusive_of', 'store_id': 1}))
-    session.loop.run_until_complete(models['external_variables'].insert(session, {'name': 'index_exclusive_of', 'store_id': 1}))
+    session.loop.run_until_complete(models['external_variables'].insert(session, {'name': 'test', 'store_id': 1})) # ID: 1
+    session.loop.run_until_complete(models['external_variables'].insert(session, {'name': 'test2', 'store_id': 1})) # ID: 2
+    session.loop.run_until_complete(models['external_variables'].insert(session, {'name': 'test3', 'store_id': 1})) # ID: 3
+    session.loop.run_until_complete(models['external_variables'].insert(session, {'name': 'filter_string_inclusive', 'store_id': 1})) # ID: 4
+    session.loop.run_until_complete(models['external_variables'].insert(session, {'name': 'filter_integer_inclusive', 'store_id': 1})) # ID: 5
+    session.loop.run_until_complete(models['external_variables'].insert(session, {'name': 'filter_base_prop_inclusive', 'store_id': 1})) # ID: 6
+    session.loop.run_until_complete(models['external_variables'].insert(session, {'name': 'filter_boolean_inclusive', 'store_id': 1})) # ID: 7
+    session.loop.run_until_complete(models['external_variables'].insert(session, {'name': 'filter_array_inclusive', 'store_id': 1})) # ID: 8
+    session.loop.run_until_complete(models['external_variables'].insert(session, {'name': 'filter_object_inclusive', 'store_id': 1})) # ID: 9
+    session.loop.run_until_complete(models['external_variables'].insert(session, {'name': 'filter_string_exclusive', 'store_id': 1})) # ID: 10
+    session.loop.run_until_complete(models['external_variables'].insert(session, {'name': 'filter_integer_exclusive', 'store_id': 1})) # ID: 11
+    session.loop.run_until_complete(models['external_variables'].insert(session, {'name': 'filter_base_prop_exclusive', 'store_id': 1})) # ID: 12
+    session.loop.run_until_complete(models['external_variables'].insert(session, {'name': 'filter_boolean_exclusive', 'store_id': 1})) # ID: 13
+    session.loop.run_until_complete(models['external_variables'].insert(session, {'name': 'filter_array_exclusive', 'store_id': 1})) # ID: 14
+    session.loop.run_until_complete(models['external_variables'].insert(session, {'name': 'filter_object_exclusive', 'store_id': 1})) # ID: 15
+    session.loop.run_until_complete(models['external_variables'].insert(session, {'name': 'filter_string_inclusive_of', 'store_id': 1})) # ID: 16
+    session.loop.run_until_complete(models['external_variables'].insert(session, {'name': 'filter_integer_inclusive_of', 'store_id': 1})) # ID: 17
+    session.loop.run_until_complete(models['external_variables'].insert(session, {'name': 'filter_boolean_inclusive_of', 'store_id': 1})) # ID: 18
+    session.loop.run_until_complete(models['external_variables'].insert(session, {'name': 'filter_array_inclusive_of', 'store_id': 1})) # ID: 19
+    session.loop.run_until_complete(models['external_variables'].insert(session, {'name': 'filter_object_inclusive_of', 'store_id': 1})) # ID: 20
+    session.loop.run_until_complete(models['external_variables'].insert(session, {'name': 'filter_string_exclusive_of', 'store_id': 1})) # ID: 21
+    session.loop.run_until_complete(models['external_variables'].insert(session, {'name': 'filter_integer_exclusive_of', 'store_id': 1})) # ID: 22
+    session.loop.run_until_complete(models['external_variables'].insert(session, {'name': 'filter_boolean_exclusive_of', 'store_id': 1})) # ID: 23
+    session.loop.run_until_complete(models['external_variables'].insert(session, {'name': 'filter_array_exclusive_of', 'store_id': 1})) # ID: 24
+    session.loop.run_until_complete(models['external_variables'].insert(session, {'name': 'filter_object_exclusive_of', 'store_id': 1})) # ID: 25
+    session.loop.run_until_complete(models['external_variables'].insert(session, {'name': 'index_inclusive_of', 'store_id': 1})) # ID: 26
+    session.loop.run_until_complete(models['external_variables'].insert(session, {'name': 'index_exclusive_of', 'store_id': 1})) # ID: 27
 
     slot = {
         'max_items': 10,
@@ -251,21 +251,18 @@ def init_db(models, session, api, temp_dir):
         'engine_id': 1,
         'slot_variables': [{
             '_operation': 'insert',
-            'external_variable_name': 'test2',
-            'external_variable_store_id': 1,
+            'external_variable_id': 2,
             'engine_variable_name': 'item_id'
         }],
         'slot_filters': [{
             '_operation': 'insert',
-            'external_variable_name': 'test',
-            'external_variable_store_id': 1,
+            'external_variable_id': 1,
             'is_inclusive': True,
             'type_id': 'property_value',
             'property_name': 'filter_test'
         },{
             '_operation': 'insert',
-            'external_variable_name': 'test3',
-            'external_variable_store_id': 1,
+            'external_variable_id': 3,
             'is_inclusive': True,
             'type_id': 'item_property_value',
             'property_name': 'filter_test'
@@ -279,169 +276,145 @@ def init_db(models, session, api, temp_dir):
         'engine_id': 4,
         'slot_filters': [{
             '_operation': 'insert',
-            'external_variable_name': 'filter_string_inclusive',
-            'external_variable_store_id': 1,
+            'external_variable_id': 4,
             'is_inclusive': True,
             'type_id': 'property_value',
             'property_name': 'filter_string'
         },{
             '_operation': 'insert',
-            'external_variable_name': 'filter_integer_inclusive',
-            'external_variable_store_id': 1,
+            'external_variable_id': 5,
             'is_inclusive': True,
             'type_id': 'property_value',
             'property_name': 'filter_integer'
         },{
             '_operation': 'insert',
-            'external_variable_name': 'filter_base_prop_inclusive',
-            'external_variable_store_id': 1,
+            'external_variable_id': 6,
             'is_inclusive': True,
             'type_id': 'property_value',
             'property_name': 'base_prop'
         },{
             '_operation': 'insert',
-            'external_variable_name': 'filter_boolean_inclusive',
-            'external_variable_store_id': 1,
+            'external_variable_id': 7,
             'is_inclusive': True,
             'type_id': 'property_value',
             'property_name': 'filter_boolean'
         },{
             '_operation': 'insert',
-            'external_variable_name': 'filter_array_inclusive',
-            'external_variable_store_id': 1,
+            'external_variable_id': 8,
             'is_inclusive': True,
             'type_id': 'property_value',
             'property_name': 'filter_array'
         },{
             '_operation': 'insert',
-            'external_variable_name': 'filter_object_inclusive',
-            'external_variable_store_id': 1,
+            'external_variable_id': 9,
             'is_inclusive': True,
             'type_id': 'property_value',
             'property_name': 'filter_object'
         },{
             '_operation': 'insert',
-            'external_variable_name': 'filter_string_exclusive',
-            'external_variable_store_id': 1,
+            'external_variable_id': 10,
             'is_inclusive': False,
             'type_id': 'property_value',
             'property_name': 'filter_string'
         },{
             '_operation': 'insert',
-            'external_variable_name': 'filter_integer_exclusive',
-            'external_variable_store_id': 1,
+            'external_variable_id': 11,
             'is_inclusive': False,
             'type_id': 'property_value',
             'property_name': 'filter_integer'
         },{
             '_operation': 'insert',
-            'external_variable_name': 'filter_base_prop_exclusive',
-            'external_variable_store_id': 1,
+            'external_variable_id': 12,
             'is_inclusive': False,
             'type_id': 'property_value',
             'property_name': 'base_prop'
         },{
             '_operation': 'insert',
-            'external_variable_name': 'filter_boolean_exclusive',
-            'external_variable_store_id': 1,
+            'external_variable_id': 13,
             'is_inclusive': False,
             'type_id': 'property_value',
             'property_name': 'filter_boolean'
         },{
             '_operation': 'insert',
-            'external_variable_name': 'filter_array_exclusive',
-            'external_variable_store_id': 1,
+            'external_variable_id': 14,
             'is_inclusive': False,
             'type_id': 'property_value',
             'property_name': 'filter_array'
         },{
             '_operation': 'insert',
-            'external_variable_name': 'filter_object_exclusive',
-            'external_variable_store_id': 1,
+            'external_variable_id': 15,
             'is_inclusive': False,
             'type_id': 'property_value',
             'property_name': 'filter_object'
         },{
             '_operation': 'insert',
-            'external_variable_name': 'filter_string_inclusive_of',
-            'external_variable_store_id': 1,
+            'external_variable_id': 16,
             'is_inclusive': True,
             'type_id': 'item_property_value',
             'property_name': 'filter_string'
         },{
             '_operation': 'insert',
-            'external_variable_name': 'filter_integer_inclusive_of',
-            'external_variable_store_id': 1,
+            'external_variable_id': 17,
             'is_inclusive': True,
             'type_id': 'item_property_value',
             'property_name': 'filter_integer'
         },{
             '_operation': 'insert',
-            'external_variable_name': 'filter_boolean_inclusive_of',
-            'external_variable_store_id': 1,
+            'external_variable_id': 18,
             'is_inclusive': True,
             'type_id': 'item_property_value',
             'property_name': 'filter_boolean'
         },{
             '_operation': 'insert',
-            'external_variable_name': 'filter_array_inclusive_of',
-            'external_variable_store_id': 1,
+            'external_variable_id': 19,
             'is_inclusive': True,
             'type_id': 'item_property_value',
             'property_name': 'filter_array'
         },{
             '_operation': 'insert',
-            'external_variable_name': 'filter_object_inclusive_of',
-            'external_variable_store_id': 1,
+            'external_variable_id': 20,
             'is_inclusive': True,
             'type_id': 'item_property_value',
             'property_name': 'filter_object'
         },{
             '_operation': 'insert',
-            'external_variable_name': 'filter_string_exclusive_of',
-            'external_variable_store_id': 1,
+            'external_variable_id': 21,
             'is_inclusive': False,
             'type_id': 'item_property_value',
             'property_name': 'filter_string'
         },{
             '_operation': 'insert',
-            'external_variable_name': 'filter_integer_exclusive_of',
-            'external_variable_store_id': 1,
+            'external_variable_id': 22,
             'is_inclusive': False,
             'type_id': 'item_property_value',
             'property_name': 'filter_integer'
         },{
             '_operation': 'insert',
-            'external_variable_name': 'filter_boolean_exclusive_of',
-            'external_variable_store_id': 1,
+            'external_variable_id': 23,
             'is_inclusive': False,
             'type_id': 'item_property_value',
             'property_name': 'filter_boolean'
         },{
             '_operation': 'insert',
-            'external_variable_name': 'filter_array_exclusive_of',
-            'external_variable_store_id': 1,
+            'external_variable_id': 24,
             'is_inclusive': False,
             'type_id': 'item_property_value',
             'property_name': 'filter_array'
         },{
             '_operation': 'insert',
-            'external_variable_name': 'filter_object_exclusive_of',
-            'external_variable_store_id': 1,
+            'external_variable_id': 25,
             'is_inclusive': False,
             'type_id': 'item_property_value',
             'property_name': 'filter_object'
         },{
             '_operation': 'insert',
-            'external_variable_name': 'index_inclusive_of',
-            'external_variable_store_id': 1,
+            'external_variable_id': 26,
             'is_inclusive': True,
             'type_id': 'property_value_index',
             'property_name': 'sku'
         },{
             '_operation': 'insert',
-            'external_variable_name': 'index_exclusive_of',
-            'external_variable_store_id': 1,
+            'external_variable_id': 27,
             'is_inclusive': False,
             'type_id': 'property_value_index',
             'property_name': 'sku'
@@ -596,28 +569,13 @@ class TestPlacementsModelPost(object):
                         'override': False,
                         'override_value': None,
                         'external_variable': {
+                            'id': 2,
                             'name': 'test2',
                             'store_id': 1
                         },
-                        'external_variable_name': 'test2',
-                        'external_variable_store_id': 1
+                        'external_variable_id': 2
                     }],
                     'slot_filters': [{
-                        'is_inclusive': True,
-                        'type_id': 'item_property_value',
-                        'slot_id': 1,
-                        'id': 2,
-                        'property_name': 'filter_test',
-                        'override': False,
-                        'override_value': None,
-                        'skip_values': None,
-                        'external_variable': {
-                            'name': 'test3',
-                            'store_id': 1
-                        },
-                        'external_variable_name': 'test3',
-                        'external_variable_store_id': 1
-                    },{
                         'is_inclusive': True,
                         'type_id': 'property_value',
                         'slot_id': 1,
@@ -627,11 +585,26 @@ class TestPlacementsModelPost(object):
                         'override_value': None,
                         'skip_values': None,
                         'external_variable': {
+                            'id': 1,
                             'name': 'test',
                             'store_id': 1
                         },
-                        'external_variable_name': 'test',
-                        'external_variable_store_id': 1
+                        'external_variable_id': 1
+                    },{
+                        'is_inclusive': True,
+                        'type_id': 'item_property_value',
+                        'slot_id': 1,
+                        'id': 2,
+                        'property_name': 'filter_test',
+                        'override': False,
+                        'override_value': None,
+                        'skip_values': None,
+                        'external_variable': {
+                            'id': 3,
+                            'name': 'test3',
+                            'store_id': 1
+                        },
+                        'external_variable_id': 3
                     }],
                     'fallbacks': [],
                     'id': 1,
@@ -914,28 +887,13 @@ class TestPlacementsModelUriTemplateGet(object):
                         'override': False,
                         'override_value': None,
                         'external_variable': {
+                            'id': 2,
                             'name': 'test2',
                             'store_id': 1
                         },
-                        'external_variable_name': 'test2',
-                        'external_variable_store_id': 1
+                        'external_variable_id': 2
                     }],
                     'slot_filters': [{
-                        'is_inclusive': True,
-                        'type_id': 'item_property_value',
-                        'slot_id': 1,
-                        'id': 2,
-                        'property_name': 'filter_test',
-                        'override': False,
-                        'override_value': None,
-                        'skip_values': None,
-                        'external_variable': {
-                            'name': 'test3',
-                            'store_id': 1
-                        },
-                        'external_variable_name': 'test3',
-                        'external_variable_store_id': 1
-                    },{
                         'is_inclusive': True,
                         'type_id': 'property_value',
                         'slot_id': 1,
@@ -945,11 +903,26 @@ class TestPlacementsModelUriTemplateGet(object):
                         'override_value': None,
                         'skip_values': None,
                         'external_variable': {
+                            'id': 1,
                             'name': 'test',
                             'store_id': 1
                         },
-                        'external_variable_name': 'test',
-                        'external_variable_store_id': 1
+                        'external_variable_id': 1
+                    },{
+                        'is_inclusive': True,
+                        'type_id': 'item_property_value',
+                        'slot_id': 1,
+                        'id': 2,
+                        'property_name': 'filter_test',
+                        'override': False,
+                        'override_value': None,
+                        'skip_values': None,
+                        'external_variable': {
+                            'id': 3,
+                            'name': 'test3',
+                            'store_id': 1
+                        },
+                        'external_variable_id': 3
                     }],
                     'fallbacks': [],
                     'id': 1,

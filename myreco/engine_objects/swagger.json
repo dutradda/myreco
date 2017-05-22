@@ -43,6 +43,16 @@
                 }],
                 "operationId": "swagger_get",
                 "responses": {"200": {"description": "Got"}}
+            },
+            "delete": {
+                "parameters": [{
+                    "name": "Authorization",
+                    "in": "header",
+                    "required": true,
+                    "type": "string"
+                }],
+                "operationId": "swagger_delete",
+                "responses": {"204": {"description": "Deleted"}}
             }
         }
     }

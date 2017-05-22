@@ -130,14 +130,13 @@
                 "minProperties": 2,
                 "oneOf": [
                     {"required": ["id", "_operation"]},
-                    {"required": ["external_variable_name", "external_variable_store_id", "engine_variable_name"]},
+                    {"required": ["external_variable_id", "engine_variable_name"]},
                     {"required": ["external_variable", "engine_variable_name"]}
                 ],
                 "properties": {
                     "id": {"type": "integer"},
                     "slot_id": {"type": "integer"},
-                    "external_variable_name": {"type": "string"},
-                    "external_variable_store_id": {"type": "integer"},
+                    "external_variable_id": {"type": "integer"},
                     "_operation": {"enum": ["delete", "update", "insert"]},
                     "engine_variable_name": {"type": "string"},
                     "override": {"type": "boolean"},
@@ -155,15 +154,14 @@
                 "minProperties": 2,
                 "oneOf": [
                     {"required": ["id", "_operation"]},
-                    {"required": ["external_variable_name", "external_variable_store_id", "property_name", "type_id"]},
+                    {"required": ["external_variable_id", "property_name", "type_id"]},
                     {"required": ["external_variable", "property_name", "type_id"]}
                 ],
                 "properties": {
                     "id": {"type": "integer"},
                     "slot_id": {"type": "integer"},
                     "type_id": {"type": "string"},
-                    "external_variable_name": {"type": "string"},
-                    "external_variable_store_id": {"type": "integer"},
+                    "external_variable_id": {"type": "integer"},
                     "_operation": {"enum": ["delete", "update", "insert"]},
                     "property_name": {"type": "string"},
                     "is_inclusive": {"type": "boolean", "default": true},

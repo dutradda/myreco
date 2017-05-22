@@ -57,12 +57,11 @@ class ModelsFactory(object):
 
     def _init_attributes(self, attrs=None, update=None):
         if attrs is None:
-            if update is None:
-                attrs = dict()
-            else:
-                attrs = update
-        elif update is not None:
+            attrs = dict()
+
+        if update is not None:
             attrs.update(update)
+
         return attrs
 
     def make_all_models(self, app_type='recommender',

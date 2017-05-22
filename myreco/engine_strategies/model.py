@@ -32,6 +32,7 @@ class EngineStrategiesModelBase(AbstractConcreteBase):
     __tablename__ = 'engine_strategies'
     __swagger_json__ = get_swagger_json(__file__)
     _jobs = dict()
+    __table_args__ = (sa.UniqueConstraint('class_name', 'class_module'),)
 
     id = sa.Column(sa.Integer, primary_key=True)
     name = sa.Column(sa.String(255), unique=True, nullable=False)

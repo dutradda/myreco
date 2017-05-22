@@ -89,6 +89,8 @@ class TestExternalVariablesModelPost(object):
         resp = await client.post('/external_variables/', headers=headers, data=ujson.dumps(body))
 
         assert resp.status == 201
+
+        body[0]['id'] = 1
         assert (await resp.json()) ==  body
 
 
@@ -115,6 +117,8 @@ class TestExternalVariablesModelGet(object):
 
         resp = await client.get('/external_variables/?store_id=1', headers=headers_without_content_type)
         assert resp.status == 200
+
+        body[0]['id'] = 1
         assert (await resp.json()) ==  body
 
 
@@ -122,13 +126,13 @@ class TestExternalVariablesModelUriTemplatePatch(object):
 
    async def test_patch_without_body(self, init_db, client, headers):
         client = await client
-        resp = await client.patch('/external_variables/test/1/', headers=headers, data='')
+        resp = await client.patch('/external_variables/1/', headers=headers, data='')
         assert resp.status == 400
         assert (await resp.json()) == {'message': 'Request body is missing'}
 
    async def test_patch_with_invalid_body(self, init_db, client, headers):
         client = await client
-        resp = await client.patch('/external_variables/test/1/', headers=headers, data='{}')
+        resp = await client.patch('/external_variables/1/', headers=headers, data='{}')
         assert resp.status == 400
         assert (await resp.json()) ==  {
             'message': '{} does not have enough properties. '\
@@ -150,7 +154,7 @@ class TestExternalVariablesModelUriTemplatePatch(object):
             'name': 'test',
             'store_id': 1
         }
-        resp = await client.patch('/external_variables/test/1/', headers=headers, data=ujson.dumps(body))
+        resp = await client.patch('/external_variables/1/', headers=headers, data=ujson.dumps(body))
         assert resp.status == 404
 
    async def test_patch(self, init_db, client, headers):
@@ -165,8 +169,9 @@ class TestExternalVariablesModelUriTemplatePatch(object):
         body = {
             'name': 'test2'
         }
-        resp = await client.patch('/external_variables/test/1/', headers=headers, data=ujson.dumps(body))
+        resp = await client.patch('/external_variables/1/', headers=headers, data=ujson.dumps(body))
         obj['name'] = 'test2'
+        obj['id'] = 1
 
         assert resp.status == 200
         assert (await resp.json()) ==  obj
@@ -176,7 +181,7 @@ class TestExternalVariablesModelUriTemplateDelete(object):
 
    async def test_delete_with_body(self, init_db, client, headers):
         client = await client
-        resp = await client.delete('/external_variables/test/1/', headers=headers, data='{}')
+        resp = await client.delete('/external_variables/1/', headers=headers, data='{}')
         assert resp.status == 400
         assert (await resp.json()) == {'message': 'Request body is not acceptable'}
 
@@ -188,13 +193,13 @@ class TestExternalVariablesModelUriTemplateDelete(object):
         }]
         resp = await client.post('/external_variables/', headers=headers, data=ujson.dumps(body))
 
-        resp = await client.get('/external_variables/test/1/', headers=headers_without_content_type)
+        resp = await client.get('/external_variables/1/', headers=headers_without_content_type)
         assert resp.status == 200
 
-        resp = await client.delete('/external_variables/test/1/', headers=headers_without_content_type)
+        resp = await client.delete('/external_variables/1/', headers=headers_without_content_type)
         assert resp.status == 204
 
-        resp = await client.get('/external_variables/test/1/', headers=headers_without_content_type)
+        resp = await client.get('/external_variables/1/', headers=headers_without_content_type)
         assert resp.status == 404
 
 
@@ -202,13 +207,13 @@ class TestExternalVariablesModelUriTemplateGet(object):
 
    async def test_get_with_body(self, init_db, client, headers):
         client = await client
-        resp = await client.get('/external_variables/test/1/', headers=headers, data='{}')
+        resp = await client.get('/external_variables/1/', headers=headers, data='{}')
         assert resp.status == 400
         assert (await resp.json()) == {'message': 'Request body is not acceptable'}
 
    async def test_get_not_found(self, init_db, client, headers_without_content_type):
         client = await client
-        resp = await client.get('/external_variables/test/1/', headers=headers_without_content_type)
+        resp = await client.get('/external_variables/1/', headers=headers_without_content_type)
         assert resp.status == 404
 
    async def test_get(self, init_db, client, headers, headers_without_content_type):
@@ -219,6 +224,8 @@ class TestExternalVariablesModelUriTemplateGet(object):
         }]
         await client.post('/external_variables/', headers=headers, data=ujson.dumps(body))
 
-        resp = await client.get('/external_variables/test/1/', headers=headers_without_content_type)
+        resp = await client.get('/external_variables/1/', headers=headers_without_content_type)
         assert resp.status == 200
+
+        body[0]['id'] = 1
         assert (await resp.json()) == body[0]

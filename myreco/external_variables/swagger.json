@@ -32,14 +32,9 @@
                 "responses": {"200": {"description": "Got"}}
             }
         },
-        "/external_variables/{name}/{store_id}": {
+        "/external_variables/{id}": {
             "parameters": [{
-                "name": "name",
-                "in": "path",
-                "type": "string",
-                "required": true
-            },{
-                "name": "store_id",
+                "name": "id",
                 "in": "path",
                 "type": "integer",
                 "required": true
