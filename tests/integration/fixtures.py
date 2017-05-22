@@ -67,7 +67,7 @@ class EngineObjectWithVars(TopSellerArrayTest):
 
 
 class EngineStrategyTestWithVars(EngineStrategyTest):
-    __configuration_schema__ = {
+    configuration_schema = {
         'type': 'object',
         'required': ['object_with_vars'],
         'additionalProperties': False,

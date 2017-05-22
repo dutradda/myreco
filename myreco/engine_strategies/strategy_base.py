@@ -31,8 +31,8 @@ from abc import ABCMeta, abstractmethod
 class EngineStrategyMetaBase(ABCMeta):
 
     def __init__(cls, name, bases_classes, attributes):
-        if hasattr(cls, '__configuration_schema__'):
-            schema = cls.__configuration_schema__
+        if hasattr(cls, 'configuration_schema'):
+            schema = cls.configuration_schema
             Draft4Validator.check_schema(schema)
             cls.__config_validator__ = build_validator(schema, get_module_path(cls))
 

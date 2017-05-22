@@ -26,7 +26,7 @@ from myreco.engine_strategies.strategy_base import EngineStrategyBase
 
 
 class TopSellerEngineStrategy(EngineStrategyBase):
-    __configuration_schema__ = {
+    configuration_schema = {
         'type': 'object',
         'required': ['top_seller_array'],
         'additionalProperties': False,
