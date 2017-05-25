@@ -42,5 +42,5 @@ class TopSellerEngineStrategy(EngineStrategyBase):
     }
     object_types = {'top_seller_array': TopSellerArray}
 
-    async def _build_items_vector(self, session, **external_variables):
+    async def _build_items_vector(self, session, items_model, **external_variables):
         return await self.objects['top_seller_array'].get_numpy_array(session)

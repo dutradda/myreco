@@ -131,7 +131,7 @@ class PlacementsModelBase(AbstractConcreteBase):
             max_items = slot['max_items'] if max_items is None else max_items
 
             return await strategy_instance.get_items(
-                session, filters, max_items, show_details, **engine_vars)
+                session, filters, max_items, show_details, items_model, **engine_vars)
 
         except Exception as error:
             cls._logger.debug('Slot:\n' + ujson.dumps(slot, indent=4))

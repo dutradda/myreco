@@ -52,8 +52,8 @@ class EngineStrategyBase(metaclass=EngineStrategyMetaBase):
                 for obj in objects
         }
 
-    def _get_object_instance(self, obj, data_path=None):
-        return self.object_types[obj['type']](obj, data_path)
+    def _get_object_instance(self, obj):
+        return self.object_types[obj['type']](obj)
 
     def _set_config(self, objects):
         self._config = {obj['type']: obj['configuration'] for obj in objects}
@@ -68,8 +68,9 @@ class EngineStrategyBase(metaclass=EngineStrategyMetaBase):
     def get_variables(self):
         return []
 
-    async def get_items(self, session, filters, max_items, show_details, **external_variables):
-        items_vector = await self._build_items_vector(session, **external_variables)
+    async def get_items(self, session, filters, max_items, show_details,
+                        items_model, **external_variables):
+        items_vector = await self._build_items_vector(session, items_model, **external_variables)
 
         if items_vector is not None:
             for filter_, ids in filters.items():
