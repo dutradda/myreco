@@ -87,7 +87,7 @@ class _ItemTypesModelBase(AbstractConcreteBase):
                 schema_properties_names = sorted(schema_properties.keys())
                 dict_inst['available_filters'] = \
                     [{'name': name, 'schema': schema_properties[name]} \
-                        for name in schema_properties_names]
+                        for name in schema_properties_names if name != '_operation']
 
         if todict_schema.get('store_items_class') is not False:
             dict_inst.pop('store_items_class_json')
