@@ -63,7 +63,7 @@ def init_db(models, session):
 class TestUsersModelPost(object):
    async def test_post_valid_grants_update(self, init_db, models, headers, session, client):
         client = await client
-        models['uris'].insert(session, {'uri': '/users/test2'})
+        await models['uris'].insert(session, {'uri': '/users/test2'})
         user = [{
             'name': 'test2',
             'email': 'test2',
@@ -83,16 +83,19 @@ class TestUsersModelPost(object):
             'email': 'test2',
             'password': 'test',
             'grants': [{
+                'id': 5,
                 'method_id': 3,
                 'uri_id': 2,
                 'method': {'id': 3, 'method': 'post'},
                 'uri': {'id': 2, 'uri': '/test3'}
             },{
+                'id': 6,
                 'method_id': 1,
                 'uri_id': 5,
                 'method': {'id': 1, 'method': 'patch'},
                 'uri': {'id': 5, 'uri': '/users/test2'}
             },{
+                'id': 7,
                 'method_id': 2,
                 'uri_id': 5,
                 'method': {'id': 2, 'method': 'get'},
@@ -125,16 +128,19 @@ class TestUsersModelPost(object):
             'email': 'test2',
             'password': 'test',
             'grants': [{
+                'id': 5,
                 'method_id': 1,
                 'uri_id': 2,
                 'method': {'id': 1, 'method': 'patch'},
                 'uri': {'id': 2, 'uri': '/test3'}
             },{
+                'id': 6,
                 'uri_id': 5,
                 'method': {'id': 1, 'method': 'patch'},
                 'method_id': 1,
                 'uri': {'id': 5, 'uri': '/users/test2'}
             },{
+                'id': 7,
                 'uri_id': 5,
                 'method': {'id': 2, 'method': 'get'},
                 'method_id': 2,
@@ -166,6 +172,7 @@ class TestUsersModelPost(object):
             'email': 'test2',
             'password': 'test',
             'grants': [{
+                'id': 6,
                 'uri_id': 5,
                 'method': {
                     'id': 1,
@@ -177,6 +184,7 @@ class TestUsersModelPost(object):
                     'uri': '/users/test2'
                 }
             },{
+                'id': 7,
                 'uri_id': 5,
                 'method': {
                     'id': 2,
@@ -188,6 +196,7 @@ class TestUsersModelPost(object):
                     'uri': '/users/test2'
                 }
             },{
+                'id': 5,
                 'method_id': 5,
                 'uri_id': 6,
                 'method': {'id': 5, 'method': 'delete'},
@@ -272,6 +281,7 @@ class TestUsersModelPatchOne(object):
             'stores': [],
             'admin': False,
             'grants': [{
+                'id': 5,
                 'uri_id': 5,
                 'method': {
                     'id': 1,
@@ -283,6 +293,7 @@ class TestUsersModelPatchOne(object):
                     'uri': '/users/test2'
                 }
             },{
+                'id': 6,
                 'uri_id': 5,
                 'method': {
                     'id': 2,
@@ -321,6 +332,7 @@ class TestUsersModelPatchOne(object):
             'stores': [],
             'admin': False,
             'grants': [{
+                'id': 5,
                 'uri_id': 5,
                 'method': {
                     'id': 1,
@@ -332,6 +344,7 @@ class TestUsersModelPatchOne(object):
                     'uri': '/users/test2'
                 }
             },{
+                'id': 6,
                 'uri_id': 5,
                 'method': {
                     'id': 2,
@@ -369,6 +382,7 @@ class TestUsersModelPatchMany(object):
             'stores': [],
             'admin': False,
             'grants': [{
+                'id': 5,
                 'uri_id': 5,
                 'method': {
                     'id': 1,
@@ -380,6 +394,7 @@ class TestUsersModelPatchMany(object):
                     'uri': '/users/test2'
                 }
             },{
+                'id': 6,
                 'uri_id': 5,
                 'method': {
                     'id': 2,
@@ -419,6 +434,7 @@ class TestUsersModelPatchMany(object):
             'stores': [],
             'admin': False,
             'grants': [{
+                'id': 5,
                 'uri_id': 5,
                 'method': {
                     'id': 1,
@@ -430,6 +446,7 @@ class TestUsersModelPatchMany(object):
                     'uri': '/users/test2'
                 }
             },{
+                'id': 6,
                 'uri_id': 5,
                 'method': {
                     'id': 2,

@@ -32,14 +32,17 @@ import re
 class GrantsModelBase(AbstractConcreteBase):
     __tablename__ = 'grants'
     __use_redis__ = False
+    __table_args__ = (sa.UniqueConstraint('uri_id', 'method_id'),)
+
+    id = sa.Column(sa.Integer, primary_key=True)
 
     @declared_attr
     def uri_id(cls):
-        return sa.Column(sa.ForeignKey('uris.id'), primary_key=True)
+        return sa.Column(sa.ForeignKey('uris.id'))
 
     @declared_attr
     def method_id(cls):
-        return sa.Column(sa.ForeignKey('methods.id'), primary_key=True)
+        return sa.Column(sa.ForeignKey('methods.id'))
 
     @declared_attr
     def uri(cls):
