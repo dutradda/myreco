@@ -29,11 +29,6 @@
         },
         "/stores/{id}/": {
             "parameters": [{
-                "name": "Authorization",
-                "in": "header",
-                "required": true,
-                "type": "string"
-            },{
                 "name": "id",
                 "in": "path",
                 "type": "integer",
