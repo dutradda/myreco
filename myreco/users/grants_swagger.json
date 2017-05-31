@@ -1,0 +1,18 @@
+{
+    "paths": {
+        "/grants/": {
+            "get": {
+                "operationId": "swagger_get_all",
+                "parameters": [{
+                    "name": "Authorization",
+                    "in": "header",
+                    "required": true,
+                    "type": "string"
+                }],
+                "responses": {
+                    "200": {"description": "Got"}
+                }
+            }
+        }
+    }
+}

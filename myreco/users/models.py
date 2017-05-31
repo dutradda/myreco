@@ -32,6 +32,7 @@ import re
 class GrantsModelBase(AbstractConcreteBase):
     __tablename__ = 'grants'
     __table_args__ = (sa.UniqueConstraint('uri_id', 'method_id'),)
+    __swagger_json__ = get_swagger_json(__file__, 'grants_swagger.json')
 
     id = sa.Column(sa.Integer, primary_key=True)
 
@@ -54,6 +55,7 @@ class GrantsModelBase(AbstractConcreteBase):
 
 class URIsModelBase(AbstractConcreteBase):
     __tablename__ = 'uris'
+    __swagger_json__ = get_swagger_json(__file__, 'uris_swagger.json')
 
     id = sa.Column(sa.Integer, primary_key=True)
     uri = sa.Column(sa.String(255), unique=True, nullable=False)
@@ -61,6 +63,7 @@ class URIsModelBase(AbstractConcreteBase):
 
 class MethodsModelBase(AbstractConcreteBase):
     __tablename__ = 'methods'
+    __swagger_json__ = get_swagger_json(__file__, 'methods_swagger.json')
 
     id = sa.Column(sa.Integer, primary_key=True)
     method = sa.Column(sa.String(10), unique=True, nullable=False)

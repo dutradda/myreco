@@ -507,3 +507,110 @@ class TestUsersModelDeleteGet(object):
 
         resp = await client.get('/users?stores=id:1', data=ujson.dumps([{'email': 'test2'}]), headers=headers)
         assert resp.status == 404
+
+
+class TestUsersModelGetAll(object):
+
+    async def test_get_all_users(self, init_db, client, headers, headers_without_content_type):
+        client = await client
+
+        store = [{
+            'name': 'test',
+            'country': 'test',
+            'configuration': {'data_path': '/test'}
+        }]
+        resp = await client.post('/stores', data=ujson.dumps(store), headers=headers)
+        assert resp.status == 201
+
+        user = [{
+            'name': 'test2',
+            'email': 'test2',
+            'password': 'test',
+            'stores': [{'id':1}]
+        }]
+        resp = await client.post('/users', data=ujson.dumps(user), headers=headers)
+        assert resp.status == 201
+
+        resp = await client.get('/users?stores=id:1', headers=headers_without_content_type)
+        assert resp.status == 200
+        assert (await resp.json()) == [{
+            'id': 'test2:test',
+            'email': 'test2',
+            'name': 'test2',
+            'admin': False,
+            'password': 'test',
+            'grants': [{
+                'id': 5,
+                'uri_id': 5,
+                'uri': {'uri': '/users/test2', 'id': 5},
+                'method': {'method': 'patch', 'id': 1},
+                'method_id': 1
+            },{
+                'id': 6,
+                'uri_id': 5,
+                'uri': {'uri': '/users/test2', 'id': 5},
+                'method': {'method': 'get', 'id': 2},
+                'method_id': 2
+            }],
+            'stores': [{
+                'country': 'test',
+                'configuration': {'data_path': '/test'},
+                'name': 'test',
+                'id': 1
+            }]
+        }]
+
+    async def test_get_all_methods(self, init_db, client, headers_without_content_type):
+        client = await client
+
+        resp = await client.get('/methods', headers=headers_without_content_type)
+        assert resp.status == 200
+        assert (await resp.json()) == [
+            {'method': 'get', 'id': 2},
+            {'method': 'patch', 'id': 1},
+            {'method': 'post', 'id': 3},
+            {'method': 'put', 'id': 4}
+        ]
+
+    async def test_get_all_uris(self, init_db, client, headers_without_content_type):
+        client = await client
+
+        resp = await client.get('/uris', headers=headers_without_content_type)
+        assert resp.status == 200
+        assert (await resp.json()) == [
+            {'uri': '/test', 'id': 4},
+            {'uri': '/test2', 'id': 1},
+            {'uri': '/test3', 'id': 2},
+            {'uri': '/users/test', 'id': 3}
+        ]
+
+    async def test_get_all_grants(self, init_db, client, headers_without_content_type):
+        client = await client
+
+        resp = await client.get('/grants', headers=headers_without_content_type)
+        assert resp.status == 200
+        assert (await resp.json()) == [{
+            'uri_id': 3,
+            'method_id': 1,
+            'id': 1,
+            'uri': {'id': 3, 'uri': '/users/test'},
+            'method': {'id': 1, 'method': 'patch'}
+        },{
+            'uri_id': 3,
+            'method_id': 2,
+            'id': 2,
+            'uri': {'id': 3, 'uri': '/users/test'},
+            'method': {'id': 2, 'method': 'get'}
+        },{
+            'uri_id': 3,
+            'method_id': 3,
+            'id': 4,
+            'uri': {'id': 3, 'uri': '/users/test'},
+            'method': {'id': 3, 'method': 'post'}
+        },{
+            'uri_id': 4,
+            'method_id': 3,
+            'id': 3,
+            'uri': {'id': 4, 'uri': '/test'},
+            'method': {'id': 3, 'method': 'post'}
+        }]
