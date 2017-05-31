@@ -26,15 +26,14 @@ from unittest import mock
 import pytest
 import ujson
 import os.path
-import asyncio
 
 
 @pytest.fixture
 def init_db(models, session):
     uris = [{'uri': '/test2'}, {'uri': '/test3'}, {'uri': '/users/test'}]
-    asyncio.run_coroutine_threadsafe(models['uris'].insert(session, uris[0]), session.loop)
-    asyncio.run_coroutine_threadsafe(models['uris'].insert(session, uris[1]), session.loop)
-    asyncio.run_coroutine_threadsafe(models['uris'].insert(session, uris[2]), session.loop)
+    session.loop.run_until_complete(models['uris'].insert(session, uris[0]))
+    session.loop.run_until_complete(models['uris'].insert(session, uris[1]))
+    session.loop.run_until_complete(models['uris'].insert(session, uris[2]))
 
     user = {
         'name': 'test',
@@ -42,22 +41,22 @@ def init_db(models, session):
         'password': 'test',
         'admin': True
     }
-    asyncio.run_coroutine_threadsafe(models['users'].insert(session, user), session.loop)
+    session.loop.run_until_complete(models['users'].insert(session, user))
 
     grants = [{
         'uri': {'uri': '/test', '_operation': 'insert'},
         'method': {'method': 'post', '_operation': 'insert'}
     }]
-    asyncio.run_coroutine_threadsafe(models['grants'].insert(session, grants), session.loop)
+    session.loop.run_until_complete(models['grants'].insert(session, grants))
 
     methods = [{'method': 'put'}]
-    asyncio.run_coroutine_threadsafe(models['methods'].insert(session, methods), session.loop)
+    session.loop.run_until_complete(models['methods'].insert(session, methods))
 
     grants = [{
         'uri_id': 3,
         'method_id': 3
     }]
-    asyncio.run_coroutine_threadsafe(models['grants'].insert(session, grants), session.loop)
+    session.loop.run_until_complete(models['grants'].insert(session, grants))
 
 
 class TestUsersModelPost(object):

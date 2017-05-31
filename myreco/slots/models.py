@@ -32,7 +32,6 @@ import ujson
 
 class SlotVariablesModelBase(AbstractConcreteBase):
     __tablename__ = 'slot_variables'
-    __use_redis__ = False
     __table_args__ = (sa.UniqueConstraint('engine_variable_name', 'slot_id'),)
 
     id = sa.Column(sa.Integer, primary_key=True)
@@ -74,7 +73,6 @@ class SlotVariablesModelBase(AbstractConcreteBase):
 
 class SlotFiltersModelBase(AbstractConcreteBase):
     __tablename__ = 'slot_filters'
-    __use_redis__ = False
     __factory__ = FiltersFactory
     __table_args__ = (sa.UniqueConstraint('is_inclusive', 'property_name', 'type_id', 'slot_id'),)
 

@@ -31,7 +31,6 @@ import re
 
 class GrantsModelBase(AbstractConcreteBase):
     __tablename__ = 'grants'
-    __use_redis__ = False
     __table_args__ = (sa.UniqueConstraint('uri_id', 'method_id'),)
 
     id = sa.Column(sa.Integer, primary_key=True)
@@ -55,7 +54,6 @@ class GrantsModelBase(AbstractConcreteBase):
 
 class URIsModelBase(AbstractConcreteBase):
     __tablename__ = 'uris'
-    __use_redis__ = False
 
     id = sa.Column(sa.Integer, primary_key=True)
     uri = sa.Column(sa.String(255), unique=True, nullable=False)
@@ -63,7 +61,6 @@ class URIsModelBase(AbstractConcreteBase):
 
 class MethodsModelBase(AbstractConcreteBase):
     __tablename__ = 'methods'
-    __use_redis__ = False
 
     id = sa.Column(sa.Integer, primary_key=True)
     method = sa.Column(sa.String(10), unique=True, nullable=False)

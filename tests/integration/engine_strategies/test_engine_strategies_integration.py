@@ -23,7 +23,6 @@
 
 import pytest
 import ujson
-import asyncio
 
 
 @pytest.fixture
@@ -34,7 +33,7 @@ def init_db(models, session):
         'password': 'test',
         'admin': True
     }
-    asyncio.run_coroutine_threadsafe(models['users'].insert(session, user), session.loop)
+    session.loop.run_until_complete(models['users'].insert(session, user))
 
 
 class TestEngineStrategiesModelPost(object):

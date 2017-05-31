@@ -274,7 +274,6 @@ class PlacementsModelBase(AbstractConcreteBase):
 
 class VariationsModelBase(AbstractConcreteBase):
     __tablename__ = 'variations'
-    __use_redis__ = False
     __table_args__ = (sa.UniqueConstraint('name', 'placement_hash'),)
 
     id = sa.Column(sa.Integer, primary_key=True)
@@ -293,7 +292,6 @@ class VariationsModelBase(AbstractConcreteBase):
 
 class ABTestUsersModelBase(AbstractConcreteBase):
     __tablename__ = 'ab_test_users'
-    __use_redis__ = False
 
     id = sa.Column(sa.Integer, primary_key=True)
 
