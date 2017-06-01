@@ -461,6 +461,7 @@ class TestPlacementsModelPost(object):
                     'ab_testing': {'type': 'boolean'},
                     'show_details': {'type': 'boolean'},
                     'distribute_items': {'type': 'boolean'},
+                    'is_redirect': {'type': 'boolean'},
                     'name': {'type': 'string'},
                     'store_id': {'type': 'integer'},
                     'variations': {'$ref': '#/definitions/PlacementsModel.variations'}
@@ -521,6 +522,7 @@ class TestPlacementsModelPost(object):
             'ab_testing': False,
             'show_details': True,
             'distribute_items': False,
+            'is_redirect': False,
             'hash': '941e021d7ae6ca23f8969870ffe48b87a315e05c',
             'name': 'Placement Test',
             'small_hash': '941e0',
@@ -685,6 +687,7 @@ class TestPlacementsModelUriTemplatePatch(object):
                     'ab_testing': {'type': 'boolean'},
                     'show_details': {'type': 'boolean'},
                     'distribute_items': {'type': 'boolean'},
+                    'is_redirect': {'type': 'boolean'},
                     'name': {'type': 'string'},
                     'store_id': {'type': 'integer'},
                     'variations': {'$ref': '#/definitions/PlacementsModel.variations'}
@@ -722,6 +725,7 @@ class TestPlacementsModelUriTemplatePatch(object):
             'ab_testing': False,
             'show_details': True,
             'distribute_items': False,
+            'is_redirect': False,
             'hash': '941e021d7ae6ca23f8969870ffe48b87a315e05c',
             'name': 'Placement Test',
             'small_hash': '941e0',
@@ -839,6 +843,7 @@ class TestPlacementsModelUriTemplateGet(object):
             'ab_testing': False,
             'show_details': True,
             'distribute_items': False,
+            'is_redirect': False,
             'hash': '941e021d7ae6ca23f8969870ffe48b87a315e05c',
             'name': 'Placement Test',
             'small_hash': '941e0',
@@ -2722,3 +2727,157 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
         resp = await client.get('/placements/{}/items?index_exclusive_of=1|test1,2|test2,3|test3'.format(obj['small_hash']), headers=headers_without_content_type)
         assert resp.status == 404
         assert (await resp.json()) == None
+
+
+class TestPlacementsGetRecomendationsRedirect(object):
+
+    async def test_get_items_invalid_item_idx(self, init_db, client, headers, monkeypatch, headers_without_content_type):
+        client = await client
+        class_loader = mock.MagicMock()
+        monkeypatch.setattr('myreco.item_types.model.ModuleObjectLoader', class_loader)
+        monkeypatch.setattr('myreco.engine_strategies.model.ModuleObjectLoader', class_loader)
+
+        class_loader.load()().get_items = CoroMock()
+        class_loader.load()().get_items.coro.return_value = [{'id': 1}, {'id': 2}, {'id': 3}]
+        body = [{
+            'store_id': 1,
+            'name': 'Placement Test',
+            'variations': [{
+                '_operation': 'insert',
+                'name': 'Var 1',
+                'slots': [{'id': 1}]
+            }],
+            'is_redirect': True
+        }]
+        class_loader.load()().get_variables.return_value = \
+            [{'name': 'item_id', 'schema': {'type': 'integer'}}]
+        resp = await client.post('/placements/', headers=headers, data=ujson.dumps(body))
+        obj = (await resp.json())[0]
+
+        resp = await client.get('/placements/{}/items?test2=1'.format(obj['small_hash']), headers=headers_without_content_type)
+        assert resp.status == 400
+        assert await resp.json() == {'message': "Query argument 'item_idx' is mandatory when 'is_redirect' is true."}
+
+    async def test_get_items_invalid_slot_idx(self, init_db, client, headers, monkeypatch, headers_without_content_type):
+        client = await client
+        class_loader = mock.MagicMock()
+        monkeypatch.setattr('myreco.item_types.model.ModuleObjectLoader', class_loader)
+        monkeypatch.setattr('myreco.engine_strategies.model.ModuleObjectLoader', class_loader)
+
+        class_loader.load()().get_items = CoroMock()
+        class_loader.load()().get_items.coro.return_value = [{'id': 1}, {'id': 2}, {'id': 3}]
+        body = [{
+            'store_id': 1,
+            'name': 'Placement Test',
+            'variations': [{
+                '_operation': 'insert',
+                'name': 'Var 1',
+                'slots': [{'id': 1}]
+            }],
+            'is_redirect': True
+        }]
+        class_loader.load()().get_variables.return_value = \
+            [{'name': 'item_id', 'schema': {'type': 'integer'}}]
+        resp = await client.post('/placements/', headers=headers, data=ujson.dumps(body))
+        obj = (await resp.json())[0]
+
+        resp = await client.get('/placements/{}/items?item_idx=1'.format(obj['small_hash']), headers=headers_without_content_type)
+        assert resp.status == 400
+        assert await resp.json() == {'message': "Query argument 'slot_idx' is mandatory when 'distribute_items' is false."}
+
+    async def test_get_items_valid(self, init_db, client, headers, monkeypatch, headers_without_content_type):
+        client = await client
+        class_loader = mock.MagicMock()
+        monkeypatch.setattr('myreco.item_types.model.ModuleObjectLoader', class_loader)
+        monkeypatch.setattr('myreco.engine_strategies.model.ModuleObjectLoader', class_loader)
+
+        class_loader.load()().get_items = CoroMock()
+        class_loader.load()().get_items.coro.return_value = [{'id': 1}, {'id': 2}, {'id': 3}]
+        body = [{
+            'store_id': 1,
+            'name': 'Placement Test',
+            'variations': [{
+                '_operation': 'insert',
+                'name': 'Var 1',
+                'slots': [{'id': 1}]
+            }],
+            'is_redirect': True
+        }]
+        class_loader.load()().get_variables.return_value = \
+            [{'name': 'item_id', 'schema': {'type': 'integer'}}]
+        resp = await client.post('/placements/', headers=headers, data=ujson.dumps(body))
+        obj = (await resp.json())[0]
+
+        resp = await client.get(
+            '/placements/{}/items?item_idx=0&slot_idx=0'.format(obj['small_hash']),
+            headers=headers_without_content_type,
+            allow_redirects=False
+        )
+        assert resp.status == 302
+        assert dict(resp.headers)['Location'] == str({'id': 1})
+        assert await resp.json() == None
+
+    async def test_get_items_invalid_with_distribute_items(self, init_db, client, headers, monkeypatch, headers_without_content_type):
+        client = await client
+        class_loader = mock.MagicMock()
+        monkeypatch.setattr('myreco.item_types.model.ModuleObjectLoader', class_loader)
+        monkeypatch.setattr('myreco.engine_strategies.model.ModuleObjectLoader', class_loader)
+
+        class_loader.load()().get_items = CoroMock()
+        class_loader.load()().get_items.coro.return_value = [{'id': 1}, {'id': 2}, {'id': 3}]
+        body = [{
+            'store_id': 1,
+            'name': 'Placement Test',
+            'variations': [{
+                '_operation': 'insert',
+                'name': 'Var 1',
+                'slots': [{'id': 1}]
+            }],
+            'is_redirect': True,
+            'distribute_items': True
+        }]
+        class_loader.load()().get_variables.return_value = \
+            [{'name': 'item_id', 'schema': {'type': 'integer'}}]
+        resp = await client.post('/placements/', headers=headers, data=ujson.dumps(body))
+        obj = (await resp.json())[0]
+
+        resp = await client.get(
+            '/placements/{}/items?item_idx=0&slot_idx=0'.format(obj['small_hash']),
+            headers=headers_without_content_type,
+            allow_redirects=False
+        )
+        assert resp.status == 400
+        assert await resp.json() == {'message': "Query argument 'slot_idx' can't be setted when 'distribute_items' is true."}
+
+    async def test_get_items_valid_with_distribute_items(self, init_db, client, headers, monkeypatch, headers_without_content_type):
+        client = await client
+        class_loader = mock.MagicMock()
+        monkeypatch.setattr('myreco.item_types.model.ModuleObjectLoader', class_loader)
+        monkeypatch.setattr('myreco.engine_strategies.model.ModuleObjectLoader', class_loader)
+
+        class_loader.load()().get_items = CoroMock()
+        class_loader.load()().get_items.coro.return_value = [{'id': 1}, {'id': 2}, {'id': 3}]
+        body = [{
+            'store_id': 1,
+            'name': 'Placement Test',
+            'variations': [{
+                '_operation': 'insert',
+                'name': 'Var 1',
+                'slots': [{'id': 1}]
+            }],
+            'is_redirect': True,
+            'distribute_items': True
+        }]
+        class_loader.load()().get_variables.return_value = \
+            [{'name': 'item_id', 'schema': {'type': 'integer'}}]
+        resp = await client.post('/placements/', headers=headers, data=ujson.dumps(body))
+        obj = (await resp.json())[0]
+
+        resp = await client.get(
+            '/placements/{}/items?item_idx=0'.format(obj['small_hash']),
+            headers=headers_without_content_type,
+            allow_redirects=False
+        )
+        assert resp.status == 302
+        assert dict(resp.headers)['Location'] == str({'id': 1, 'type': 'products'})
+        assert await resp.json() == None

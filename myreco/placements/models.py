@@ -42,6 +42,7 @@ class PlacementsModelBase(AbstractConcreteBase):
     ab_testing = sa.Column(sa.Boolean, default=False)
     show_details = sa.Column(sa.Boolean, default=True)
     distribute_items = sa.Column(sa.Boolean, default=False)
+    is_redirect = sa.Column(sa.Boolean, default=False)
 
     @declared_attr
     def store_id(cls):
@@ -71,7 +72,7 @@ class PlacementsModelBase(AbstractConcreteBase):
     async def get_items(cls, req, session):
         placement = await cls._get_placement(req, session)
         if placement is None:
-            return cls._build_recos_response(None)
+            return cls._build_response(404)
 
         explict_fallbacks = req.query.pop('explict_fallbacks', False)
         input_external_variables = req.query
@@ -93,9 +94,9 @@ class PlacementsModelBase(AbstractConcreteBase):
                 slots.append(slot)
 
         if not slots:
-            return cls._build_recos_response(None)
+            return cls._build_response(404)
 
-        if not explict_fallbacks:
+        if not explict_fallbacks or placement['is_redirect']:
             for slot in slots:
                 slot['items'] = cls._get_all_slot_recos(slot['items'])
 
@@ -104,10 +105,14 @@ class PlacementsModelBase(AbstractConcreteBase):
                 recos = cls._get_all_recos_from_slots(slots)
                 recos = cls._distribute_items(recos)
 
-        placement = {'name': placement['name'], 'small_hash': placement['small_hash']}
-        placement[recos_key] = recos
+        if placement['is_redirect']:
+            return cls._build_redirect_response(recos, distribute_items, req)
 
-        return cls._build_recos_response(placement)
+        else:
+            placement = {'name': placement['name'], 'small_hash': placement['small_hash']}
+            placement[recos_key] = recos
+
+            return cls._build_recos_response(placement)
 
     @classmethod
     async def _get_placement(cls, req, session):
@@ -264,12 +269,49 @@ class PlacementsModelBase(AbstractConcreteBase):
         return unique
 
     @classmethod
-    def _build_recos_response(cls, recos):
-        if recos is None:
-            return cls._build_response(404)
+    def _build_redirect_response(cls, recos, distribute_items, req):
+        slot_idx = req.query.get('slot_idx')
+        item_idx = req.query.get('item_idx')
+
+        if item_idx is None:
+            message = {
+                'message': "Query argument 'item_idx' "\
+                           "is mandatory when 'is_redirect' is true."
+            }
+            return cls._build_response(400, body=cls._pack_obj(message))
+
+        if (slot_idx is None and distribute_items is False):
+            message = {
+                'message': "Query argument 'slot_idx' "\
+                           "is mandatory when 'distribute_items' is false."
+            }
+            return cls._build_response(400, body=cls._pack_obj(message))
+
+        elif (slot_idx is not None and distribute_items is True):
+            message = {
+                'message': "Query argument 'slot_idx' "\
+                           "can't be setted when 'distribute_items' is true."
+            }
+            return cls._build_response(400, body=cls._pack_obj(message))
+
+        if distribute_items is True:
+            get_item = lambda recos: recos[item_idx]
         else:
-            headers = {'Content-Type': 'application/json'}
-            return cls._build_response(200, body=cls._pack_obj(recos), headers=headers)
+            get_item = lambda recos: recos[slot_idx]['items'][item_idx]
+
+        try:
+            location = get_item(recos)
+
+        except IndexError:
+            return cls._build_response(404)
+
+        else:
+            return cls._build_response(302, headers={'Location': str(location)})
+
+    @classmethod
+    def _build_recos_response(cls, recos):
+        headers = {'Content-Type': 'application/json'}
+        return cls._build_response(200, body=cls._pack_obj(recos), headers=headers)
 
 
 class VariationsModelBase(AbstractConcreteBase):

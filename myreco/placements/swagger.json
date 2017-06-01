@@ -91,9 +91,20 @@
                     "name": "show_details",
                     "in": "query",
                     "type": "boolean"
+                },{
+                    "name": "slot_idx",
+                    "in": "query",
+                    "type": "integer"
+                },{
+                    "name": "item_idx",
+                    "in": "query",
+                    "type": "integer"
                 }],
                 "operationId": "get_items",
-                "responses": {"200": {"description": "Got"}}
+                "responses": {
+                    "200": {"description": "Got"},
+                    "302": {"description": "Redirected"}
+                }
             }
         }
     },
@@ -108,6 +119,7 @@
                 "ab_testing": {"type": "boolean"},
                 "show_details": {"type": "boolean"},
                 "distribute_items": {"type": "boolean"},
+                "is_redirect": {"type": "boolean"},
                 "variations": {"$ref": "#/definitions/variations"}
             }
         },
@@ -124,6 +136,7 @@
                     "ab_testing": {"type": "boolean"},
                     "show_details": {"type": "boolean"},
                     "distribute_items": {"type": "boolean"},
+                    "is_redirect": {"type": "boolean"},
                     "variations": {"$ref": "#/definitions/variations"}
                 }
             }
