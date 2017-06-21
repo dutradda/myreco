@@ -117,7 +117,8 @@
                 "additionalProperties": false,
                 "required": ["id"],
                 "properties": {
-                    "id": {"type": "integer"}
+                    "id": {"type": "integer"},
+                    "_operation": {"enum": ["remove"]},
                 }
             }
         },
@@ -128,7 +129,7 @@
                 "type": "object",
                 "additionalProperties": false,
                 "minProperties": 2,
-                "oneOf": [
+                "anyOf": [
                     {"required": ["id", "_operation"]},
                     {"required": ["external_variable_id", "engine_variable_name"]},
                     {"required": ["external_variable", "engine_variable_name"]}
