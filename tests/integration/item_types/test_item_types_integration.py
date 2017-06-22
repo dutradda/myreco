@@ -1006,3 +1006,18 @@ class TestItemTypesModelFiltersUpdater(object):
         filter_[key3] = np.fromstring(filter_[key3], dtype=np.bool).tolist()
 
         assert filter_ == {key1: expected1, key2: expected2, key3: expected3}
+
+
+class TestItemTypesFilterTypes(object):
+
+    async def test_get(self, init_db, headers_without_content_type, client):
+        client = await client
+        resp = await client.get('/item_types/filter_types/', headers=headers_without_content_type)
+
+        assert resp.status == 200
+        assert await resp.json() == [
+            {'id': 'item_property_value', 'name': 'By Item Property Value'},
+            {'id': 'item_property_value_index', 'name': 'By Item Property Value Index'},
+            {'id': 'property_value', 'name': 'By Property Value'},
+            {'id': 'property_value_index', 'name': 'By Property Value Index'}
+        ]

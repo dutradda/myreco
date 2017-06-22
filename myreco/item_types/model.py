@@ -93,6 +93,12 @@ class _ItemTypesModelBase(AbstractConcreteBase):
             dict_inst.pop('store_items_class_json')
             dict_inst['store_items_class'] = self.store_items_class
 
+    @classmethod
+    async def swagger_get_filter_types(cls, req, session):
+        filters_factory = cls.get_model('slot_filters').__factory__
+        body = ujson.dumps(filters_factory.get_filter_types())
+        return cls._build_response(200, body=body)
+
 
 class _StoreItemsOperationsMixin(object):
 

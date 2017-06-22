@@ -218,6 +218,18 @@
                 "operationId": "swagger_search_items",
                 "responses": {"200": {"description": "Got"}}
             }
+        },
+        "/item_types/filter_types": {
+            "get": {
+                "parameters": [{
+                    "name": "Authorization",
+                    "in": "header",
+                    "required": true,
+                    "type": "string"
+                }],
+                "operationId": "swagger_get_filter_types",
+                "responses": {"200": {"description": "Got"}}
+            }
         }
     },
     "definitions": {

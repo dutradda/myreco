@@ -73,7 +73,7 @@ class FiltersFactory(object):
     @classmethod
     def get_filter_types(cls):
         return [{'name': filter_type['name'], 'id': filter_type_id}
-            for filter_type_id, filter_type in cls._filters_types_map.items()]
+            for filter_type_id, filter_type in sorted(cls._filters_types_map.items())]
 
     @classmethod
     def get_filter_type(cls, filter_type_id):
