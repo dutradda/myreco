@@ -454,7 +454,11 @@ class TestSlotsModelPost(object):
                     'skip_values': None,
                     'external_variable_id': 1,
                     'is_inclusive': True,
-                    'type_id': 'property_value'
+                    'type_id': 'property_value',
+                    'type': {
+                        'id': 'property_value',
+                        'name': 'By Property Value'
+                    }
                 }
             ],
             'engine': {

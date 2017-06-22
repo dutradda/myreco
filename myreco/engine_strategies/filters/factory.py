@@ -29,7 +29,7 @@ from myreco.engine_strategies.filters.filters import (BooleanFilterBy, SimpleFil
 class FiltersFactory(object):
     _filters_types_map = {
         'property_value': {
-            'name': 'Filter by property value',
+            'name': 'By Property Value',
             'types': {
                 'integer': SimpleFilterBy,
                 'string': SimpleFilterBy,
@@ -39,7 +39,7 @@ class FiltersFactory(object):
             }
         },
         'item_property_value': {
-            'name': 'Filter by item property value',
+            'name': 'By Item Property Value',
             'types': {
                 'integer': SimpleFilterOf,
                 'string': SimpleFilterOf,
@@ -49,7 +49,7 @@ class FiltersFactory(object):
             }
         },
         'property_value_index': {
-            'name': 'Filter by property value index',
+            'name': 'By Property Value Index',
             'types': {
                 'integer': IndexFilterOf,
                 'string': IndexFilterOf,
@@ -59,7 +59,7 @@ class FiltersFactory(object):
             }
         },
         'item_property_value_index': {
-            'name': 'Filter by item property value index',
+            'name': 'By Item Property Value Index',
             'types': {
                 'integer': IndexFilterByPropertyOf,
                 'string': IndexFilterByPropertyOf,

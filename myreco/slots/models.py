@@ -118,6 +118,9 @@ class SlotFiltersModelBase(AbstractConcreteBase):
             dict_inst.pop('override_value_json')
             dict_inst['override_value'] = self.override_value
 
+        if schema.get('type') is not False:
+            dict_inst['type'] = self.type
+
     @declared_attr
     def external_variable_id(cls):
         return sa.Column(sa.ForeignKey('external_variables.id', ondelete='CASCADE', onupdate='CASCADE'), nullable=False)

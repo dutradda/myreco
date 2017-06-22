@@ -580,6 +580,10 @@ class TestPlacementsModelPost(object):
                     'slot_filters': [{
                         'is_inclusive': True,
                         'type_id': 'property_value',
+                        'type': {
+                            'id': 'property_value',
+                            'name': 'By Property Value'
+                        },
                         'slot_id': 1,
                         'id': 1,
                         'property_name': 'filter_test',
@@ -595,6 +599,10 @@ class TestPlacementsModelPost(object):
                     },{
                         'is_inclusive': True,
                         'type_id': 'item_property_value',
+                        'type': {
+                            'id': 'item_property_value',
+                            'name': 'By Item Property Value'
+                        },
                         'slot_id': 1,
                         'id': 2,
                         'property_name': 'filter_test',
@@ -901,6 +909,10 @@ class TestPlacementsModelUriTemplateGet(object):
                     'slot_filters': [{
                         'is_inclusive': True,
                         'type_id': 'property_value',
+                        'type': {
+                            'id': 'property_value',
+                            'name': 'By Property Value'
+                        },
                         'slot_id': 1,
                         'id': 1,
                         'property_name': 'filter_test',
@@ -916,6 +928,10 @@ class TestPlacementsModelUriTemplateGet(object):
                     },{
                         'is_inclusive': True,
                         'type_id': 'item_property_value',
+                        'type': {
+                            'id': 'item_property_value',
+                            'name': 'By Item Property Value'
+                        },
                         'slot_id': 1,
                         'id': 2,
                         'property_name': 'filter_test',
