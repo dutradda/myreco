@@ -126,6 +126,7 @@ class EnginesModelBase(AbstractConcreteBase):
 
                 if value is None:
                     setattr(obj, obj_prop_name, self_prop_value)
+
                 elif value != self_prop_value:
                     raise SwaggerItModelError(
                     "Invalid object '{}' with value '{}'. "\
@@ -137,8 +138,15 @@ class EnginesModelBase(AbstractConcreteBase):
                     instance=input_
                 )
 
-
         self.strategy_instance.validate_config()
+
+    async def init(self, session, input_=None, **kwargs):
+        for object_ in kwargs.get('objects', []):
+            object_['item_type_id'] = kwargs.get('item_type_id', self.item_type_id)
+            object_['strategy_id'] = kwargs.get('strategy_id', self.strategy_id)
+            object_['store_id'] = kwargs.get('store_id', self.store_id)
+
+        await super().init(session, input_=input_, **kwargs)
 
 
     def _format_output_json(self, dict_inst, schema):
