@@ -29,7 +29,7 @@ from swaggerit.method import SwaggerMethod
 from swaggerit.request import SwaggerRequest
 from swaggerit.models.orm.factory import FactoryOrmModels
 from sqlalchemy.ext.declarative import declared_attr, AbstractConcreteBase
-from jsonschema import ValidationError, Draft4Validator
+from jsonschema import ValidationError, Draft4Validator, validate
 from copy import deepcopy
 import sqlalchemy as sa
 import ujson
@@ -70,7 +70,7 @@ class _ItemTypesModelBase(AbstractConcreteBase):
         await super()._setattr(attr_name, value, session, input_)
 
     def _validate_input(self, schema):
-        Draft4Validator.check_schema(schema)
+        validate(schema, get_swagger_json(__file__, 'store_items_metaschema.json'))
 
         for id_name in schema['id_names']:
             if id_name not in schema.get('properties', {}):
