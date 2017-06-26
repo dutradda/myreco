@@ -15,7 +15,7 @@
             "allOf": [ { "$ref": "#/definitions/positiveInteger" }, { "default": 0 } ]
         },
         "simpleTypes": {
-            "enum": [ "array", "boolean", "integer", "null", "number", "string" ]
+            "enum": [ "array", "boolean", "integer", "null", "number", "string", "simpleObject" ]
         },
         "stringArray": {
             "type": "array",
@@ -159,15 +159,19 @@
         "allOf": [{
             "$ref": "#/definitions/baseObject"
         },{
-            "required": ["type", "id_names"],
-            "properties": {
-                "type": {"enum": ["object"]},
-                "id_names": {
-                    "type": "array",
-                    "minItems": 1,
-                    "items": {"type": "string", "minLength": 1}
+            "anyOf" : [{
+                "required": ["type", "id_names", "properties"],
+                "properties": {
+                    "type": {"enum": ["object"]},
+                    "id_names": {
+                        "type": "array",
+                        "minItems": 1,
+                        "items": {"type": "string", "minLength": 1}
+                    }
                 }
-            }
+            }, {
+                "required": ["type", "id_names", "patternProperties"],
+            }]
         }]
     }]
 }
