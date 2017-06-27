@@ -112,13 +112,16 @@ class TestEnginesModelPost(object):
                     'item_type_id': {'type': 'integer'},
                     'strategy_id': {'type': 'integer'},
                     'objects': {
-                        'oneOf': [{
-                            '$ref': '#/definitions/EnginesModel.insert_objects_schema'
-                        },{
-                            '$ref': '#/definitions/EnginesModel.update_objects_schema'
-                        },{
-                            '$ref': '#/definitions/EnginesModel.get_objects_schema'
-                        }]
+                        'type': 'array',
+                        'minItems': 1,
+                        'items': {
+                            'type': 'object',
+                            'oneOf': [
+                                {'$ref': '#/definitions/EnginesModel.insert_objects_schema'},
+                                {'$ref': '#/definitions/EnginesModel.update_objects_schema'},
+                                {'$ref': '#/definitions/EnginesModel.get_objects_schema'}
+                            ]
+                        }
                     }
                 }
             }
@@ -380,15 +383,16 @@ class TestEnginesModelUriTemplatePatch(object):
                     'item_type_id': {'type': 'integer'},
                     'strategy_id': {'type': 'integer'},
                     'objects': {
-                        'oneOf': [{
-                            '$ref': '#/definitions/EnginesModel.insert_objects_schema'
-                        },{
-                            '$ref': '#/definitions/EnginesModel.update_objects_schema'
-                        },{
-                            '$ref': '#/definitions/EnginesModel.get_objects_schema'
-                        },{
-                            '$ref': '#/definitions/EnginesModel.delete_remove_objects_schema'
-                        }]
+                        'type': 'array',
+                        'minItems': 1,
+                        'items': {
+                            'oneOf': [
+                                {'$ref': '#/definitions/EnginesModel.insert_objects_schema'},
+                                {'$ref': '#/definitions/EnginesModel.update_objects_schema'},
+                                {'$ref': '#/definitions/EnginesModel.get_objects_schema'},
+                                {'$ref': '#/definitions/EnginesModel.delete_remove_objects_schema'}
+                            ]
+                        }
                     }
                 }
             }

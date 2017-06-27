@@ -90,13 +90,16 @@
                     "item_type_id": {"type": "integer"},
                     "strategy_id": {"type": "integer"},
                     "objects": {
-                        "oneOf": [{
-                            "$ref": "#/definitions/insert_objects_schema"
-                        },{
-                            "$ref": "#/definitions/update_objects_schema"
-                        },{
-                            "$ref": "#/definitions/get_objects_schema"
-                        }]
+                        "type": "array",
+                        "minItems": 1,
+                        "items": {
+                            "type": "object",
+                            "oneOf": [
+                                {"$ref": "#/definitions/insert_objects_schema"},
+                                {"$ref": "#/definitions/update_objects_schema"},
+                                {"$ref": "#/definitions/get_objects_schema"}
+                            ]
+                        }
                     }
                 }
             }
@@ -111,74 +114,59 @@
                 "item_type_id": {"type": "integer"},
                 "strategy_id": {"type": "integer"},
                 "objects": {
-                    "oneOf": [{
-                        "$ref": "#/definitions/insert_objects_schema"
-                    },{
-                        "$ref": "#/definitions/update_objects_schema"
-                    },{
-                        "$ref": "#/definitions/get_objects_schema"
-                    },{
-                        "$ref": "#/definitions/delete_remove_objects_schema"
-                    }]
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                        "oneOf": [
+                            {"$ref": "#/definitions/insert_objects_schema"},
+                            {"$ref": "#/definitions/update_objects_schema"},
+                            {"$ref": "#/definitions/get_objects_schema"},
+                            {"$ref": "#/definitions/delete_remove_objects_schema"}
+                        ]
+                    }
                 }
             }
         },
         "insert_objects_schema": {
-            "type": "array",
-            "minItems": 1,
-            "items": {
-                "type": "object",
-                "additionalProperties": false,
-                "required": ["_operation", "name", "type", "configuration"],
-                "properties": {
-                    "_operation": {"enum": ["insert"]},
-                    "name": {"type": "string"},
-                    "type": {"type": "string"},
-                    "configuration": {}
-                }
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["_operation", "name", "type", "configuration"],
+            "properties": {
+                "_operation": {"enum": ["insert"]},
+                "name": {"type": "string"},
+                "type": {"type": "string"},
+                "configuration": {}
             }
         },
         "update_objects_schema": {
-            "type": "array",
-            "minItems": 1,
-            "items": {
-                "type": "object",
-                "additionalProperties": false,
-                "minProperties": 2,
-                "required": ["id"],
-                "properties": {
-                    "_operation": {"enum": ["update"]},
-                    "id": {"type": "integer"},
-                    "name": {"type": "string"},
-                    "type": {"type": "string"},
-                    "configuration": {}
-                }
+            "type": "object",
+            "additionalProperties": false,
+            "minProperties": 2,
+            "required": ["id"],
+            "properties": {
+                "_operation": {"enum": ["update"]},
+                "id": {"type": "integer"},
+                "name": {"type": "string"},
+                "type": {"type": "string"},
+                "configuration": {}
             }
         },
         "get_objects_schema": {
-            "type": "array",
-            "minItems": 1,
-            "items": {
-                "type": "object",
-                "additionalProperties": false,
-                "required": ["id"],
-                "properties": {
-                    "_operation": {"enum": ["get"]},
-                    "id": {"type": "integer"}
-                }
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id"],
+            "properties": {
+                "_operation": {"enum": ["get"]},
+                "id": {"type": "integer"}
             }
         },
         "delete_remove_objects_schema": {
-            "type": "array",
-            "minItems": 1,
-            "items": {
-                "type": "object",
-                "additionalProperties": false,
-                "required": ["id"],
-                "properties": {
-                    "_operation": {"enum": ["delete", "remove"]},
-                    "id": {"type": "integer"}
-                }
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id"],
+            "properties": {
+                "_operation": {"enum": ["delete", "remove"]},
+                "id": {"type": "integer"}
             }
         }
     }
