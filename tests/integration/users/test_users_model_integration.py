@@ -614,3 +614,152 @@ class TestUsersModelGetAll(object):
             'uri': {'id': 4, 'uri': '/test'},
             'method': {'id': 3, 'method': 'post'}
         }]
+
+
+class TestUrisModelPost(object):
+
+   async def test_post_without_body(self, init_db, client, headers, headers_without_content_type):
+        client = await client
+        resp = await client.post('/uris/', headers=headers)
+        assert resp.status == 400
+        assert (await resp.json()) == {'message': 'Request body is missing'}
+
+   async def test_post_with_invalid_body(self, init_db, client, headers, headers_without_content_type):
+        client = await client
+        resp = await client.post('/uris/', headers=headers, data='[{}]')
+        assert resp.status == 400
+        assert (await resp.json()) ==  {
+            'message': "'uri' is a required property. "\
+                       "Failed validating instance['0'] for schema['items']['required']",
+            'schema': {
+                'type': 'object',
+                'additionalProperties': False,
+                'required': ['uri'],
+                'properties': {
+                    'uri': {'type': 'string'}
+                }
+            }
+        }
+
+   async def test_post(self, init_db, client, headers, headers_without_content_type):
+        client = await client
+        body = [{
+            'uri': 'test'
+        }]
+        resp = await client.post('/uris/', headers=headers, data=ujson.dumps(body))
+        body[0]['id'] = 5
+
+        assert resp.status == 201
+        assert (await resp.json()) ==  body
+
+   async def test_post_with_invalid_grant(self, client):
+        client = await client
+        body = [{
+            'uri': 'test'
+        }]
+        resp = await client.post('/uris/', headers={'Authorization': 'invalid'}, data=ujson.dumps(body))
+        assert resp.status == 401
+        assert (await resp.json()) ==  {'message': 'Invalid authorization'}
+
+
+class TestUrisModelUriTemplatePatch(object):
+
+   async def test_patch_without_body(self, init_db, client, headers, headers_without_content_type):
+        client = await client
+        resp = await client.patch('/uris/5/', headers=headers, data='')
+        assert resp.status == 400
+        assert (await resp.json()) == {'message': 'Request body is missing'}
+
+   async def test_patch_with_invalid_body(self, init_db, client, headers, headers_without_content_type):
+        client = await client
+        resp = await client.patch('/uris/5/', headers=headers, data='{}')
+        assert resp.status == 400
+        assert (await resp.json()) ==  {
+            'message': "'uri' is a required property. "\
+                       "Failed validating instance for schema['required']",
+            'schema': {
+                'type': 'object',
+                'additionalProperties': False,
+                'required': ['uri'],
+                'properties': {
+                    'uri': {'type': 'string'}
+                }
+            }
+        }
+
+   async def test_patch_not_found(self, init_db, client, headers, headers_without_content_type):
+        client = await client
+        body = {
+            'uri': 'test'
+        }
+        resp = await client.patch('/uris/1000/', headers=headers, data=ujson.dumps(body))
+        assert resp.status == 404
+
+   async def test_patch(self, init_db, client, headers, headers_without_content_type):
+        client = await client
+        body = [{
+            'uri': 'test'
+        }]
+        resp = await client.post('/uris/', headers=headers, data=ujson.dumps(body))
+        obj = (await resp.json())[0]
+
+        body = {
+            'uri': 'test2'
+        }
+        resp = await client.patch('/uris/5/', headers=headers, data=ujson.dumps(body))
+        obj['uri'] = 'test2'
+
+        assert resp.status == 200
+        assert (await resp.json()) ==  obj
+
+
+class TestUrisModelUriTemplateDelete(object):
+
+   async def test_delete_with_body(self, init_db, client, headers, headers_without_content_type):
+        client = await client
+        resp = await client.delete('/uris/5/', headers=headers, data='{}')
+        assert resp.status == 400
+        assert (await resp.json()) == {'message': 'Request body is not acceptable'}
+
+   async def test_delete(self, init_db, client, headers, headers_without_content_type):
+        client = await client
+        body = [{
+            'uri': 'test'
+        }]
+        await client.post('/uris/', headers=headers, data=ujson.dumps(body))
+
+        resp = await client.get('/uris/5/', headers=headers_without_content_type)
+        assert resp.status == 200
+
+        resp = await client.delete('/uris/5/', headers=headers_without_content_type)
+        assert resp.status == 204
+
+        resp = await client.get('/uris/5/', headers=headers_without_content_type)
+        assert resp.status == 404
+
+
+class TestUrisModelUriTemplateGet(object):
+
+   async def test_get_with_body(self, init_db, client, headers, headers_without_content_type):
+        client = await client
+        resp = await client.get('/uris/5/', headers=headers, data='{}')
+        assert resp.status == 400
+        assert (await resp.json()) == {'message': 'Request body is not acceptable'}
+
+   async def test_get_not_found(self, init_db, client, headers, headers_without_content_type):
+        client = await client
+        resp = await client.get('/uris/5/', headers=headers_without_content_type)
+        assert resp.status == 404
+
+   async def test_get(self, init_db, client, headers, headers_without_content_type):
+        client = await client
+        body = [{
+            'uri': 'test'
+        }]
+        await client.post('/uris/', headers=headers, data=ujson.dumps(body))
+
+        resp = await client.get('/uris/5/', headers=headers_without_content_type)
+        body[0]['id'] = 5
+
+        assert resp.status == 200
+        assert (await resp.json()) == body[0]
