@@ -25,6 +25,7 @@ from swaggerit.exceptions import SwaggerItModelError
 from sqlalchemy.ext.declarative import AbstractConcreteBase, declared_attr
 import sqlalchemy as sa
 import ujson
+import jsonschema
 
 
 class EngineObjectsModelBase(AbstractConcreteBase):
@@ -71,9 +72,30 @@ class EngineObjectsModelBase(AbstractConcreteBase):
             value = ujson.dumps(value)
             attr_name = 'configuration_json'
 
+        if attr_name == 'strategy_id':
+            value = {'id': value}
+            attr_name = 'strategy'
+
         await super()._setattr(attr_name, value, session, input_)
 
     def _format_output_json(self, dict_inst, schema):
         if schema.get('configuration') is not False:
             dict_inst.pop('configuration_json')
             dict_inst['configuration'] = self.configuration
+
+    async def _validate(self, session, input_):
+        # disable validation when the operation was did by the engine model
+        if (isinstance(input_, list) and 'objects' in input_[0]) or \
+                (isinstance(input_, dict) and 'objects' in input_):
+            return
+
+        strategy_class = self.strategy.get_class()
+
+        if self.type not in strategy_class.object_types:
+            raise SwaggerItModelError(
+                "Invalid object type '{}'".format(self.type),
+                instance=input_
+            )
+
+        object_schema = strategy_class.configuration_schema['properties'][self.type]
+        jsonschema.validate(self.configuration, object_schema)

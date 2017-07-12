@@ -85,6 +85,71 @@ def init_db(models, session, api):
     _all_models.pop('store_items_products_1', None)
 
 
+class TestEngineObjectsModelPost(object):
+
+   async def test_post_without_body(self, init_db, client, headers, headers_without_content_type):
+        client = await client
+        resp = await client.post('/engine_objects/', headers=headers)
+        assert resp.status == 400
+        assert (await resp.json()) == {'message': 'Request body is missing'}
+
+   async def test_post_with_invalid_body(self, init_db, client, headers, headers_without_content_type):
+        client = await client
+        resp = await client.post('/engine_objects/', headers=headers, data='[{}]')
+        assert resp.status == 400
+        assert (await resp.json()) ==  {
+            'message': "'name' is a required property. "\
+                       "Failed validating instance['0'] for schema['items']['required']",
+            'schema': {
+                'type': 'object',
+                'additionalProperties': False,
+                'required': ['name', 'type', 'configuration', 'strategy_id', 'item_type_id', 'store_id'],
+                'properties': {
+                    'name': {'type': 'string'},
+                    'type': {'type': 'string'},
+                    'strategy_id': {'type': 'integer'},
+                    'item_type_id': {'type': 'integer'},
+                    'store_id': {'type': 'integer'},
+                    'configuration': {}
+                }
+            }
+        }
+
+   async def test_post(self, init_db, client, headers, headers_without_content_type):
+        client = await client
+        body = [{
+            'name': 'Top Seller Object Test',
+            'type': 'top_seller_array',
+            'configuration': {'days_interval': 7},
+            'store_id': 1,
+            'item_type_id': 1,
+            'strategy_id': 1
+        }]
+        resp = await client.post('/engine_objects/', headers=headers, data=ujson.dumps(body))
+        resp_json = (await resp.json())
+        body[0]['id'] = 2
+        body[0]['store'] = resp_json[0]['store']
+        body[0]['strategy'] = resp_json[0]['strategy']
+        body[0]['item_type'] = resp_json[0]['item_type']
+
+        assert resp.status == 201
+        assert resp_json ==  body
+
+   async def test_post_with_invalid_grant(self, client):
+        client = await client
+        body = [{
+            'name': 'Top Seller Object Test',
+            'type': 'top_seller_array',
+            'configuration': {'days_interval': 7},
+            'store_id': 1,
+            'item_type_id': 1,
+            'strategy_id': 1
+        }]
+        resp = await client.post('/engine_objects/', headers={'Authorization': 'invalid'}, data=ujson.dumps(body))
+        assert resp.status == 401
+        assert (await resp.json()) ==  {'message': 'Invalid authorization'}
+
+
 class TestEngineObjectsModelGet(object):
 
     async def test_get_not_found(self, init_db, headers_without_content_type, client):
@@ -153,6 +218,84 @@ class TestEngineObjectsModelGet(object):
         )
         assert resp.status == 200
         assert await resp.json() ==  body
+
+
+class TestEngineObjectsModelUriTemplatePatch(object):
+
+   async def test_patch_without_body(self, init_db, client, headers, headers_without_content_type):
+        client = await client
+        resp = await client.patch('/engine_objects/1/', headers=headers, data='')
+        assert resp.status == 400
+        assert (await resp.json()) == {'message': 'Request body is missing'}
+
+   async def test_patch_with_invalid_body(self, init_db, client, headers, headers_without_content_type):
+        client = await client
+        resp = await client.patch('/engine_objects/1/', headers=headers, data='{}')
+        assert resp.status == 400
+        assert (await resp.json()) ==  {
+            'message': '{} does not have enough properties. '\
+                       "Failed validating instance for schema['minProperties']",
+            'schema': {
+                'type': 'object',
+                'additionalProperties': False,
+                'minProperties': 1,
+                'properties': {
+                    'name': {'type': 'string'},
+                    'configuration': {}
+                }
+            }
+        }
+
+   async def test_patch_with_invalid_config(self, init_db, client, headers, headers_without_content_type):
+        client = await client
+        body = {
+            'configuration': {}
+        }
+        resp = await client.patch('/engine_objects/1/', headers=headers, data=ujson.dumps(body))
+        assert resp.status == 400
+        print(ujson.dumps(await resp.json(), indent=4))
+        assert (await resp.json()) ==  {
+            'message': "'days_interval' is a required property. "\
+                       "Failed validating instance for schema['required']",
+            'schema': {
+                'type': 'object',
+                'required': ['days_interval'],
+                'additionalProperties': False,
+                'properties': {
+                    'days_interval': {'type': 'integer'}
+                }
+             }
+        }
+
+   async def test_patch_not_found(self, init_db, client, headers, headers_without_content_type):
+        client = await client
+        body = {
+            'name': 'Top Seller Object Test'
+        }
+        resp = await client.patch('/engine_objects/2/', headers=headers, data=ujson.dumps(body))
+        assert resp.status == 404
+
+   async def test_patch(self, init_db, client, headers, headers_without_content_type):
+        client = await client
+        body = [{
+            'name': 'Top Seller Object Test',
+            'type': 'top_seller_array',
+            'configuration': {'days_interval': 7},
+            'store_id': 1,
+            'item_type_id': 1,
+            'strategy_id': 1
+        }]
+        resp = await client.post('/engine_objects/', headers=headers, data=ujson.dumps(body))
+        obj = (await resp.json())[0]
+
+        body = {
+            'name': 'test2'
+        }
+        resp = await client.patch('/engine_objects/2/', headers=headers, data=ujson.dumps(body))
+        obj['name'] = 'test2'
+
+        assert resp.status == 200
+        assert (await resp.json()) ==  obj
 
 
 class TestEngineObjectsModelUriTemplateGet(object):

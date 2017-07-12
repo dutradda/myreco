@@ -10,21 +10,33 @@
                 },{
                     "name": "strategy_id",
                     "in": "query",
-                    "required": true,
                     "type": "integer"
                 },{
                     "name": "store_id",
                     "in": "query",
-                    "required": true,
                     "type": "integer"
                 },{
                     "name": "item_type_id",
                     "in": "query",
-                    "required": true,
                     "type": "integer"
                 }],
                 "operationId": "swagger_get_all",
                 "responses": {"200": {"description": "Got"}}
+            },
+            "post": {
+                "parameters": [{
+                    "name": "Authorization",
+                    "in": "header",
+                    "required": true,
+                    "type": "string"
+                },{
+                    "name": "body",
+                    "in": "body",
+                    "required": true,
+                    "schema": {"$ref": "#/definitions/insert_objects_schema"}
+                }],
+                "operationId": "swagger_insert",
+                "responses": {"201": {"description": "Created"}}
             }
         },
         "/engine_objects/{id}/": {
@@ -34,6 +46,21 @@
                 "type": "integer",
                 "required": true
             }],
+            "patch": {
+                "parameters": [{
+                    "name": "Authorization",
+                    "in": "header",
+                    "required": true,
+                    "type": "string"
+                },{
+                    "name": "body",
+                    "in": "body",
+                    "required": true,
+                    "schema": {"$ref": "#/definitions/update_object_schema"}
+                }],
+                "operationId": "swagger_update",
+                "responses": {"200": {"description": "Updated"}}
+            },
             "get": {
                 "parameters": [{
                     "name": "Authorization",
@@ -53,6 +80,34 @@
                 }],
                 "operationId": "swagger_delete",
                 "responses": {"204": {"description": "Deleted"}}
+            }
+        }
+    },
+    "definitions": {
+        "insert_objects_schema": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["name", "type", "configuration", "strategy_id", "item_type_id", "store_id"],
+                "properties": {
+                    "name": {"type": "string"},
+                    "type": {"type": "string"},
+                    "strategy_id": {"type": "integer"},
+                    "item_type_id": {"type": "integer"},
+                    "store_id": {"type": "integer"},
+                    "configuration": {}
+                }
+            }
+        },
+        "update_object_schema": {
+            "type": "object",
+            "additionalProperties": false,
+            "minProperties": 1,
+            "properties": {
+                "name": {"type": "string"},
+                "configuration": {}
             }
         }
     }

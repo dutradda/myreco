@@ -32,6 +32,7 @@ class TopSellerEngineStrategy(EngineStrategyBase):
         'additionalProperties': False,
         'properties': {
             'top_seller_array': {
+                'type': 'object',
                 'required': ['days_interval'],
                 'additionalProperties': False,
                 'properties': {

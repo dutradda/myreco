@@ -433,6 +433,7 @@ class TestEnginesModelUriTemplatePatch(object):
                        "Failed validating instance['top_seller_array'] for "\
                        "schema['properties']['top_seller_array']['required']",
             'schema': {
+                'type': 'object',
                 'required': ['days_interval'],
                 'additionalProperties': False,
                 'properties': {
