@@ -386,7 +386,7 @@ class TestEnginesModelUriTemplatePatch(object):
                         'type': 'array',
                         'minItems': 1,
                         'items': {
-                            'oneOf': [
+                            'anyOf': [
                                 {'$ref': '#/definitions/EnginesModel.insert_objects_schema'},
                                 {'$ref': '#/definitions/EnginesModel.update_objects_schema'},
                                 {'$ref': '#/definitions/EnginesModel.get_objects_schema'},

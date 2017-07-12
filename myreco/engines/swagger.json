@@ -117,7 +117,7 @@
                     "type": "array",
                     "minItems": 1,
                     "items": {
-                        "oneOf": [
+                        "anyOf": [
                             {"$ref": "#/definitions/insert_objects_schema"},
                             {"$ref": "#/definitions/update_objects_schema"},
                             {"$ref": "#/definitions/get_objects_schema"},
