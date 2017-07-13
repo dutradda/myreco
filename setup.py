@@ -16,21 +16,15 @@
 from version import VERSION
 from setuptools import setup, find_packages
 
-
 long_description = ''
 with open('README.md') as readme:
     long_description = readme.read()
 
-
-dependency_links = []
-install_requires = []
+install_requires = None
 with open('requirements.txt') as requirements:
-    lines = requirements.readlines()
-    install_requires = lines[1:]
-    del lines
+    install_requires = requirements.readlines()
 
-
-tests_require = []
+tests_require = None
 with open('requirements-dev.txt') as requirements_dev:
     tests_require = requirements_dev.readlines()
 
