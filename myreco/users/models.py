@@ -202,6 +202,26 @@ class UsersModelBase(AbstractConcreteBase):
         for inst in insts:
             inst.id = '{}:{}'.format(inst.email, inst.password)
 
+    @classmethod
+    async def get(cls, session, ids=None, limit=None, offset=None, todict=True, **kwargs):
+        users = await type(cls).get(cls, session, ids, limit, offset, todict, **kwargs)
+
+        if todict == True:
+            for user in users:
+                if user['admin'] and not user['stores']:
+                    user['stores'] = await cls.get_stores(session, todict)
+
+        else:
+            for user in users:
+                if user.admin and not user.stores:
+                    user.stores = await cls.get_stores(session, todict)
+
+        return users
+
+    @classmethod
+    async def get_stores(cls, session, todict):
+        return await cls.get_model('stores').get(session, todict=todict)
+
 
 def build_users_grants_table(metadata, **kwargs):
     return sa.Table(
