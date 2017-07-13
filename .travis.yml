@@ -5,10 +5,10 @@ services:
   - mysql
   - redis-server
   - elasticsearch
-script: py.test -c pytest-travis.ini
+script: py.test -c pytest-travis.ini tests/unit && py.test -c pytest-travis.ini tests/integration
 install: 
   - pip install cython
-  - pip install -r requirements.txt -r requirements-dev.txt --process-dependency-links
+  - pip install -r requirements.txt -r requirements-dev.txt
   - pip install coveralls
 after_success:
   - coveralls
