@@ -23,8 +23,9 @@
 
 from myreco.item_types.model import ItemTypesModelBase
 from myreco.utils import extend_swagger_json
+from swaggerit.utils import get_swagger_json
 from swaggerit.exceptions import SwaggerItModelError
-from jsonschema import Draft4Validator
+from jsonschema.validators import create, Draft4Validator
 from tempfile import NamedTemporaryFile
 from io import BytesIO
 from collections import namedtuple
@@ -35,6 +36,11 @@ import boto3
 import os
 import asyncio
 import gc
+
+
+store_items_metaschema = get_swagger_json(__file__, '../store_items_metaschema.json')
+ItemValidator = create(store_items_metaschema, Draft4Validator.VALIDATORS)
+ItemValidator.DEFAULT_TYPES['simpleObject'] = dict
 
 
 class ItemTypesDataFileImporterModelBase(ItemTypesModelBase):
@@ -149,7 +155,7 @@ class ItemTypesDataFileImporterModelBase(ItemTypesModelBase):
             "Started update items from file for '{}'".format(store_items_model.__key__)
         )
         warning_message = "Invalid line for model '{}': ".format(store_items_model.__key__) + '{}'
-        validator = Draft4Validator(store_items_model.item_type['schema'])
+        validator = ItemValidator(store_items_model.item_type['schema'])
         new_keys = set()
         success_lines = 0
         errors_lines = 0
