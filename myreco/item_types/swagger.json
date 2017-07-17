@@ -266,7 +266,10 @@
                 "type": "object",
                 "additionalProperties": false,
                 "required": ["id"],
-                "properties": {"id": {"type": "integer"}}
+                "properties": {
+                    "id": {"type": "integer"},
+                    "_operation": {"enum": ["remove"]}
+                }
             }
         },
         "items": {
