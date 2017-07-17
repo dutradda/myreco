@@ -98,4 +98,8 @@ class EngineObjectsModelBase(AbstractConcreteBase):
             )
 
         object_schema = strategy_class.configuration_schema['properties'][self.type]
+
+        if 'definitions' in strategy_class.configuration_schema:
+            object_schema['definitions'] = strategy_class.configuration_schema['definitions']
+
         jsonschema.validate(self.configuration, object_schema)
