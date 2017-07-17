@@ -36,7 +36,7 @@ class TopSellerArray(EngineObjectBase):
 
         items_indices_map_dict = self._run_coro(
             self._get_items_indices_map_dict(items_model.indices_map, session),
-            session.loop
+            session
         )
 
         ret = self.update(readers, session, items_indices_map_dict)
@@ -52,7 +52,7 @@ class TopSellerArray(EngineObjectBase):
                 self._redis_key,
                 self._pack_array(self.numpy_array, compress=False)
             ),
-            session.loop
+            session
         )
 
         return {

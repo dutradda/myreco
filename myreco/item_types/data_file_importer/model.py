@@ -22,7 +22,7 @@
 
 
 from myreco.item_types.model import ItemTypesModelBase
-from myreco.utils import extend_swagger_json
+from myreco.utils import extend_swagger_json, run_coro
 from swaggerit.utils import get_swagger_json
 from swaggerit.exceptions import SwaggerItModelError
 from jsonschema.validators import create, Draft4Validator
@@ -119,17 +119,7 @@ class ItemTypesDataFileImporterModelBase(ItemTypesModelBase):
 
     @classmethod
     def _run_coro(cls, coro, session):
-        if not asyncio.iscoroutine(coro):
-            coro = cls._convert_future_to_coro(coro)
-
-        if session.loop.is_running():
-            return asyncio.run_coroutine_threadsafe(coro, session.loop).result()
-        else:
-            return session.loop.run_until_complete(coro)
-
-    @classmethod
-    async def _convert_future_to_coro(cls, fut):
-        return await fut
+        return run_coro(coro, session)
 
     @classmethod
     def _update_items_from_zipped_file(cls, stream, store_items_model, content_type, session):

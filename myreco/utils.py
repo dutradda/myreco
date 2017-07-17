@@ -26,6 +26,7 @@ from swaggerit.models.orm.factory import FactoryOrmModels
 from swaggerit.utils import get_model, get_swagger_json
 from importlib import import_module
 from copy import deepcopy
+import asyncio
 import os
 import re
 
@@ -108,3 +109,16 @@ def makedirs(dir_):
     except OSError as e:
         if os.errno.EEXIST != e.errno:
             raise
+
+
+def run_coro(coro, session):
+    if not asyncio.iscoroutine(coro):
+        coro = _convert_future_to_coro(coro)
+
+    if session.loop.is_running():
+        return asyncio.run_coroutine_threadsafe(coro, session.loop).result()
+    else:
+        return session.loop.run_until_complete(coro)
+
+async def _convert_future_to_coro(fut):
+    return await fut
