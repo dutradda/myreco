@@ -29,7 +29,7 @@
                     "required": true,
                     "schema": {}
                 }],
-                "consumes": ["application/zip"],
+                "consumes": ["application/zip", "application/gzip"],
                 "operationId": "post_import_data_file_job",
                 "responses": {"200": {"description": "Posted"}}
             },

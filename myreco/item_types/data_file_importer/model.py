@@ -30,7 +30,7 @@ from tempfile import NamedTemporaryFile
 from io import BytesIO
 from collections import namedtuple
 from zipfile import ZipFile
-import zlib
+from gzip import GzipFile
 import ujson
 import boto3
 import os
@@ -52,7 +52,7 @@ class ItemTypesDataFileImporterModelBase(ItemTypesModelBase):
     @classmethod
     async def post_import_data_file_job(cls, req, session):
         content_type = req.headers.get('content-type')
-        if content_type != 'application/zip':
+        if content_type != 'application/zip' and content_type != 'application/gzip':
             raise SwaggerItModelError("Invalid content type '{}'".format(content_type))
 
         stream = BytesIO()
@@ -62,10 +62,11 @@ class ItemTypesDataFileImporterModelBase(ItemTypesModelBase):
 
         return await cls._create_job(
             cls._run_import_data_file_job,
-            req, session, '_importer', stream=stream)
+            req, session, '_importer',
+            stream=stream, content_type=content_type)
 
     @classmethod
-    async def _create_job(cls, func, req, session, jobs_id_prefix, stream=None):
+    async def _create_job(cls, func, req, session, jobs_id_prefix, stream=None, content_type=None):
         store_id = req.query['store_id']
         store_items_model = await cls._get_store_items_model(req, session)
         if store_items_model is None:
@@ -77,17 +78,19 @@ class ItemTypesDataFileImporterModelBase(ItemTypesModelBase):
             func, jobs_id,
             req, session,
             store_items_model, store_id,
-            stream=stream
+            stream=stream, content_type=content_type
         )
 
     @classmethod
-    def _run_import_data_file_job(cls, req, session, store_items_model, store_id, stream):
+    def _run_import_data_file_job(
+            cls, req, session, store_items_model,
+            store_id, stream, content_type):
         upload_file = req.query.get('upload_file', True)
         if upload_file:
             cls._put_file_on_s3(stream, store_items_model, session, store_id)
             stream.seek(0)
 
-        result = cls._update_items_from_zipped_file(stream, store_items_model, session)
+        result = cls._update_items_from_zipped_file(stream, store_items_model, content_type, session)
 
         gc.collect()
         return result
@@ -129,15 +132,19 @@ class ItemTypesDataFileImporterModelBase(ItemTypesModelBase):
         return await fut
 
     @classmethod
-    def _update_items_from_zipped_file(cls, stream, store_items_model, session):
-        feed = cls._unzip_file(stream)
+    def _update_items_from_zipped_file(cls, stream, store_items_model, content_type, session):
+        feed = cls._unzip_file(content_type, stream)
         result = cls._update_items_from_file(feed, store_items_model, session)
 
         feed.close()
+
+        if os.path.isfile(feed.name):
+            os.remove(feed.name)
+
         return result
 
     @classmethod
-    def _unzip_file(cls, stream=None, mode=None):
+    def _unzip_file(cls, content_type, stream=None, mode=None):
         tempfile = NamedTemporaryFile(delete=False)
         filename = tempfile.name
         kwargs = {'mode': mode} if mode else {}
@@ -145,9 +152,16 @@ class ItemTypesDataFileImporterModelBase(ItemTypesModelBase):
             tempfile.write(stream.read())
 
         tempfile.close()
-        zfile = ZipFile(filename, **kwargs)
-        zfile = zfile.open(zfile.namelist()[0])
+
+        if content_type.endswith('gzip'):
+            zfile = GzipFile(filename, **kwargs)
+
+        else:
+            zfile = ZipFile(filename, **kwargs)
+            zfile = zfile.open(zfile.namelist()[0])
+
         return zfile
+
 
     @classmethod
     def _update_items_from_file(cls, feed, store_items_model, session):
