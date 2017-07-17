@@ -26,9 +26,10 @@ from myreco.utils import extend_swagger_json
 from swaggerit.exceptions import SwaggerItModelError
 from jsonschema import Draft4Validator
 from tempfile import NamedTemporaryFile
-from aiofiles import zip_open, open as aiopen
 from io import BytesIO
 from collections import namedtuple
+from zipfile import ZipFile
+import zlib
 import ujson
 import boto3
 import os
@@ -80,10 +81,7 @@ class ItemTypesDataFileImporterModelBase(ItemTypesModelBase):
             cls._put_file_on_s3(stream, store_items_model, session, store_id)
             stream.seek(0)
 
-        result = asyncio.run_coroutine_threadsafe(
-            cls._update_items_from_zipped_file(stream, store_items_model, session),
-            session.loop
-        ).result()
+        result = cls._update_items_from_zipped_file(stream, store_items_model, session)
 
         gc.collect()
         return result
@@ -92,10 +90,10 @@ class ItemTypesDataFileImporterModelBase(ItemTypesModelBase):
     def _put_file_on_s3(cls, stream, store_items_model, session, store_id):
         cls._logger.info("Started put file on S3 for '{}'".format(store_items_model.__key__))
 
-        store = asyncio.run_coroutine_threadsafe(
+        store = cls._run_coro(
             cls.get_model('stores').get(session, [{'id': store_id}]),
-            session.loop
-        ).result()[0]
+            session
+        )[0]
 
         s3_bucket = store['configuration']['aws']['s3']['bucket']
         access_key_id = store['configuration']['aws'].get('access_key_id')
@@ -111,16 +109,29 @@ class ItemTypesDataFileImporterModelBase(ItemTypesModelBase):
         cls._logger.info("Finished put file on S3 for '{}'".format(store_items_model.__key__))
 
     @classmethod
-    async def _update_items_from_zipped_file(cls, stream, store_items_model, session):
-        feed = await cls._build_async_file(zip_open, stream)
-        result = await cls._update_items_from_file(feed, store_items_model, session)
+    def _run_coro(cls, coro, session):
+        if not asyncio.iscoroutine(coro):
+            coro = cls._convert_future_to_coro(coro)
 
-        await feed.close()
-        os.remove(feed.name)
+        if session.loop.is_running():
+            return asyncio.run_coroutine_threadsafe(coro, session.loop).result()
+        else:
+            return session.loop.run_until_complete(coro)
+
+    @classmethod
+    async def _convert_future_to_coro(cls, fut):
+        return await fut
+
+    @classmethod
+    def _update_items_from_zipped_file(cls, stream, store_items_model, session):
+        feed = cls._unzip_file(stream)
+        result = cls._update_items_from_file(feed, store_items_model, session)
+
+        feed.close()
         return result
 
     @classmethod
-    async def _build_async_file(cls, file_func, stream=None, mode=None):
+    def _unzip_file(cls, stream=None, mode=None):
         tempfile = NamedTemporaryFile(delete=False)
         filename = tempfile.name
         kwargs = {'mode': mode} if mode else {}
@@ -128,12 +139,12 @@ class ItemTypesDataFileImporterModelBase(ItemTypesModelBase):
             tempfile.write(stream.read())
 
         tempfile.close()
-        af = await file_func(filename, **kwargs)
-        af.name = filename
-        return af
+        zfile = ZipFile(filename, **kwargs)
+        zfile = zfile.open(zfile.namelist()[0])
+        return zfile
 
     @classmethod
-    async def _update_items_from_file(cls, feed, store_items_model, session):
+    def _update_items_from_file(cls, feed, store_items_model, session):
         cls._logger.info(
             "Started update items from file for '{}'".format(store_items_model.__key__)
         )
@@ -143,10 +154,17 @@ class ItemTypesDataFileImporterModelBase(ItemTypesModelBase):
         success_lines = 0
         errors_lines = 0
         empty_lines = 0
-        old_keys = set(await session.redis_bind.hkeys(store_items_model.__key__))
+        old_keys = cls._run_coro(
+            session.redis_bind.hkeys(store_items_model.__key__),
+            session
+        )
+        old_keys = set(old_keys)
         lines = []
 
-        async for line in feed:
+        if hasattr(store_items_model, 'pre_process_feed'):
+            feed = store_items_model.pre_process_feed(feed, session)
+
+        for line in feed:
             try:
                 line = cls._try_to_process_line(line, validator, store_items_model)
                 if line is None:
@@ -158,7 +176,10 @@ class ItemTypesDataFileImporterModelBase(ItemTypesModelBase):
                     lines.append(line)
 
                     if len(lines) == 1000:
-                        await store_items_model.insert(session, lines, skip_validation=True)
+                        cls._run_coro(
+                            store_items_model.insert(session, lines, skip_validation=True),
+                            session
+                        )
                         lines = []
 
             except Exception as error:
@@ -168,16 +189,24 @@ class ItemTypesDataFileImporterModelBase(ItemTypesModelBase):
                 continue
 
         if lines:
-            await store_items_model.insert(session, lines, skip_validation=True)
+            cls._run_coro(
+                store_items_model.insert(session, lines, skip_validation=True),
+                session
+            )
 
         del lines
-        await feed.close()
         old_keys.difference_update(new_keys)
 
         if old_keys:
-            await session.redis_bind.hdel(store_items_model.__key__, *old_keys)
+            cls._run_coro(
+                session.redis_bind.hdel(store_items_model.__key__, *old_keys),
+                session
+            )
 
-        await cls._set_stock_filter(store_items_model, session)
+        cls._run_coro(
+            cls._set_stock_filter(store_items_model, session),
+            session
+        )
 
         cls._logger.info(
             "Finished update items from file for '{}'".format(store_items_model.__key__)
@@ -196,9 +225,6 @@ class ItemTypesDataFileImporterModelBase(ItemTypesModelBase):
             return None
 
         line = ujson.loads(line)
-        if hasattr(store_items_model, 'pre_process_item'):
-            store_items_model.pre_process_item(line)
-
         validator.validate(line)
 
         return line

@@ -26,7 +26,7 @@ from myreco.utils import build_engine_object_key, makedirs
 from myreco.exceptions import EngineError
 from abc import abstractmethod, ABCMeta
 from glob import glob
-from aiofiles import gzip_open
+from gzip import GzipFile
 import os.path
 import asyncio
 import zlib
@@ -68,12 +68,12 @@ class EngineObjectBase(metaclass=ABCMeta):
     def export(self, items_model, session):
         pass
 
-    async def _build_csv_readers(self, pattern=''):
+    def _build_csv_readers(self, pattern=''):
         readers = []
         pattern = os.path.join(self._data_path, '{}*.gz'.format(pattern))
 
         for filename in glob(pattern):
-            file_ = await gzip_open(filename, 'rt')
+            file_ = GzipFile(filename, 'r')
             readers.append(file_)
 
         return readers
@@ -89,10 +89,16 @@ class EngineObjectBase(metaclass=ABCMeta):
         return items_indices_map_dict
 
     def _run_coro(self, coro, loop):
+        if not asyncio.iscoroutine(coro):
+            coro = self._convert_future_to_coro(coro)
+
         if loop.is_running():
             return asyncio.run_coroutine_threadsafe(coro, loop).result()
         else:
             return loop.run_until_complete(coro)
+
+    async def _convert_future_to_coro(self, fut):
+        return await fut
     
     @abstractmethod
     def get_data(self, items_model, session):

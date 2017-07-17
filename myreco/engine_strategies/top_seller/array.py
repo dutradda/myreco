@@ -32,29 +32,27 @@ class TopSellerArray(EngineObjectBase):
     def export(self, items_model, session):
         self._logger.info("Started export objects")
 
-        readers = self._run_coro(
-            self._build_csv_readers(),
-            session.loop
-        )
+        readers = self._build_csv_readers()
 
         items_indices_map_dict = self._run_coro(
             self._get_items_indices_map_dict(items_model.indices_map, session),
             session.loop
         )
 
-        ret = self._run_coro(
-            self.update(readers, session, items_indices_map_dict),
-            session.loop
-        )
+        ret = self.update(readers, session, items_indices_map_dict)
 
         self._logger.info("Finished export objects")
         return ret
 
-    async def update(self, readers, session, items_indices_map_dict):
-        await self._build_top_seller_vector(readers, session, items_indices_map_dict)
-        await session.redis_bind.set(
-            self._redis_key,
-            self._pack_array(self.numpy_array, compress=False)
+    def update(self, readers, session, items_indices_map_dict):
+        self._build_top_seller_vector(readers, session, items_indices_map_dict)
+
+        self._run_coro(
+            session.redis_bind.set(
+                self._redis_key,
+                self._pack_array(self.numpy_array, compress=False)
+            ),
+            session.loop
         )
 
         return {
@@ -63,7 +61,7 @@ class TopSellerArray(EngineObjectBase):
             'min_sells': int(min(self.numpy_array))
         }
 
-    async def _build_top_seller_vector(self, readers, session, items_indices_map_dict):
+    def _build_top_seller_vector(self, readers, session, items_indices_map_dict):
         error_message = "No data found for engine object '{}'".format(self._engine_object['name'])
         if not len(readers):
             raise EngineError(error_message)
@@ -71,7 +69,7 @@ class TopSellerArray(EngineObjectBase):
         indices_values_map = dict()
 
         for reader in readers:
-            await self._set_indices_values_map(indices_values_map, items_indices_map_dict, reader)
+            self._set_indices_values_map(indices_values_map, items_indices_map_dict, reader)
 
         if not indices_values_map:
             raise EngineError(error_message)
@@ -81,8 +79,8 @@ class TopSellerArray(EngineObjectBase):
         vector[indices] = np.array(list(indices_values_map.values()), dtype=np.int32)
         self.numpy_array = vector
 
-    async def _set_indices_values_map(self, indices_values_map, items_indices_map_dict, reader):
-        async for line in reader:
+    def _set_indices_values_map(self, indices_values_map, items_indices_map_dict, reader):
+        for line in reader:
             line = ujson.loads(line)
             index = items_indices_map_dict.get(line['item_key'])
             if index is not None:
