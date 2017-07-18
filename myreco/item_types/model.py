@@ -210,7 +210,9 @@ class _StoreItemsOperationsMixin(object):
             return cls._build_response(404)
 
         req = SwaggerRequest(
-            req.url, req.method,
+            req.path, req.method,
+            scheme=req.scheme,
+            host=req.host,
             path_params=req.path_params['item_key'],
             query=req.query,
             headers=req.headers,

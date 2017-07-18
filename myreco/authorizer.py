@@ -50,7 +50,7 @@ class MyrecoAuthorizer(object):
             return response401
 
         authorization = authorization.replace(basic_str, '')
-        authorize = await self._users_model.authorize(session, authorization, req.url, req.method)
+        authorize = await self._users_model.authorize(session, authorization, req.path, req.method)
 
         if authorize is None:
             return response401
