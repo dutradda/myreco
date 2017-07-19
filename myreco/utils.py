@@ -78,10 +78,23 @@ def build_class_name(*names):
     return final_name + 'Model'
 
 
-def extend_swagger_json(original, current_filename, swagger_json_name=None):
+def extend_swagger_json(original, current_filename, swagger_json_name=None, by_method=False):
     swagger_json = deepcopy(original)
     additional_swagger = get_swagger_json(current_filename, swagger_json_name)
-    swagger_json['paths'].update(additional_swagger['paths'])
+
+    if by_method:
+        for path_name, addit_path in additional_swagger['paths'].items():
+            if path_name in swagger_json['paths']:
+                path = swagger_json['paths'][path_name]
+
+                for method_name, method in addit_path.items():
+                    if method_name in path:
+                        path[method_name].update(method)
+                    else:
+                        path[method_name] = method
+
+    else:
+        swagger_json['paths'].update(additional_swagger['paths'])
 
     definitions = swagger_json.get('definitions')
     additional_definitions = additional_swagger.get('definitions')
