@@ -31,9 +31,10 @@ class EnginesModelBase(AbstractConcreteBase):
     __tablename__ = 'engines'
     __swagger_json__ = get_swagger_json(__file__)
     _jobs = dict()
+    __table_args__ = (sa.UniqueConstraint('name', 'store_id'),)
 
     id = sa.Column(sa.Integer, primary_key=True)
-    name = sa.Column(sa.String(255), unique=True, nullable=False)
+    name = sa.Column(sa.String(255), nullable=False)
 
     @declared_attr
     def strategy_id(cls):

@@ -31,10 +31,11 @@ import jsonschema
 class EngineObjectsModelBase(AbstractConcreteBase):
     __tablename__ = 'engine_objects'
     __swagger_json__ = get_swagger_json(__file__)
+    __table_args__ = (sa.UniqueConstraint('name', 'type', 'store_id'),)
 
     id = sa.Column(sa.Integer, primary_key=True)
     type = sa.Column(sa.String(255), nullable=False)
-    name = sa.Column(sa.String(255), unique=True, nullable=False)
+    name = sa.Column(sa.String(255), nullable=False)
     configuration_json = sa.Column(sa.Text, nullable=False)
 
     @declared_attr
