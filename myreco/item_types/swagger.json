@@ -25,7 +25,6 @@
                 },{
                     "name": "stores",
                     "in": "query",
-                    "required": true,
                     "type": "array",
                     "items": {
                         "type": "object",
@@ -250,7 +249,7 @@
             "items": {
                 "type": "object",
                 "additionalProperties": false,
-                "required": ["name", "schema", "stores"],
+                "required": ["name", "schema"],
                 "properties": {
                     "name": {"type": "string"},
                     "schema": {"$ref": "#/definitions/items"},

@@ -75,7 +75,7 @@ class TestItemTypesModelPost(object):
             'schema': {
                 'type': 'object',
                 'additionalProperties': False,
-                'required': ['name', 'schema', 'stores'],
+                'required': ['name', 'schema'],
                 'properties': {
                     'name': {'type': 'string'},
                     'stores': {'$ref': '#/definitions/ItemTypesModel.stores'},
