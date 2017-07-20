@@ -67,7 +67,6 @@
                 },{
                     "name": "stores",
                     "in": "query",
-                    "required": true,
                     "type": "array",
                     "items": {
                         "type": "object",
