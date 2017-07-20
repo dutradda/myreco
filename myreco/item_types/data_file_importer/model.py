@@ -230,7 +230,11 @@ class ItemTypesDataFileImporterModelBase(ItemTypesModelBase):
 
     @classmethod
     def _try_to_process_line(cls, line, validator, store_items_model):
-        line = line.strip().decode()
+        line = line.strip()
+
+        if isinstance(line, bytes):
+            line = line.decode()
+
         if not line:
             return None
 
