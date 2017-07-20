@@ -21,11 +21,9 @@
 # SOFTWARE.
 
 
-from myreco.item_types.model import ItemTypesModelBase
+from myreco.item_types.model import ItemTypesModelBase, ItemValidator
 from myreco.utils import extend_swagger_json, run_coro
-from swaggerit.utils import get_swagger_json
 from swaggerit.exceptions import SwaggerItModelError
-from jsonschema.validators import create, Draft4Validator
 from tempfile import NamedTemporaryFile
 from io import BytesIO
 from collections import namedtuple
@@ -36,11 +34,6 @@ import boto3
 import os
 import asyncio
 import gc
-
-
-store_items_metaschema = get_swagger_json(__file__, '../store_items_metaschema.json')
-ItemValidator = create(store_items_metaschema, Draft4Validator.VALIDATORS)
-ItemValidator.DEFAULT_TYPES['simpleObject'] = dict
 
 
 class ItemTypesDataFileImporterModelBase(ItemTypesModelBase):

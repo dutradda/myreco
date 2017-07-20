@@ -29,10 +29,16 @@ from swaggerit.method import SwaggerMethod
 from swaggerit.request import SwaggerRequest
 from swaggerit.models.orm.factory import FactoryOrmModels
 from sqlalchemy.ext.declarative import declared_attr, AbstractConcreteBase
-from jsonschema import ValidationError, Draft4Validator, validate
+from jsonschema import ValidationError, validate
+from jsonschema.validators import create, Draft4Validator
 from copy import deepcopy
 import sqlalchemy as sa
 import ujson
+
+
+store_items_metaschema = get_swagger_json(__file__, 'store_items_metaschema.json')
+ItemValidator = create(store_items_metaschema, Draft4Validator.VALIDATORS)
+ItemValidator.DEFAULT_TYPES['simpleObject'] = dict
 
 
 class _ItemTypesModelBase(AbstractConcreteBase):
@@ -174,7 +180,7 @@ class _StoreItemsOperationsMixin(object):
 
     @classmethod
     def _build_insert_validator(cls, item_type):
-        return Draft4Validator({
+        return ItemValidator({
             'type': 'array',
             'minItems': 1,
             'items': item_type['schema']
@@ -187,7 +193,7 @@ class _StoreItemsOperationsMixin(object):
         if properties:
             properties['_operation'] = {'enum': ['delete', 'update']}
 
-        return Draft4Validator({
+        return ItemValidator({
             'type': 'array',
             'minItems': 1,
             'items': schema
