@@ -81,14 +81,7 @@ class UsersModelBase(AbstractConcreteBase):
 
     @declared_attr
     def grants(cls):
-        grants_primaryjoin = 'UsersModel.id == users_grants.c.user_id'
-        grants_secondaryjoin = 'and_('\
-            'GrantsModel.uri_id == users_grants.c.grant_uri_id, '\
-            'GrantsModel.method_id == users_grants.c.grant_method_id)'
-
-        return sa.orm.relationship(
-            'GrantsModel', uselist=True, secondary='users_grants',
-            primaryjoin=grants_primaryjoin, secondaryjoin=grants_secondaryjoin)
+        return sa.orm.relationship('GrantsModel', uselist=True, secondary='users_grants')
 
     @declared_attr
     def stores(cls):
@@ -227,8 +220,7 @@ def build_users_grants_table(metadata, **kwargs):
     return sa.Table(
         'users_grants', metadata,
         sa.Column('user_id', sa.String(255), sa.ForeignKey('users.id', ondelete='CASCADE', onupdate='CASCADE'), primary_key=True),
-        sa.Column('grant_uri_id', sa.Integer, sa.ForeignKey('grants.uri_id', ondelete='CASCADE', onupdate='CASCADE'), primary_key=True),
-        sa.Column('grant_method_id', sa.Integer, sa.ForeignKey('grants.method_id', ondelete='CASCADE', onupdate='CASCADE'), primary_key=True),
+        sa.Column('grant_id', sa.Integer, sa.ForeignKey('grants.id', ondelete='CASCADE', onupdate='CASCADE'), primary_key=True),
         **kwargs)
 
 
