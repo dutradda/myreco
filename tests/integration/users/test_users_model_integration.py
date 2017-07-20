@@ -508,68 +508,6 @@ class TestUsersModelDeleteGet(object):
         resp = await client.get('/users?stores=id:1', data=ujson.dumps([{'email': 'test2'}]), headers=headers)
         assert resp.status == 404
 
-    async def test_if_get_set_stores_when_admin(self, init_db, client, headers, headers_without_content_type):
-        client = await client
-
-        store = [{
-            'name': 'test',
-            'country': 'test',
-            'configuration': {'data_path': '/test'}
-        }]
-        resp = await client.post('/stores', data=ujson.dumps(store), headers=headers)
-        assert resp.status == 201
-
-        store = [{
-            'name': 'test2',
-            'country': 'test',
-            'configuration': {'data_path': '/test'}
-        }]
-        resp = await client.post('/stores', data=ujson.dumps(store), headers=headers)
-        assert resp.status == 201
-
-        user = [{
-            'name': 'test2',
-            'email': 'test2',
-            'password': 'test',
-            'admin': True
-        }]
-        resp = await client.post('/users', data=ujson.dumps(user), headers=headers)
-        assert resp.status == 201
-
-        resp = await client.get('/users/test2', headers=headers_without_content_type)
-        assert resp.status == 200
-        assert (await resp.json()) == {
-            'id': 'test2:test',
-            'email': 'test2',
-            'name': 'test2',
-            'admin': True,
-            'password': 'test',
-            'grants': [{
-                'id': 5,
-                'uri_id': 5,
-                'uri': {'uri': '/users/test2', 'id': 5},
-                'method': {'method': 'patch', 'id': 1},
-                'method_id': 1
-            },{
-                'id': 6,
-                'uri_id': 5,
-                'uri': {'uri': '/users/test2', 'id': 5},
-                'method': {'method': 'get', 'id': 2},
-                'method_id': 2
-            }],
-            'stores': [{
-                'country': 'test',
-                'configuration': {'data_path': '/test'},
-                'name': 'test',
-                'id': 1
-            },{
-                'country': 'test',
-                'configuration': {'data_path': '/test'},
-                'name': 'test2',
-                'id': 2
-            }]
-        }
-
 
 class TestUsersModelGetAll(object):
 
