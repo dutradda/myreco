@@ -90,10 +90,15 @@ class PlacementsModelBase(AbstractConcreteBase):
 
             slot = {'name': slot['name'], 'item_type': slot['engine']['item_type']['name']}
             slot['items'] = slot_recos
-            if slot_recos['main'] or slot_recos['fallbacks']:
-                slots.append(slot)
+            slots.append(slot)
 
-        if not slots:
+        valid_slots = []
+        for slot in slots:
+            has_fallback = [True for fallback in slot_recos['fallbacks'] if fallback]
+            if slot_recos['main'] or has_fallback:
+                valid_slots.append(slot)
+
+        if not valid_slots:
             return cls._build_response(404)
 
         if not explict_fallbacks or placement['is_redirect']:
@@ -219,8 +224,7 @@ class PlacementsModelBase(AbstractConcreteBase):
                     fallback, input_external_variables, session, show_details, max_items)
                 all_recos = cls._get_all_slot_recos(slot_recos)
                 fallback_recos = cls._unique_recos(fallback_recos, all_recos)
-                if fallback_recos:
-                    slot_recos['fallbacks'].append(fallback_recos)
+                slot_recos['fallbacks'].append(fallback_recos)
 
     @classmethod
     def _get_all_slot_recos(cls, slot_recos):
