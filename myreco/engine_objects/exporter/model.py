@@ -52,7 +52,7 @@ class EngineObjectsExporterModelBase(EngineObjectsDataImporterModelBase):
     def _run_export_objects_job(cls, req, session, engine_object):
         import_data = req.query.get('import_data')
         items_model = cls._get_items_model(engine_object)
-        engine_object = cls._get_engine_object_instance(engine_object)
+        engine_object = cls.get_engine_object_instance(engine_object)
 
         if import_data:
             importer_result = engine_object.get_data(items_model, session)

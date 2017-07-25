@@ -70,7 +70,7 @@ class EngineObjectsDataImporterModelBase(EngineObjectsModelBase):
     @classmethod
     def _run_import_data_job(cls, req, session, engine_object):
         items_model = cls._get_items_model(engine_object)
-        engine_object = cls._get_engine_object_instance(engine_object)
+        engine_object = cls.get_engine_object_instance(engine_object)
         return engine_object.get_data(
             items_model,
             session
@@ -84,7 +84,7 @@ class EngineObjectsDataImporterModelBase(EngineObjectsModelBase):
         )
 
     @classmethod
-    def _get_engine_object_instance(cls, engine_object):
+    def get_engine_object_instance(cls, engine_object):
         strategy_class = engine_object.strategy.get_class()
         object_class = strategy_class.object_types[engine_object.type]
         return object_class(engine_object.todict(), cls.__data_path__)

@@ -42,14 +42,14 @@ class ItemTypesFiltersUpdaterModelBase(ItemTypesDataFileImporterModelBase):
     async def _run_update_filters_job(cls, req, session, store_items_model, store_id, **kwargs):
         cls._logger.info("Started update filters for '{}'".format(store_items_model.__key__))
 
-        return await cls._update_enabled_filters(store_items_model, session, store_id)
+        return await cls.update_enabled_filters(store_items_model, session, store_id)
 
     @classmethod
     async def get_update_filters_job(cls, req, session):
         return await cls._get_job('_updater', req, session)
 
     @classmethod
-    async def _update_enabled_filters(cls, store_items_model, session, store_id):
+    async def update_enabled_filters(cls, store_items_model, session, store_id):
         items_indices_map = store_items_model.indices_map
         items_indices_map_ret = await items_indices_map.update(session)
         items_indices_map_len = await items_indices_map.get_length(session)
