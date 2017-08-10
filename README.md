@@ -2,4 +2,4 @@
 [![Coverage Status](https://coveralls.io/repos/github/dutradda/myreco/badge.svg?branch=master)](https://coveralls.io/github/dutradda/myreco?branch=master)
 
 # myreco
-My Recommendations - A Restful recommendations service
+My Recommendations - A HTTP API Recommendations Service
