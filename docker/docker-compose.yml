@@ -9,6 +9,9 @@ services:
     redis:
         image: redis
         container_name: myreco-redis
+    elsearch:
+        image: elasticsearch
+        container_name: myreco-elsearch
     myreco:
         build: .
         image: myreco
@@ -18,8 +21,10 @@ services:
         depends_on:
             - mysql
             - redis
+            - elsearch
         links:
             - mysql:myreco-mysql
             - redis:myreco-redis
+            - elsearch:myreco-elsearch
         volumes:
             - $MYRECO_DEV_HOME:/myreco
