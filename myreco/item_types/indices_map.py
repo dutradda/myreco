@@ -62,8 +62,7 @@ class ItemsIndicesMap(object):
         items_indices_map = await self.get_all(session)
         indices_items_map = await self.get_indices_items_map(session)
 
-        items = await self.items_model.get_all(session)
-        items_keys = self._build_keys(items)
+        items_keys = await self._get_items_keys(session)
 
         new_keys = [key for key in items_keys if key not in items_indices_map]
         old_keys = set([key for key in items_keys if key in items_indices_map])
@@ -97,8 +96,8 @@ class ItemsIndicesMap(object):
 
         return self._format_output(await self.get_all(session))
 
-    def _build_keys(self, items):
-        return set([self.items_model.get_instance_key(item) for item in items])
+    async def _get_items_keys(self, session):
+        return set(await self.items_model.get_keys(session))
 
     def _format_output(self, output):
         maximum_index = max(output.values()) if len(output.keys()) else None

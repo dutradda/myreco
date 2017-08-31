@@ -64,3 +64,6 @@ class _StoreItemsModelBaseMeta(ModelRedisElSearchMeta):
             return []
 
         return await ModelRedisElSearchMeta.search(cls, session, pattern, page-1, size)
+
+    async def get_keys(cls, session):
+        return await session.redis_bind.hkeys(cls.__key__)

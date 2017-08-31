@@ -38,9 +38,8 @@ def CoroMock():
 @pytest.fixture
 def indices_map(monkeypatch):
     items_model = mock.MagicMock()
-    items_model.get_all = CoroMock()
-    items_model.get_all.coro.return_value = [{'k': 'a'}, {'k': 'b'}, {'k': 'c'}, {'k': 'd'}]
-    items_model.get_instance_key = lambda x: x['k'].encode()
+    items_model.get_keys = CoroMock()
+    items_model.get_keys.coro.return_value = [b'a', b'b', b'c', b'd']
     items_model.__key__ = 'test'
 
     monkeypatch.setattr('builtins.dict', OrderedDict)
@@ -48,10 +47,10 @@ def indices_map(monkeypatch):
 
     m = ItemsIndicesMap(items_model)
 
-    def _build_keys_mock(self, items):
-        return [self.items_model.get_instance_key(item) for item in items]
+    async def _get_items_keys_mock(self, session):
+        return await self.items_model.get_keys(session)
 
-    m._build_keys = MethodType(_build_keys_mock, m)
+    m._get_items_keys = MethodType(_get_items_keys_mock, m)
     return m
 
 
@@ -122,8 +121,8 @@ class TestItemsIndicesMapWithSameItems(object):
 
 @pytest.fixture
 def indices_map_new_item(indices_map):
-    ret = indices_map.items_model.get_all.coro.return_value
-    ret.append({'k': 'e'})
+    ret = indices_map.items_model.get_keys.coro.return_value
+    ret.append(b'e')
     return indices_map
 
 
@@ -152,7 +151,7 @@ class TestItemsIndicesMapWithNewItem(object):
 
 @pytest.fixture
 def indices_map_removed_item(indices_map):
-    ret = indices_map.items_model.get_all.coro.return_value
+    ret = indices_map.items_model.get_keys.coro.return_value
     ret.remove(ret[0])
     return indices_map
 
@@ -183,9 +182,9 @@ class TestItemsIndicesMapWithItemRemoved(object):
 
 @pytest.fixture
 def indices_map_removed_and_added_item_in_freed_index(indices_map):
-    ret = indices_map.items_model.get_all.coro.return_value
+    ret = indices_map.items_model.get_keys.coro.return_value
     ret.remove(ret[0])
-    ret.append({'k': 'e'})
+    ret.append(b'e')
     return indices_map
 
 
@@ -215,10 +214,10 @@ class TestItemsIndicesMapWithItemRemovedAndAddedInFreedIndex(object):
 
 @pytest.fixture
 def indices_map_removed_and_added_two_items(indices_map):
-    ret = indices_map.items_model.get_all.coro.return_value
+    ret = indices_map.items_model.get_keys.coro.return_value
     ret.remove(ret[0])
-    ret.append({'k': 'e'})
-    ret.append({'k': 'f'})
+    ret.append(b'e')
+    ret.append(b'f')
     return indices_map
 
 
@@ -248,15 +247,15 @@ class TestItemsIndicesMapWithItemRemovedAndAddedTwoItems(object):
 
 @pytest.fixture
 def indices_map_free_indices(indices_map):
-    ret = indices_map.items_model.get_all.coro.return_value
+    ret = indices_map.items_model.get_keys.coro.return_value
     ret.remove(ret[0])
     ret.remove(ret[1])
     ret.pop()
-    ret.append({'k': 'e'})
-    ret.append({'k': 'f'})
-    ret.append({'k': 'g'})
-    ret.append({'k': 'h'})
-    ret.append({'k': 'i'})
+    ret.append(b'e')
+    ret.append(b'f')
+    ret.append(b'g')
+    ret.append(b'h')
+    ret.append(b'i')
     return indices_map
 
 
