@@ -56,8 +56,20 @@ class _StoreItemsModelBaseMeta(ModelRedisElSearchMeta):
         return await \
             ModelRedisElSearchMeta.get(cls, session, ids=ids, limit=limit, offset=offset, **kwargs)
 
-    async def get_all(cls, session, **kwargs):
-        return await ModelRedisElSearchMeta.get(cls, session, **kwargs)
+    async def get_all(cls, session, limit=10000):
+        offset = 0
+        all_items = []
+        part_items = True
+
+        while part_items:
+            part_items = await ModelRedisElSearchMeta.get(
+                cls, session, offset=offset, limit=limit
+            )
+            offset = limit
+            limit += limit
+            all_items.extend(part_items)
+
+        return all_items
 
     async def search(cls, session, pattern, page=1, size=100):
         if page < 1:
