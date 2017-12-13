@@ -22,7 +22,7 @@
 
 
 from myreco.engine_strategies.top_seller.strategy import TopSellerEngineStrategy
-from myreco.engine_strategies.top_seller.array import TopSellerArray
+from myreco.engine_strategies.top_seller.map import TopSellerMap
 from unittest import mock
 from jsonschema import ValidationError
 from os import makedirs
@@ -39,7 +39,7 @@ def CoroMock():
     return corofunc
 
 
-class TopSellerArrayTest(TopSellerArray):
+class TopSellerMapTest(TopSellerMap):
     def get_data(self, items_model, session):
         asyncio.run_coroutine_threadsafe(asyncio.sleep(0.5), session.loop).result()
 
@@ -58,11 +58,11 @@ class TopSellerArrayTest(TopSellerArray):
 
 class EngineStrategyTest(TopSellerEngineStrategy):
     object_types = {
-        'top_seller_array': TopSellerArrayTest
+        'top_seller_map': TopSellerMapTest
     }
 
 
-class EngineObjectWithVars(TopSellerArrayTest):
+class EngineObjectWithVars(TopSellerMapTest):
     pass
 
 

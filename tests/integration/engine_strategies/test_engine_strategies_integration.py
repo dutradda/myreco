@@ -118,7 +118,7 @@ class TestEngineStrategiesModelPost(object):
         }]
         resp = await client.post('/engine_strategies/', headers=headers, data=ujson.dumps(body))
         body[0]['id'] = 1
-        body[0]['object_types'] = ['top_seller_array']
+        body[0]['object_types'] = ['top_seller_map']
 
         assert resp.status == 201
         assert (await resp.json()) ==  body
@@ -146,7 +146,7 @@ class TestEngineStrategiesModelGet(object):
         }]
         await client.post('/engine_strategies/', headers=headers, data=ujson.dumps(body))
         body[0]['id'] = 1
-        body[0]['object_types'] = ['top_seller_array']
+        body[0]['object_types'] = ['top_seller_map']
 
         resp = await client.get('/engine_strategies/', headers=headers_without_content_type)
         assert resp.status == 200

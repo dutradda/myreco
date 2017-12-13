@@ -177,7 +177,7 @@ def init_db(models, session, api, temp_dir):
         'objects': [{
             '_operation': 'insert',
             'name': 'Object Top Seller Invalid',
-            'type': 'top_seller_array',
+            'type': 'top_seller_map',
             'configuration': {'days_interval': 7}
         }],
         'store_id': 1,
@@ -190,7 +190,7 @@ def init_db(models, session, api, temp_dir):
         'objects': [{
             '_operation': 'insert',
             'name': 'Object Top Seller',
-            'type': 'top_seller_array',
+            'type': 'top_seller_map',
             'configuration': {'days_interval': 7}
         }],
         'store_id': 1,
@@ -241,8 +241,6 @@ def init_db(models, session, api, temp_dir):
     session.loop.run_until_complete(models['external_variables'].insert(session, {'name': 'filter_boolean_exclusive_of', 'store_id': 1})) # ID: 23
     session.loop.run_until_complete(models['external_variables'].insert(session, {'name': 'filter_array_exclusive_of', 'store_id': 1})) # ID: 24
     session.loop.run_until_complete(models['external_variables'].insert(session, {'name': 'filter_object_exclusive_of', 'store_id': 1})) # ID: 25
-    session.loop.run_until_complete(models['external_variables'].insert(session, {'name': 'index_inclusive_of', 'store_id': 1})) # ID: 26
-    session.loop.run_until_complete(models['external_variables'].insert(session, {'name': 'index_exclusive_of', 'store_id': 1})) # ID: 27
 
     slot = {
         'max_items': 10,
@@ -406,18 +404,6 @@ def init_db(models, session, api, temp_dir):
             'is_inclusive': False,
             'type_id': 'item_property_value',
             'property_name': 'filter_object'
-        },{
-            '_operation': 'insert',
-            'external_variable_id': 26,
-            'is_inclusive': True,
-            'type_id': 'property_value_index',
-            'property_name': 'sku'
-        },{
-            '_operation': 'insert',
-            'external_variable_id': 27,
-            'is_inclusive': False,
-            'type_id': 'property_value_index',
-            'property_name': 'sku'
         }]
     }
     session.loop.run_until_complete(models['slots'].insert(session, slot))
@@ -1018,7 +1004,7 @@ class TestPlacementsGetRecomendations(object):
         resp = await client.get('/placements/{}/items?test2=1'.format(obj['small_hash']), headers=headers_without_content_type)
         assert resp.status == 200
         assert class_loader.load()().get_items.call_count == 1
-        assert class_loader.load()().get_items.call_args_list[0][1] == {'item_id': 1}
+        assert class_loader.load()().get_items.call_args_list[0][0][4] == {'item_id': 1}
 
     async def test_get_items_valid(self, init_db, client, headers, monkeypatch, headers_without_content_type):
         random_patch(monkeypatch)
@@ -1691,7 +1677,6 @@ class TestPlacementsGetRecomendationsFilters(object):
         resp = await client.get('/placements/{}/items?filter_array_inclusive=t2,t3'.format(obj['small_hash']), headers=headers_without_content_type)
         assert resp.status == 200
         assert (await resp.json())['slots'][0]['items'] == [
-            {'filter_array': ['t1', 't2'], 'item_id': 1, 'sku': 'test1'},
             {'sku': 'test2', 'item_id': 2, 'filter_array': ['t2', 't3']}
         ]
 
@@ -2388,7 +2373,7 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
         },{
             'item_id': 2,
             'sku': 'test2',
-            'filter_array': ['t2', 't3']
+            'filter_array': ['t2', 't1']
         },{
             'item_id': 3,
             'sku': 'test3'
@@ -2429,7 +2414,7 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
         assert resp.status == 200
         assert (await resp.json())['slots'][0]['items'] == [
             {'filter_array': ['t1', 't2'], 'item_id': 1, 'sku': 'test1'},
-            {'sku': 'test2', 'item_id': 2, 'filter_array': ['t2', 't3']}]
+            {'sku': 'test2', 'item_id': 2, 'filter_array': ['t2', 't1']}]
 
     async def test_get_items_of_array_exclusive(self, init_db, client, headers, monkeypatch, headers_without_content_type):
         random_patch(monkeypatch)
@@ -2587,162 +2572,6 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
         assert (await resp.json())['slots'][0]['items'] == [
             {'sku': 'test3', 'item_id': 3},
             {'sku': 'test2', 'item_id': 2, 'filter_object': {'id': 2}}]
-
-    async def test_get_items_of_index_inclusive(self, init_db, client, headers, monkeypatch, headers_without_content_type):
-        random_patch(monkeypatch)
-        client = await client
-        products = [{
-            'item_id': 1,
-            'sku': 'test1',
-            'filter_object': {'id': 1}
-        },{
-            'item_id': 2,
-            'sku': 'test2',
-            'filter_object': {'id': 2}
-        },{
-            'item_id': 3,
-            'sku': 'test3'
-        }]
-        await client.post('/item_types/4/items?store_id=1', headers=headers, data=ujson.dumps(products))
-
-        await client.post('/item_types/4/update_filters?store_id=1', headers=headers_without_content_type)
-        sleep(0.05)
-        while True:
-            resp = await client.get(
-                '/item_types/4/update_filters?store_id=1&job_hash=6342e10bd7dca3240c698aa79c98362e',
-                headers=headers_without_content_type)
-            if (await resp.json())['status'] != 'running':
-                break
-
-        await client.post('/engine_objects/4/export?import_data=true', headers=headers_without_content_type)
-        sleep(0.05)
-        while True:
-            resp = await client.get(
-                '/engine_objects/4/export?job_hash=6342e10bd7dca3240c698aa79c98362e',
-                headers=headers_without_content_type)
-            if (await resp.json())['status'] != 'running':
-                break
-
-        body = [{
-            'store_id': 1,
-            'name': 'Placement Test',
-            'variations': [{
-                '_operation': 'insert',
-                'name': 'Var 1',
-                'slots': [{'id': 2}]
-            }]
-        }]
-        resp = await client.post('/placements/', headers=headers, data=ujson.dumps(body))
-        obj = (await resp.json())[0]
-
-        resp = await client.get('/placements/{}/items?index_inclusive_of=1|test1,2|test2'.format(obj['small_hash']), headers=headers_without_content_type)
-        assert resp.status == 200
-        obj1 = {'sku': 'test1', 'item_id': 1, 'filter_object': {'id': 1}}
-        obj2 = {'sku': 'test2', 'item_id': 2, 'filter_object': {'id': 2}}
-        assert (await resp.json())['slots'][0]['items'] == [obj1, obj2] or \
-            (await resp.json())['slots'][0]['items'] == [obj2, obj1]
-
-    async def test_get_items_of_index_exclusive(self, init_db, client, headers, monkeypatch, headers_without_content_type):
-        random_patch(monkeypatch)
-        client = await client
-        products = [{
-            'item_id': 1,
-            'sku': 'test1',
-            'filter_object': {'id': 1}
-        },{
-            'item_id': 2,
-            'sku': 'test2',
-            'filter_object': {'id': 2}
-        },{
-            'item_id': 3,
-            'sku': 'test3'
-        }]
-        await client.post('/item_types/4/items?store_id=1', headers=headers, data=ujson.dumps(products))
-
-        await client.post('/item_types/4/update_filters?store_id=1', headers=headers_without_content_type)
-        sleep(0.05)
-        while True:
-            resp = await client.get(
-                '/item_types/4/update_filters?store_id=1&job_hash=6342e10bd7dca3240c698aa79c98362e',
-                headers=headers_without_content_type)
-            if (await resp.json())['status'] != 'running':
-                break
-
-        await client.post('/engine_objects/4/export?import_data=true', headers=headers_without_content_type)
-        sleep(0.05)
-        while True:
-            resp = await client.get(
-                '/engine_objects/4/export?job_hash=6342e10bd7dca3240c698aa79c98362e',
-                headers=headers_without_content_type)
-            if (await resp.json())['status'] != 'running':
-                break
-
-        body = [{
-            'store_id': 1,
-            'name': 'Placement Test',
-            'variations': [{
-                '_operation': 'insert',
-                'name': 'Var 1',
-                'slots': [{'id': 2}]
-            }]
-        }]
-        resp = await client.post('/placements/', headers=headers, data=ujson.dumps(body))
-        obj = (await resp.json())[0]
-
-        resp = await client.get('/placements/{}/items?index_exclusive_of=1|test1,2|test2'.format(obj['small_hash']), headers=headers_without_content_type)
-        assert resp.status == 200
-        assert (await resp.json())['slots'][0]['items'] == [{'sku': 'test3', 'item_id': 3}]
-
-    async def test_get_items_404(self, init_db, client, headers, monkeypatch, headers_without_content_type):
-        random_patch(monkeypatch)
-        client = await client
-        products = [{
-            'item_id': 1,
-            'sku': 'test1',
-            'filter_object': {'id': 1}
-        },{
-            'item_id': 2,
-            'sku': 'test2',
-            'filter_object': {'id': 2}
-        },{
-            'item_id': 3,
-            'sku': 'test3'
-        }]
-        await client.post('/item_types/4/items?store_id=1', headers=headers, data=ujson.dumps(products))
-
-        await client.post('/item_types/4/update_filters?store_id=1', headers=headers_without_content_type)
-        sleep(0.05)
-        while True:
-            resp = await client.get(
-                '/item_types/4/update_filters?store_id=1&job_hash=6342e10bd7dca3240c698aa79c98362e',
-                headers=headers_without_content_type)
-            if (await resp.json())['status'] != 'running':
-                break
-
-        await client.post('/engine_objects/4/export?import_data=true', headers=headers_without_content_type)
-        sleep(0.05)
-        while True:
-            resp = await client.get(
-                '/engine_objects/4/export?job_hash=6342e10bd7dca3240c698aa79c98362e',
-                headers=headers_without_content_type)
-            if (await resp.json())['status'] != 'running':
-                break
-
-        body = [{
-            'store_id': 1,
-            'name': 'Placement Test',
-            'variations': [{
-                '_operation': 'insert',
-                'name': 'Var 1',
-                'slots': [{'id': 2}]
-            }]
-        }]
-        resp = await client.post('/placements/', headers=headers, data=ujson.dumps(body))
-        obj = (await resp.json())[0]
-
-        resp = await client.get('/placements/{}/items?index_exclusive_of=1|test1,2|test2,3|test3'.format(obj['small_hash']), headers=headers_without_content_type)
-        assert resp.status == 404
-        assert (await resp.json()) == None
 
 
 class TestPlacementsGetRecomendationsRedirect(object):

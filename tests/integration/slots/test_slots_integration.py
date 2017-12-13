@@ -137,7 +137,7 @@ def init_db(models, session, api, monkeypatch):
         'objects': [{
             '_operation': 'insert',
             'name': 'Object',
-            'type': 'top_seller_array',
+            'type': 'top_seller_map',
             'configuration': {'days_interval': 7}
         }],
         'store_id': 1,

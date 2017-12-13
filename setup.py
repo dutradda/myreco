@@ -15,6 +15,7 @@
 
 from version import VERSION
 from setuptools import setup, find_packages
+from Cython.Build import cythonize
 
 long_description = ''
 with open('README.md') as readme:
@@ -57,5 +58,8 @@ setup(
         'Programming Language :: Python :: 3.5',
         'Topic :: Internet :: WWW/HTTP :: WSGI :: Middleware',
         'Topic :: Software Development :: Libraries :: Python Modules'
-    ]
+    ],
+    ext_modules = cythonize(
+        "myreco/engine_strategies/{filters/apply_filters,top_seller/_recommender}.pyx"
+    )
 )

@@ -22,7 +22,6 @@
 
 
 from myreco.engine_strategies.filters.filters import BooleanFilterBy
-from myreco.engine_strategies.filters.factory import FiltersFactory
 from myreco.item_types.data_file_importer.model import ItemTypesDataFileImporterModelBase
 from myreco.utils import extend_swagger_json
 from swaggerit.exceptions import SwaggerItModelError
@@ -50,30 +49,23 @@ class ItemTypesFiltersUpdaterModelBase(ItemTypesDataFileImporterModelBase):
 
     @classmethod
     async def update_enabled_filters(cls, store_items_model, session, store_id):
-        items_indices_map = store_items_model.indices_map
-        items_indices_map_ret = await items_indices_map.update(session)
-        items_indices_map_len = await items_indices_map.get_length(session)
-
         filters_factory = cls.get_model('slot_filters').__factory__
-        enabled_filters = await cls._get_enabled_filters(store_items_model, session, store_id)
         filters_ret = dict()
-        items_indices_map_dict = await items_indices_map.get_all(session)
-        items = await cls._get_items_with_indices_and_stock(
-            store_items_model, session, items_indices_map_dict
-        )
+        enabled_filters = await cls._get_enabled_filters(store_items_model, session, store_id)
+        items = await cls._get_items_with_stock(store_items_model, session)
 
         stock_filter = BooleanFilterBy(store_items_model, 'stock')
-        await stock_filter.update(session, items, items_indices_map_len)
+        await stock_filter.update(session, items)
 
         for slot_filter, schema in enabled_filters:
             filter_ = filters_factory.make(
                 store_items_model, slot_filter,
                 schema, slot_filter['skip_values']
             )
-            filters_ret[filter_.name] = await filter_.update(session, items, items_indices_map_len)
+            filters_ret[filter_.name] = await filter_.update(session, items)
 
         cls._logger.info("Finished update filters for '{}'".format(store_items_model.__key__))
-        return {'items_indices_map': items_indices_map_ret, 'filters': filters_ret}
+        return {'filters': filters_ret}
 
     @classmethod
     async def _get_enabled_filters(cls, store_items_model, session, store_id):
@@ -97,7 +89,7 @@ class ItemTypesFiltersUpdaterModelBase(ItemTypesDataFileImporterModelBase):
         return filters_external_variables
 
     @classmethod
-    async def _get_items_with_indices_and_stock(cls, store_items_model, session, items_indices_map_dict):
+    async def _get_items_with_stock(cls, store_items_model, session):
         items = []
         page = 1
         items_part = await store_items_model.get(session, page=page, items_per_page=100000)
@@ -108,10 +100,6 @@ class ItemTypesFiltersUpdaterModelBase(ItemTypesDataFileImporterModelBase):
             items_part = await store_items_model.get(session, page=page, items_per_page=100000)
 
         for item in items:
-            item_key = store_items_model.get_instance_key(item)
-            index = items_indices_map_dict.get(item_key)
-            if index is not None:
-                item['index'] = index
-                item['stock'] = True
+            item['stock'] = True
 
         return items

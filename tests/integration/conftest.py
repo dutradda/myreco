@@ -29,6 +29,7 @@ from unittest import mock
 from sqlalchemy import create_engine
 from aioredis import create_redis
 from base64 import b64encode
+from credis import Connection
 import sqlalchemy as sa
 import pytest
 import pymysql
@@ -62,6 +63,15 @@ def redis(variables, loop):
         loop=loop
     )
     return loop.run_until_complete(coro)
+
+
+@pytest.fixture(scope='session')
+def cy_redis(variables, loop):
+    return Connection(
+        variables['redis']['host'],
+        variables['redis']['port'],
+        variables['redis']['db']
+    )
 
 
 @pytest.fixture(scope='session')
@@ -104,10 +114,11 @@ def elsearch(variables, loop):
 
 
 @pytest.fixture(scope='session')
-def api(engine, redis, elsearch, loop):
+def api(engine, redis, elsearch, loop, cy_redis):
     api = MyrecoAPI('/tmp', sqlalchemy_bind=engine, redis_bind=redis,
                     elsearch_bind=elsearch, title='Myreco API',
-                    loop=loop, debug=True, type_='objects_exporter')
+                    loop=loop, debug=True, type_='objects_exporter',
+                    redis_bind_cy=cy_redis)
 
     class ModelTest(api.models_factory.base_model):
         __tablename__ = 'test'
@@ -162,7 +173,7 @@ def client(api, test_client):
 
 
 @pytest.fixture
-def session(variables, redis, engine, pymysql_conn, base_model, loop, elsearch):
+def session(variables, redis, engine, pymysql_conn, base_model, loop, elsearch, cy_redis):
     base_model.metadata.bind = engine
     base_model.metadata.create_all()
 
@@ -182,7 +193,13 @@ def session(variables, redis, engine, pymysql_conn, base_model, loop, elsearch):
     pymysql_conn.commit()
     loop.run_until_complete(redis.flushdb())
     loop.run_until_complete(elsearch.flush_index())
-    session = Session(bind=engine, redis_bind=redis, elsearch_bind=elsearch, loop=loop)
+    session = Session(
+        bind=engine,
+        redis_bind=redis,
+        elsearch_bind=elsearch,
+        loop=loop,
+        redis_bind_cy=cy_redis
+    )
     yield session
     session.close()
 

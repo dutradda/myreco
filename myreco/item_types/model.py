@@ -246,32 +246,21 @@ class _StoreItemsOperationsMixin(object):
 
     @classmethod
     async def _set_stock_filter(cls, store_items_model, session):
-        items_indices_map_dict = await store_items_model.indices_map.get_all(session)
-        items_indices_map_len = await store_items_model.indices_map.get_length(session)
-
-        if items_indices_map_dict.values():
-            items_keys = set(await session.redis_bind.hkeys(store_items_model.__key__))
-            items_indices_keys = set(items_indices_map_dict.keys())
-            remaining_keys = items_indices_keys.intersection(items_keys)
-            old_keys = items_indices_keys.difference(items_keys)
-
-            items = []
-            cls._set_stock_item(
-                store_items_model, remaining_keys,
-                items_indices_map_dict, True, items
-            )
-            cls._set_stock_item(store_items_model, old_keys, items_indices_map_dict, False, items)
-
-            stock_filter = BooleanFilterBy(store_items_model, 'stock')
-            await stock_filter.update(session, items, items_indices_map_len)
+        items_keys = set(await session.redis_bind.hkeys(store_items_model.__key__))
+        items = cls._build_items_stock(store_items_model, items_keys)
+        stock_filter = BooleanFilterBy(store_items_model, 'stock')
+        await stock_filter.update(session, items)
 
     @classmethod
-    def _set_stock_item(cls, store_items_model, keys, items_indices_map_dict, value, items):
+    def _build_items_stock(cls, store_items_model, keys):
+        items = []
+
         for key in keys:
-            item = {}
+            item = {'stock': True}
             store_items_model.set_instance_ids(item, key)
-            item.update({'stock': value, 'index': int(items_indices_map_dict[key])})
             items.append(item)
+
+        return items
 
 
 class ItemTypesModelBase(_ItemTypesModelBase, _StoreItemsOperationsMixin):

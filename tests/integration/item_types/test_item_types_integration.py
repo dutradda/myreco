@@ -22,7 +22,6 @@
 
 
 from swaggerit.models._base import _all_models
-from myreco.item_types.indices_map import ItemsIndicesMap
 from myreco.authorizer import MyrecoAuthorizer
 from base64 import b64encode
 from unittest import mock
@@ -30,7 +29,6 @@ from datetime import datetime
 from time import sleep
 import pytest
 import ujson
-import numpy as np
 
 
 @pytest.fixture
@@ -477,12 +475,11 @@ class TestItemsModelPatch(object):
 
 
         test_model = _all_models['store_items_test_1']
-        await ItemsIndicesMap(test_model).update(session)
 
         body = [{'id': 'test', '_operation': 'delete'}]
         resp = await client.patch('/item_types/1/items?store_id=1', headers=headers, data=ujson.dumps(body))
-        stock_filter = np.fromstring(await redis.get('store_items_test_1_stock_filter'), dtype=np.bool).tolist()
-        assert stock_filter == [False]
+        stock_filter = await redis.smembers('store_items_test_1_stock_bool_filter')
+        assert stock_filter == [b'test']
 
 
 @pytest.fixture
@@ -542,7 +539,7 @@ def update_filters_init_db(models, session, api, monkeypatch):
         'objects': [{
             '_operation': 'insert',
             'name': 'Top Seller Array',
-            'type': 'top_seller_array',
+            'type': 'top_seller_map',
             'configuration': {'days_interval': 7}
         }],
         'store_id': 1,
@@ -649,10 +646,9 @@ class TestItemTypesModelFiltersUpdater(object):
         assert await resp.json() == {
             'status': 'done',
             'result': {
-                'items_indices_map': {'maximum_index': 0, 'total_items': 1},
                 'filters': {
                     'filter1': {'filters_quantity': 1},
-                    'filter2': {'true_values': 1},
+                    'filter2': {'filters_quantity': 1},
                     'filter3': {'filters_quantity': 1},
                     'filter4': {'filters_quantity': 1},
                     'filter5': {'filters_quantity': 1}
@@ -706,8 +702,9 @@ class TestItemTypesModelFiltersUpdater(object):
             if (await resp.json())['status'] != 'running':
                 break
 
-        stock_filter = np.fromstring(await redis.get('store_items_products_1_stock_filter'), dtype=np.bool).tolist()
-        assert stock_filter == [True, True, True]
+        expected = sorted([b'test2', b'test3', b'test'])
+        stock_filter = await redis.smembers('store_items_products_1_stock_bool_filter')
+        assert sorted(stock_filter) == expected
 
     async def test_if_update_filters_builds_boolean_filter(self, update_filters_init_db, headers, redis, session, monkeypatch, headers_without_content_type, client):
         set_patches(monkeypatch)
@@ -750,16 +747,9 @@ class TestItemTypesModelFiltersUpdater(object):
             if (await resp.json())['status'] != 'running':
                 break
 
-        products_model = _all_models['store_items_products_1']
-        indices_items_map = await ItemsIndicesMap(products_model).get_indices_items_map(session)
-
-        expected = [None, None, None]
-        for k, v in indices_items_map.items():
-            expected[k] = True if v == 'test' or v == 'test2' else False
-
-        filter_ = await redis.get('store_items_products_1_filter2_filter')
-        filter_ = np.fromstring(filter_, dtype=np.bool).tolist()
-        assert filter_ == expected
+        expected = sorted([b'test2', b'test'])
+        filter_ = await redis.smembers('store_items_products_1_filter2_bool_filter')
+        assert sorted(filter_) == expected
 
     async def test_if_update_filters_builds_integer_filter(self, update_filters_init_db, headers, redis, session, monkeypatch, headers_without_content_type, client):
         set_patches(monkeypatch)
@@ -802,24 +792,12 @@ class TestItemTypesModelFiltersUpdater(object):
             if (await resp.json())['status'] != 'running':
                 break
 
-        products_model = _all_models['store_items_products_1']
-        indices_items_map = await ItemsIndicesMap(products_model).get_indices_items_map(session)
-
-        expected1 = [None, None, None]
-        for k, v in indices_items_map.items():
-            expected1[k] = True if v == 'test' or v == 'test2' else False
-
-        expected2 = [None, None, None]
-        for k, v in indices_items_map.items():
-            expected2[k] = False if v == 'test' or v == 'test2' else True
-
-        filter_ = await redis.hgetall('store_items_products_1_filter1_filter')
-        key1 = '1'.encode()
-        key2 = '2'.encode()
-        filter_[key1] = np.fromstring(filter_[key1], dtype=np.bool).tolist()
-        filter_[key2] = np.fromstring(filter_[key2], dtype=np.bool).tolist()
-
-        assert filter_ == {key1: expected1, key2: expected2}
+        expected1 = sorted([b'test2', b'test'])
+        expected2 = sorted([b'test3'])
+        filter11 = await redis.smembers('store_items_products_1_filter1_1_filter')
+        filter12 = await redis.smembers('store_items_products_1_filter1_2_filter')
+        assert sorted(filter11) == expected1
+        assert sorted(filter12) == expected2
 
     async def test_if_update_filters_builds_string_filter(self, update_filters_init_db, headers, redis, session, monkeypatch, headers_without_content_type, client):
         set_patches(monkeypatch)
@@ -862,24 +840,12 @@ class TestItemTypesModelFiltersUpdater(object):
             if (await resp.json())['status'] != 'running':
                 break
 
-        products_model = _all_models['store_items_products_1']
-        indices_items_map = await ItemsIndicesMap(products_model).get_indices_items_map(session)
-
-        expected1 = [None, None, None]
-        for k, v in indices_items_map.items():
-            expected1[k] = True if v == 'test' or v == 'test2' else False
-
-        expected2 = [None, None, None]
-        for k, v in indices_items_map.items():
-            expected2[k] = False if v == 'test' or v == 'test2' else True
-
-        filter_ = await redis.hgetall('store_items_products_1_filter3_filter')
-        key1 = 'test'.encode()
-        key2 = 'test2'.encode()
-        filter_[key1] = np.fromstring(filter_[key1], dtype=np.bool).tolist()
-        filter_[key2] = np.fromstring(filter_[key2], dtype=np.bool).tolist()
-
-        assert filter_ == {key1: expected1, key2: expected2}
+        expected1 = sorted([b'test2', b'test'])
+        expected2 = sorted([b'test3'])
+        filter31 = await redis.smembers('store_items_products_1_filter3_test_filter')
+        filter32 = await redis.smembers('store_items_products_1_filter3_test2_filter')
+        assert sorted(filter31) == expected1
+        assert sorted(filter32) == expected2
 
     async def test_if_update_filters_builds_object_filter(self, update_filters_init_db, headers, redis, session, monkeypatch, headers_without_content_type, client):
         set_patches(monkeypatch)
@@ -922,24 +888,12 @@ class TestItemTypesModelFiltersUpdater(object):
             if (await resp.json())['status'] != 'running':
                 break
 
-        products_model = _all_models['store_items_products_1']
-        indices_items_map = await ItemsIndicesMap(products_model).get_indices_items_map(session)
-
-        expected1 = [None, None, None]
-        for k, v in indices_items_map.items():
-            expected1[k] = True if v == 'test' or v == 'test2' else False
-
-        expected2 = [None, None, None]
-        for k, v in indices_items_map.items():
-            expected2[k] = False if v == 'test' or v == 'test2' else True
-
-        filter_ = await redis.hgetall('store_items_products_1_filter4_filter')
-        key1 = '(1,)'.encode()
-        key2 = '(2,)'.encode()
-        filter_[key1] = np.fromstring(filter_[key1], dtype=np.bool).tolist()
-        filter_[key2] = np.fromstring(filter_[key2], dtype=np.bool).tolist()
-
-        assert filter_ == {key1: expected1, key2: expected2}
+        expected1 = sorted([b'test2', b'test'])
+        expected2 = sorted([b'test3'])
+        filter31 = await redis.smembers('store_items_products_1_filter4_(1,)_filter')
+        filter32 = await redis.smembers('store_items_products_1_filter4_(2,)_filter')
+        assert sorted(filter31) == expected1
+        assert sorted(filter32) == expected2
 
     async def test_if_update_filters_builds_array_filter(self, update_filters_init_db, headers, redis, session, monkeypatch, headers_without_content_type, client):
         set_patches(monkeypatch)
@@ -982,30 +936,15 @@ class TestItemTypesModelFiltersUpdater(object):
             if (await resp.json())['status'] != 'running':
                 break
 
-        products_model = _all_models['store_items_products_1']
-        indices_items_map = await ItemsIndicesMap(products_model).get_indices_items_map(session)
-
-        expected1 = [None, None, None]
-        for k, v in indices_items_map.items():
-            expected1[k] = True if v == 'test' or v == 'test2' else False
-
-        expected2 = [None, None, None]
-        for k, v in indices_items_map.items():
-            expected2[k] = True if v == 'test2' or v == 'test3' else False
-
-        expected3 = [None, None, None]
-        for k, v in indices_items_map.items():
-            expected3[k] = True if v == 'test3' else False
-
-        filter_ = await redis.hgetall('store_items_products_1_filter5_filter')
-        key1 = '1'.encode()
-        key2 = '2'.encode()
-        key3 = '3'.encode()
-        filter_[key1] = np.fromstring(filter_[key1], dtype=np.bool).tolist()
-        filter_[key2] = np.fromstring(filter_[key2], dtype=np.bool).tolist()
-        filter_[key3] = np.fromstring(filter_[key3], dtype=np.bool).tolist()
-
-        assert filter_ == {key1: expected1, key2: expected2, key3: expected3}
+        expected1 = sorted([b'test2', b'test'])
+        expected2 = sorted([b'test3', b'test2'])
+        expected3 = sorted([b'test3'])
+        filter31 = await redis.smembers('store_items_products_1_filter5_1_filter')
+        filter32 = await redis.smembers('store_items_products_1_filter5_2_filter')
+        filter33 = await redis.smembers('store_items_products_1_filter5_3_filter')
+        assert sorted(filter31) == expected1
+        assert sorted(filter32) == expected2
+        assert sorted(filter33) == expected3
 
 
 class TestItemTypesFilterTypes(object):
@@ -1017,7 +956,5 @@ class TestItemTypesFilterTypes(object):
         assert resp.status == 200
         assert await resp.json() == [
             {'id': 'item_property_value', 'name': 'By Item Property Value'},
-            {'id': 'item_property_value_index', 'name': 'By Item Property Value Index'},
-            {'id': 'property_value', 'name': 'By Property Value'},
-            {'id': 'property_value_index', 'name': 'By Property Value Index'}
+            {'id': 'property_value', 'name': 'By Property Value'}
         ]

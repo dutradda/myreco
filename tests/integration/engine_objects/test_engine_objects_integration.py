@@ -24,7 +24,7 @@
 from unittest import mock
 from time import sleep
 from datetime import datetime
-from tests.integration.fixtures import TopSellerArrayTest
+from tests.integration.fixtures import TopSellerMapTest
 from swaggerit.models._base import _all_models
 import asyncio
 import tempfile
@@ -70,7 +70,7 @@ def init_db(models, session, api):
 
     engine_object = {
         'name': 'Top Seller Object',
-        'type': 'top_seller_array',
+        'type': 'top_seller_map',
         'configuration': {'days_interval': 7},
         'store_id': 1,
         'item_type_id': 1,
@@ -119,7 +119,7 @@ class TestEngineObjectsModelPost(object):
         client = await client
         body = [{
             'name': 'Top Seller Object Test',
-            'type': 'top_seller_array',
+            'type': 'top_seller_map',
             'configuration': {'days_interval': 7},
             'store_id': 1,
             'item_type_id': 1,
@@ -139,7 +139,7 @@ class TestEngineObjectsModelPost(object):
         client = await client
         body = [{
             'name': 'Top Seller Object Test',
-            'type': 'top_seller_array',
+            'type': 'top_seller_map',
             'configuration': {'days_interval': 7},
             'store_id': 1,
             'item_type_id': 1,
@@ -173,7 +173,7 @@ class TestEngineObjectsModelGet(object):
     async def test_get_valid(self, init_db, headers, headers_without_content_type, client):
         body = [{
             'name': 'Top Seller Object',
-            'type': 'top_seller_array',
+            'type': 'top_seller_map',
             'configuration': {"days_interval": 7},
             'store_id': 1,
             'item_type_id': 1,
@@ -207,7 +207,7 @@ class TestEngineObjectsModelGet(object):
                 'name': 'test',
                 'class_module': 'tests.integration.fixtures',
                 'class_name': 'EngineStrategyTest',
-                'object_types': ['top_seller_array']
+                'object_types': ['top_seller_map']
             }
         }]
 
@@ -253,7 +253,6 @@ class TestEngineObjectsModelUriTemplatePatch(object):
         }
         resp = await client.patch('/engine_objects/1/', headers=headers, data=ujson.dumps(body))
         assert resp.status == 400
-        print(ujson.dumps(await resp.json(), indent=4))
         assert (await resp.json()) ==  {
             'message': "'days_interval' is a required property. "\
                        "Failed validating instance for schema['required']",
@@ -279,7 +278,7 @@ class TestEngineObjectsModelUriTemplatePatch(object):
         client = await client
         body = [{
             'name': 'Top Seller Object Test',
-            'type': 'top_seller_array',
+            'type': 'top_seller_map',
             'configuration': {'days_interval': 7},
             'store_id': 1,
             'item_type_id': 1,
@@ -316,7 +315,7 @@ class TestEngineObjectsModelUriTemplateGet(object):
         resp = await client.get('/engine_objects/1/', headers=headers_without_content_type)
         body = {
             'name': 'Top Seller Object',
-            'type': 'top_seller_array',
+            'type': 'top_seller_map',
             'configuration': {"days_interval": 7},
             'store_id': 1,
             'item_type_id': 1,
@@ -350,7 +349,7 @@ class TestEngineObjectsModelUriTemplateGet(object):
                 'name': 'test',
                 'class_module': 'tests.integration.fixtures',
                 'class_name': 'EngineStrategyTest',
-                'object_types': ['top_seller_array']
+                'object_types': ['top_seller_map']
             }
         }
 
@@ -445,7 +444,7 @@ class TestEngineObjectsModelsDataImporter(object):
 
     async def test_importer_get_with_error(self, init_db, headers_without_content_type, client, monkeypatch):
         set_patches(monkeypatch)
-        monkeypatch.setattr('tests.integration.fixtures.TopSellerArrayTest.get_data',
+        monkeypatch.setattr('tests.integration.fixtures.TopSellerMapTest.get_data',
                             mock.MagicMock(side_effect=Exception('testing')))
         client = await client
         await client.post('/engine_objects/1/import_data', headers=headers_without_content_type)
@@ -582,7 +581,7 @@ def set_data_importer_patch(monkeypatch, mock_=None):
     if mock_ is None:
         mock_ = mock.MagicMock()
 
-    monkeypatch.setattr('tests.integration.fixtures.TopSellerArrayTest.get_data', mock_)
+    monkeypatch.setattr('tests.integration.fixtures.TopSellerMapTest.get_data', mock_)
     return mock_
 
 
@@ -603,8 +602,8 @@ class TestEngineObjectsModelsObjectsExporterWithImport(object):
 
         await _wait_job_finish(client, headers_without_content_type)
 
-        called = bool(TopSellerArrayTest.get_data.called)
-        TopSellerArrayTest.get_data.reset_mock()
+        called = bool(TopSellerMapTest.get_data.called)
+        TopSellerMapTest.get_data.reset_mock()
 
         assert hash_ == {'job_hash': '6342e10bd7dca3240c698aa79c98362e'}
         assert called

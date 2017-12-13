@@ -5,9 +5,11 @@ services:
   - mysql
   - redis-server
   - elasticsearch
-script: py.test -c pytest-travis.ini tests/unit && py.test -c pytest-travis.ini tests/integration
+script: py.test -c pytest-travis.ini tests/integration
 install: 
   - pip install cython
+  - cythonize -b myreco/engine_strategies/filters/apply_filters.pyx
+  - cythonize -b myreco/engine_strategies/top_seller/_recommender.pyx
   - pip install -r requirements.txt -r requirements-dev.txt
   - pip install coveralls
 after_success:

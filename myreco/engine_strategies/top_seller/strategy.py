@@ -21,17 +21,18 @@
 # SOFTWARE.
 
 
-from myreco.engine_strategies.top_seller.array import TopSellerArray
+from myreco.engine_strategies.top_seller.map import TopSellerMap
+from myreco.engine_strategies.top_seller._recommender import _build_recommendations
 from myreco.engine_strategies.strategy_base import EngineStrategyBase
 
 
 class TopSellerEngineStrategy(EngineStrategyBase):
     configuration_schema = {
         'type': 'object',
-        'required': ['top_seller_array'],
+        'required': ['top_seller_map'],
         'additionalProperties': False,
         'properties': {
-            'top_seller_array': {
+            'top_seller_map': {
                 'type': 'object',
                 'required': ['days_interval'],
                 'additionalProperties': False,
@@ -41,7 +42,8 @@ class TopSellerEngineStrategy(EngineStrategyBase):
             }
         }
     }
-    object_types = {'top_seller_array': TopSellerArray}
+    object_types = {'top_seller_map': TopSellerMap}
 
-    async def _build_items_vector(self, session, items_model, **external_variables):
-        return await self.objects['top_seller_array'].get_numpy_array(session)
+    async def _build_recommendations(self, session, filters, engine_variables):
+        recos = await self.objects['top_seller_map'].get_map(session)
+        return _build_recommendations(session.redis_bind_cy, list(recos.items()), filters)

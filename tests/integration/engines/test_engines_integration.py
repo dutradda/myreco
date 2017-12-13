@@ -73,7 +73,7 @@ def init_db(models, session, api):
         'objects': [{
             '_operation': 'insert',
             'name': 'Top Seller Object',
-            'type': 'top_seller_array',
+            'type': 'top_seller_map',
             'configuration': {'days_interval': 7}
         }],
         'store_id': 1,
@@ -139,7 +139,7 @@ class TestEnginesModelPost(object):
             'objects': [{
                 '_operation': 'insert',
                 'name': 'Top Seller Object 2',
-                'type': 'top_seller_array',
+                'type': 'top_seller_map',
                 'configuration': {'days_interval': 7}
             }],
             'store_id': 1,
@@ -170,7 +170,7 @@ class TestEnginesModelPost(object):
             'name': 'test',
             'class_module': 'tests.integration.fixtures',
             'class_name': 'EngineStrategyTest',
-            'object_types': ['top_seller_array']
+            'object_types': ['top_seller_map']
         }
         body[0]['objects'] = [{
             'id': 2,
@@ -178,7 +178,7 @@ class TestEnginesModelPost(object):
             'item_type_id': 1,
             'strategy_id': 1,
             'name': 'Top Seller Object 2',
-            'type': 'top_seller_array',
+            'type': 'top_seller_map',
             'configuration': {'days_interval': 7},
             'item_type': body[0]['item_type'],
             'store': body[0]['store'],
@@ -224,7 +224,7 @@ class TestEnginesModelPost(object):
             'name': 'test',
             'class_module': 'tests.integration.fixtures',
             'class_name': 'EngineStrategyTest',
-            'object_types': ['top_seller_array']
+            'object_types': ['top_seller_map']
         }
         body[0]['objects'] = [{
             'id': 1,
@@ -232,7 +232,7 @@ class TestEnginesModelPost(object):
             'item_type_id': 1,
             'strategy_id': 1,
             'name': 'Top Seller Object 2',
-            'type': 'top_seller_array',
+            'type': 'top_seller_map',
             'configuration': {'days_interval': 7},
             'item_type': body[0]['item_type'],
             'store': body[0]['store'],
@@ -277,7 +277,7 @@ class TestEnginesModelPost(object):
             'name': 'test',
             'class_module': 'tests.integration.fixtures',
             'class_name': 'EngineStrategyTest',
-            'object_types': ['top_seller_array']
+            'object_types': ['top_seller_map']
         }
         body[0]['objects'] = [{
             'id': 1,
@@ -285,7 +285,7 @@ class TestEnginesModelPost(object):
             'item_type_id': 1,
             'strategy_id': 1,
             'name': 'Top Seller Object',
-            'type': 'top_seller_array',
+            'type': 'top_seller_map',
             'configuration': {'days_interval': 7},
             'item_type': body[0]['item_type'],
             'store': body[0]['store'],
@@ -336,7 +336,7 @@ class TestEnginesModelGet(object):
             'name': 'test',
             'class_module': 'tests.integration.fixtures',
             'class_name': 'EngineStrategyTest',
-            'object_types': ['top_seller_array']
+            'object_types': ['top_seller_map']
         }
         body[0]['objects'] = [{
             'id': 1,
@@ -344,7 +344,7 @@ class TestEnginesModelGet(object):
             'item_type_id': 1,
             'strategy_id': 1,
             'name': 'Top Seller Object',
-            'type': 'top_seller_array',
+            'type': 'top_seller_map',
             'configuration': {'days_interval': 7},
             'item_type': body[0]['item_type'],
             'store': body[0]['store'],
@@ -430,8 +430,8 @@ class TestEnginesModelUriTemplatePatch(object):
         assert resp.status == 400
         assert await resp.json() ==  {
             'message': "'days_interval' is a required property. "\
-                       "Failed validating instance['top_seller_array'] for "\
-                       "schema['properties']['top_seller_array']['required']",
+                       "Failed validating instance['top_seller_map'] for "\
+                       "schema['properties']['top_seller_map']['required']",
             'schema': {
                 'type': 'object',
                 'required': ['days_interval'],
@@ -505,7 +505,7 @@ class TestEnginesModelUriTemplateGet(object):
             'name': 'test',
             'class_module': 'tests.integration.fixtures',
             'class_name': 'EngineStrategyTest',
-            'object_types': ['top_seller_array']
+            'object_types': ['top_seller_map']
         }
         body[0]['objects'] = [{
             'id': 1,
@@ -513,7 +513,7 @@ class TestEnginesModelUriTemplateGet(object):
             'item_type_id': 1,
             'strategy_id': 1,
             'name': 'Top Seller Object',
-            'type': 'top_seller_array',
+            'type': 'top_seller_map',
             'configuration': {'days_interval': 7},
             'item_type': body[0]['item_type'],
             'store': body[0]['store'],

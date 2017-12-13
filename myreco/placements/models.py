@@ -25,6 +25,7 @@ from swaggerit.utils import get_swagger_json
 from swaggerit.json_builder import JsonBuilder
 from swaggerit.exceptions import SwaggerItModelError
 from myreco.utils import get_items_model
+from myreco.engine_strategies.filters.filters_set import FiltersSet
 from sqlalchemy.ext.declarative import AbstractConcreteBase, declared_attr
 import random as random_
 import sqlalchemy as sa
@@ -135,13 +136,16 @@ class PlacementsModelBase(AbstractConcreteBase):
             engine = slot['engine']
             items_model = get_items_model(engine['item_type'], engine['store_id'])
             engine_vars = cls._get_slot_variables(slot, input_external_variables)
-            filters = cls._get_slot_filters(slot, input_external_variables, items_model)
+            filters = await cls._get_slot_filters(slot,
+                                                  input_external_variables,
+                                                  items_model,
+                                                  session)
             engine_strategy_model = cls.get_model('engine_strategies')
             strategy_instance = engine_strategy_model.get_instance(engine, items_model)
             max_items = slot['max_items'] if max_items is None else max_items
 
             return await strategy_instance.get_items(
-                session, filters, max_items, show_details, items_model, **engine_vars)
+                session, max_items, show_details, filters, engine_vars)
 
         except Exception as error:
             cls._logger.debug('Slot:\n' + ujson.dumps(slot, indent=4))
@@ -172,8 +176,9 @@ class PlacementsModelBase(AbstractConcreteBase):
                 return var['schema']
 
     @classmethod
-    def _get_slot_filters(cls, slot, input_external_variables, items_model):
-        filters = dict()
+    async def _get_slot_filters(cls, slot, input_external_variables, items_model, session):
+        inclusive_filters_set = FiltersSet()
+        exclusive_filters_set = FiltersSet()
         factory = cls.get_model('slot_filters').__factory__
 
         for slot_filter in slot['slot_filters']:
@@ -187,9 +192,19 @@ class PlacementsModelBase(AbstractConcreteBase):
 
                 if filter_schema is not None and input_schema is not None:
                     filter_ = factory.make(items_model, slot_filter, filter_schema)
-                    filters[filter_] = JsonBuilder.build(var_value, input_schema)
+                    var_value = JsonBuilder.build(var_value, input_schema)
 
-        return filters
+                    if filter_.is_inclusive:
+                        filters_set = inclusive_filters_set
+                    else:
+                        filters_set = exclusive_filters_set
+
+                    await filters_set.update(session, filter_, var_value)
+
+        return {
+            'inclusive': list(inclusive_filters_set),
+            'exclusive': list(exclusive_filters_set)
+        }
 
     @classmethod
     def _get_filter_and_input_schema(cls, engine, slot_filter):

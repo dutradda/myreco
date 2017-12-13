@@ -22,10 +22,10 @@
 
 
 from swaggerit.utils import build_validator, get_module_path
-from swaggerit.json_builder import JsonBuilder
 from jsonschema import Draft4Validator
-from numpy import argpartition
+from swaggerit.json_builder import JsonBuilder
 from abc import ABCMeta, abstractmethod
+import heapq
 
 
 class EngineStrategyMetaBase(ABCMeta):
@@ -68,52 +68,32 @@ class EngineStrategyBase(metaclass=EngineStrategyMetaBase):
     def get_variables(self):
         return []
 
-    async def get_items(self, session, filters, max_items, show_details,
-                        items_model, **external_variables):
-        items_vector = await self._build_items_vector(session, items_model, **external_variables)
+    async def get_items(self, session, max_items, show_details, filters, engine_variables):
+        recos = await self._build_recommendations(session, filters, engine_variables)
+        recos_keys = self._sort_recommendations(recos, max_items)
 
-        if items_vector is not None:
-            for filter_, ids in filters.items():
-                await filter_.filter(session, items_vector, ids)
-
-            return await self._build_rec_list(session, items_vector, max_items, show_details)
-
-        return []
-
-    @abstractmethod
-    async def _build_items_vector(self, session, **external_variables):
-        pass
-
-    async def _build_rec_list(self, session, items_vector, max_items, show_details):
-        best_indices = self._get_best_indices(items_vector, max_items)
-        best_items_keys = await self._items_model.indices_map.get_items(best_indices, session)
-
-        if show_details and best_items_keys:
-            return await self._items_model.get(session, best_items_keys)
-
+        if show_details and recos_keys:
+            return await self._items_model.get(session, recos_keys)
         else:
-            items_ids = []
-            for key in best_items_keys:
-                item = {}
-                self._items_model.set_instance_ids(item, key)
-                self._set_item_values(item)
-                items_ids.append(item)
+            return [self._build_item_ids(key) for key in recos_keys]
 
-            return items_ids
+    def _build_item_ids(self, key):
+        item = {}
+        self._items_model.set_instance_ids(item, key)
 
-    def _get_best_indices(self, items_vector, max_items):
-        if max_items > items_vector.size:
-            max_items = items_vector.size
-
-        best_indices = argpartition(-items_vector, max_items-1)[:max_items]
-        best_values = items_vector[best_indices]
-        return [int(i) for i, v in
-            sorted(zip(best_indices, best_values), key=lambda x: x[1], reverse=True) if v > 0.0]
-
-    def _set_item_values(self, item):
         for k in item:
             schema = self._engine['item_type']['schema']['properties'].get(k)
             if schema is None:
                 raise EngineError('Invalid Item {}'.format(item))
 
             item[k] = JsonBuilder.build(item[k], schema)
+
+        return item
+
+    @abstractmethod
+    async def _build_recommendations(self, session, filters, engine_variables):
+        pass
+
+    def _sort_recommendations(self, recos, max_items):
+        heapq.heapify(recos)
+        return [reco[0] for reco in heapq.nlargest(max_items, recos, key=lambda r: r[1])]

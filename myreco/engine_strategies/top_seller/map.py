@@ -23,70 +23,62 @@
 
 from myreco.engine_objects.object_base import EngineObjectBase
 from myreco.exceptions import EngineError
-import numpy as np
 import ujson
 
 
-class TopSellerArray(EngineObjectBase):
+class TopSellerMap(EngineObjectBase):
+
+    def __init__(self, *args, **kwargs):
+        self.map = dict()
+        super().__init__(*args, **kwargs)
 
     def export(self, items_model, session):
         self._logger.info("Started export objects")
 
         readers = self._build_csv_readers()
-
-        items_indices_map_dict = self._run_coro(
-            self._get_items_indices_map_dict(items_model.indices_map, session),
-            session
-        )
-
-        ret = self.update(readers, session, items_indices_map_dict)
+        ret = self.update(readers, session)
 
         self._logger.info("Finished export objects")
         return ret
 
-    def update(self, readers, session, items_indices_map_dict):
-        self._build_top_seller_vector(readers, session, items_indices_map_dict)
+    def update(self, readers, session):
+        self._build_top_seller_map(readers, session)
 
         self._run_coro(
-            session.redis_bind.set(
+            session.redis_bind.hmset_dict(
                 self._redis_key,
-                self._pack_array(self.numpy_array, compress=False)
+                self.map
+            ),
+            session
+        )
+
+        self._run_coro(
+            self._del_old_keys(
+                self._redis_key,
+                set(self.map.keys()),
+                session
             ),
             session
         )
 
         return {
-            'length': int(self.numpy_array.size),
-            'max_sells': int(max(self.numpy_array)),
-            'min_sells': int(min(self.numpy_array))
+            'length': len(self.map),
+            'max_sells': max(self.map.values()),
+            'min_sells': min(self.map.values())
         }
 
-    def _build_top_seller_vector(self, readers, session, items_indices_map_dict):
+    def _build_top_seller_map(self, readers, session):
         error_message = "No data found for engine object '{}'".format(self._engine_object['name'])
         if not len(readers):
             raise EngineError(error_message)
 
-        indices_values_map = dict()
-
         for reader in readers:
-            self._set_indices_values_map(indices_values_map, items_indices_map_dict, reader)
+            for line in reader:
+                line = ujson.loads(line)
+                self.map[line['item_key']] = int(line['value'])
 
-        if not indices_values_map:
+        if not self.map:
             raise EngineError(error_message)
 
-        vector = np.zeros(len(items_indices_map_dict), dtype=np.int32)
-        indices = np.array(list(indices_values_map.keys()), dtype=np.int32)
-        vector[indices] = np.array(list(indices_values_map.values()), dtype=np.int32)
-        self.numpy_array = vector
-
-    def _set_indices_values_map(self, indices_values_map, items_indices_map_dict, reader):
-        for line in reader:
-            line = ujson.loads(line)
-            index = items_indices_map_dict.get(line['item_key'])
-            if index is not None:
-                indices_values_map[index] = int(line['value'])
-
-    async def get_numpy_array(self, session):
-        items_vector = await session.redis_bind.get(self._redis_key)
-        if items_vector is not None:
-            return self._unpack_array(items_vector, np.int32, compress=False)
+    async def get_map(self, session):
+        return await session.redis_bind.hgetall(self._redis_key)

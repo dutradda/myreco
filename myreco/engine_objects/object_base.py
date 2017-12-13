@@ -23,17 +23,14 @@
 
 from swaggerit.utils import set_logger
 from myreco.utils import build_engine_object_key, makedirs, run_coro
-from myreco.exceptions import EngineError
 from abc import abstractmethod, ABCMeta
 from glob import glob
 from gzip import GzipFile
 import os.path
-import asyncio
-import zlib
-import numpy as np
 
 
 class EngineObjectBase(metaclass=ABCMeta):
+    CHUNK_SIZE = 100000
 
     def __init__(self, engine_object, data_path=None):
         self._engine_object = engine_object
@@ -49,21 +46,6 @@ class EngineObjectBase(metaclass=ABCMeta):
         self._data_path = os.path.join(data_path, self._redis_key)
         makedirs(self._data_path)
 
-    def _pack_array(self, array, compress=True, level=-1):
-        if compress:
-            return zlib.compress(array.tobytes(), level)
-        else:
-            return array.tobytes()
-
-    def _unpack_array(self, array, dtype, compress=True):
-        if array is not None:
-            if compress:
-                return np.fromstring(zlib.decompress(array), dtype=dtype)
-            else:
-                return np.fromstring(array, dtype=dtype)
-        else:
-            return None
-
     @abstractmethod
     def export(self, items_model, session):
         pass
@@ -78,16 +60,6 @@ class EngineObjectBase(metaclass=ABCMeta):
 
         return readers
 
-    async def _get_items_indices_map_dict(self, items_indices_map, session):
-        items_indices_map_dict = await items_indices_map.get_all(session)
-
-        if not items_indices_map_dict.values():
-            raise EngineError(
-                "The Indices Map for '{}' is empty. Please update these items"
-                .format(self._engine_object['item_type']['name']))
-
-        return items_indices_map_dict
-
     def _run_coro(self, coro, session):
         return run_coro(coro, session)
     
@@ -100,3 +72,11 @@ class EngineObjectBase(metaclass=ABCMeta):
 
     def _log_get_data_finished(self):
         self._logger.info("Finished import data")
+
+    async def _del_old_keys(self, name, actual_keys, session):
+        setted_keys = set([k.decode() for k in await session.redis_bind.hkeys(name)])
+        keys_to_remove = list(set(setted_keys) - actual_keys)
+
+        while keys_to_remove:
+            await session.redis_bind.hdel(name, *keys_to_remove[:type(self).CHUNK_SIZE])
+            keys_to_remove = keys_to_remove[type(self).CHUNK_SIZE:]

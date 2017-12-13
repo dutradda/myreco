@@ -21,9 +21,10 @@
 # SOFTWARE.
 
 
-from myreco.engine_strategies.filters.filters import (BooleanFilterBy, SimpleFilterBy, ObjectFilterBy,
-    ArrayFilterBy, SimpleFilterOf, ObjectFilterOf,
-    ArrayFilterOf, IndexFilterOf, IndexFilterByPropertyOf)
+from myreco.engine_strategies.filters.filters import (
+    FilterBy, BooleanFilterBy, ObjectFilterBy,
+    FilterOf, BooleanFilterOf, ObjectFilterOf
+)
 
 
 class FiltersFactory(object):
@@ -31,41 +32,21 @@ class FiltersFactory(object):
         'property_value': {
             'name': 'By Property Value',
             'types': {
-                'integer': SimpleFilterBy,
-                'string': SimpleFilterBy,
+                'integer': FilterBy,
+                'string': FilterBy,
+                'array': FilterBy,
                 'object': ObjectFilterBy,
-                'array': ArrayFilterBy,
                 'boolean': BooleanFilterBy
             }
         },
         'item_property_value': {
             'name': 'By Item Property Value',
             'types': {
-                'integer': SimpleFilterOf,
-                'string': SimpleFilterOf,
+                'integer': FilterOf,
+                'string': FilterOf,
+                'array': FilterOf,
                 'object': ObjectFilterOf,
-                'array': ArrayFilterOf,
-                'boolean': BooleanFilterBy
-            }
-        },
-        'property_value_index': {
-            'name': 'By Property Value Index',
-            'types': {
-                'integer': IndexFilterOf,
-                'string': IndexFilterOf,
-                'object': IndexFilterOf,
-                'array': IndexFilterOf,
-                'boolean': IndexFilterOf
-            }
-        },
-        'item_property_value_index': {
-            'name': 'By Item Property Value Index',
-            'types': {
-                'integer': IndexFilterByPropertyOf,
-                'string': IndexFilterByPropertyOf,
-                'object': IndexFilterByPropertyOf,
-                'array': IndexFilterByPropertyOf,
-                'boolean': IndexFilterByPropertyOf
+                'boolean': BooleanFilterOf
             }
         }
     }
@@ -89,8 +70,10 @@ class FiltersFactory(object):
         filter_name = slot_filter['property_name']
         type_id = slot_filter['type_id']
         is_inclusive = slot_filter['is_inclusive']
-        id_names = schema.get('id_names')
         filter_class = cls._filters_types_map.get(type_id, {'types': {}})['types'].get(value_type)
+        id_names = schema.get('id_names')
 
         if filter_class:
-            return filter_class(items_model, filter_name, is_inclusive, id_names, skip_values)
+            return filter_class(items_model, filter_name, is_inclusive, skip_values, id_names)
+        else:
+            raise TypeError('invalid filter type')
