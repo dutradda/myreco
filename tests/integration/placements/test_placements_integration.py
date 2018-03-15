@@ -117,7 +117,14 @@ def init_db(models, session, api, temp_dir):
                     }
                 },
                 'item_id': {'type': 'integer'},
-                'sku': {'type': 'string'}
+                'sku': {'type': 'string'},
+                'filter_override': {
+                    'type': 'object',
+                    'id_names': ['id'],
+                    'properties': {
+                        'id': {'type': 'integer'}
+                    }
+                },
             }
         }
     }
@@ -243,6 +250,7 @@ def init_db(models, session, api, temp_dir):
     session.loop.run_until_complete(models['external_variables'].insert(session, {'name': 'filter_object_exclusive_of', 'store_id': 1})) # ID: 25
     session.loop.run_until_complete(models['external_variables'].insert(session, {'name': 'index_inclusive_of', 'store_id': 1})) # ID: 26
     session.loop.run_until_complete(models['external_variables'].insert(session, {'name': 'index_exclusive_of', 'store_id': 1})) # ID: 27
+    session.loop.run_until_complete(models['external_variables'].insert(session, {'name': 'override', 'store_id': 1})) # ID: 28
 
     slot = {
         'max_items': 10,
@@ -418,6 +426,14 @@ def init_db(models, session, api, temp_dir):
             'is_inclusive': False,
             'type_id': 'property_value_index',
             'property_name': 'sku'
+        },{
+            '_operation': 'insert',
+            'external_variable_id': 28,
+            'is_inclusive': False,
+            'type_id': 'property_value',
+            'property_name': 'filter_override',
+            'override': True,
+            'override_value': 'id:1'
         }]
     }
     session.loop.run_until_complete(models['slots'].insert(session, slot))
@@ -2743,6 +2759,59 @@ class TestPlacementsGetRecomendationsFiltersOf(object):
         resp = await client.get('/placements/{}/items?index_exclusive_of=1|test1,2|test2,3|test3'.format(obj['small_hash']), headers=headers_without_content_type)
         assert resp.status == 404
         assert (await resp.json()) == None
+
+    async def test_get_items_with_override(self, init_db, client, headers, monkeypatch, headers_without_content_type):
+        random_patch(monkeypatch)
+        client = await client
+        products = [{
+            'item_id': 1,
+            'sku': 'test1',
+            'filter_override': {'id': 1}
+        },{
+            'item_id': 2,
+            'sku': 'test2',
+            'filter_override': {'id': 2}
+        },{
+            'item_id': 3,
+            'sku': 'test3'
+        }]
+        await client.post('/item_types/4/items?store_id=1', headers=headers, data=ujson.dumps(products))
+
+        await client.post('/item_types/4/update_filters?store_id=1', headers=headers_without_content_type)
+        sleep(0.05)
+        while True:
+            resp = await client.get(
+                '/item_types/4/update_filters?store_id=1&job_hash=6342e10bd7dca3240c698aa79c98362e',
+                headers=headers_without_content_type)
+            if (await resp.json())['status'] != 'running':
+                break
+
+        await client.post('/engine_objects/4/export?import_data=true', headers=headers_without_content_type)
+        sleep(0.05)
+        while True:
+            resp = await client.get(
+                '/engine_objects/4/export?job_hash=6342e10bd7dca3240c698aa79c98362e',
+                headers=headers_without_content_type)
+            if (await resp.json())['status'] != 'running':
+                break
+
+        body = [{
+            'store_id': 1,
+            'name': 'Placement Test',
+            'variations': [{
+                '_operation': 'insert',
+                'name': 'Var 1',
+                'slots': [{'id': 2}]
+            }]
+        }]
+        resp = await client.post('/placements/', headers=headers, data=ujson.dumps(body))
+        obj = (await resp.json())[0]
+
+        resp = await client.get('/placements/{}/items'.format(obj['small_hash']), headers=headers_without_content_type)
+        assert resp.status == 200
+        assert (await resp.json())['slots'][0]['items'] == [
+            {'sku': 'test3', 'item_id': 3},
+            {'sku': 'test2', 'item_id': 2, 'filter_override': {'id': 2}}]
 
 
 class TestPlacementsGetRecomendationsRedirect(object):

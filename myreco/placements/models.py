@@ -174,22 +174,35 @@ class PlacementsModelBase(AbstractConcreteBase):
     @classmethod
     def _get_slot_filters(cls, slot, input_external_variables, items_model):
         filters = dict()
-        factory = cls.get_model('slot_filters').__factory__
 
         for slot_filter in slot['slot_filters']:
             var_name = slot_filter['external_variable']['name']
             prop_name = slot_filter['property_name']
+            is_overridable = slot_filter['override'] and slot_filter['override_value']
 
             if var_name in input_external_variables:
-                var_value = input_external_variables[var_name]
-                filter_schema, input_schema = \
-                    cls._get_filter_and_input_schema(slot['engine'], slot_filter)
+                if is_overridable:
+                    var_value = slot_filter['override_value']
+                else:
+                    var_value = input_external_variables[var_name]
 
-                if filter_schema is not None and input_schema is not None:
-                    filter_ = factory.make(items_model, slot_filter, filter_schema)
-                    filters[filter_] = JsonBuilder.build(var_value, input_schema)
+                cls._set_filter(filters, slot_filter, slot, var_value, items_model)
+
+            elif is_overridable:
+                var_value = slot_filter['override_value']
+                cls._set_filter(filters, slot_filter, slot, var_value, items_model)
 
         return filters
+
+    @classmethod
+    def _set_filter(cls, filters, slot_filter, slot, var_value, items_model):
+        factory = cls.get_model('slot_filters').__factory__
+        filter_schema, input_schema = \
+            cls._get_filter_and_input_schema(slot['engine'], slot_filter)
+
+        if filter_schema is not None and input_schema is not None:
+            filter_ = factory.make(items_model, slot_filter, filter_schema)
+            filters[filter_] = JsonBuilder.build(var_value, input_schema)
 
     @classmethod
     def _get_filter_and_input_schema(cls, engine, slot_filter):
