@@ -184,6 +184,21 @@
                 }],
                 "operationId": "swagger_get_item",
                 "responses": {"200": {"description": "Got"}}
+            },
+            "patch": {
+                "parameters": [{
+                    "name": "Authorization",
+                    "in": "header",
+                    "required": true,
+                    "type": "string"
+                },{
+                    "name": "body",
+                    "in": "body",
+                    "required": true,
+                    "schema": {}
+                }],
+                "operationId": "swagger_update_item",
+                "responses": {"200": {"description": "Updated"}}
             }
         },
         "/item_types/{id}/items/search": {

@@ -167,6 +167,7 @@ class _StoreItemsOperationsMixin(object):
             extra_attributes={
                 'insert_validator': cls._build_insert_validator(item_type),
                 'update_validator': cls._build_update_validator(item_type),
+                'atomic_update_validator': ItemValidator(item_type['schema']),
                 'item_type': item_type
             }
         )
@@ -215,7 +216,12 @@ class _StoreItemsOperationsMixin(object):
         if store_items_model is None:
             return cls._build_response(404)
 
-        req = SwaggerRequest(
+        req = cls._cast_request(req)
+        return await store_items_model.swagger_get(req, session)
+
+    @classmethod
+    def _cast_request(cls, req):
+        return SwaggerRequest(
             req.path, req.method,
             scheme=req.scheme,
             host=req.host,
@@ -226,7 +232,15 @@ class _StoreItemsOperationsMixin(object):
             body_schema=req.body_schema,
             context=req.context
         )
-        return await store_items_model.swagger_get(req, session)
+
+    @classmethod
+    async def swagger_update_item(cls, req, session):
+        store_items_model = await cls._get_store_items_model(req, session)
+        if store_items_model is None:
+            return cls._build_response(404)
+
+        req = cls._cast_request(req)
+        return await store_items_model.swagger_atomic_update(req, session)
 
     @classmethod
     async def swagger_get_all_items(cls, req, session):

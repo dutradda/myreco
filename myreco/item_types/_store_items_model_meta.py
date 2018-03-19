@@ -49,6 +49,12 @@ class _StoreItemsModelBaseMeta(ModelRedisElSearchMeta):
 
         return await ModelRedisElSearchMeta.update(cls, session, objs, **kwargs)
 
+    async def atomic_update(cls, session, objs, ids=None, skip_validation=False, **kwargs):
+        if not skip_validation:
+            cls._validate_objs(objs, 'atomic_update')
+
+        return await ModelRedisElSearchMeta.atomic_update(cls, session, objs, ids, **kwargs)
+
     async def get(cls, session, ids=None, limit=None, offset=None, **kwargs):
         items_per_page, page = kwargs.get('items_per_page', 1000), kwargs.get('page', 1)
         limit = items_per_page * page

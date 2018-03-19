@@ -485,6 +485,126 @@ class TestItemsModelPatch(object):
         assert stock_filter == [False]
 
 
+class TestItemsModelGetItem(object):
+
+    async def test_items_get_item(self, init_db, headers, client, headers_without_content_type):
+        client = await client
+        body = [{
+            'name': 'test',
+            'stores': [{'id': 1}],
+            'schema': {
+                'properties': {
+                    'id': {'type': 'string'},
+                    't1': {'type': 'integer'}
+                },
+                'type': 'object',
+                'id_names': ['id']
+            }
+        }]
+        await client.post('/item_types/', headers=headers, data=ujson.dumps(body))
+
+        body = [{'id': 'test', 't1': 1}]
+        resp = await client.post('/item_types/1/items?store_id=1', headers=headers, data=ujson.dumps(body))
+        assert resp.status == 201
+
+        resp = await client.get('/item_types/1/items/test?store_id=1', headers=headers_without_content_type)
+        assert resp.status == 200
+        assert await resp.json() == body[0]
+
+    async def test_items_get_item_404(self, init_db, headers, client, headers_without_content_type):
+        client = await client
+        body = [{
+            'name': 'test',
+            'stores': [{'id': 1}],
+            'schema': {
+                'properties': {
+                    'id': {'type': 'string'}
+                },
+                'type': 'object',
+                'id_names': ['id']
+            }
+        }]
+        resp = await client.post('/item_types/', headers=headers, data=ujson.dumps(body))
+        assert resp.status == 201
+
+        resp = await client.get('/item_types/1/items/test?store_id=1', headers=headers_without_content_type)
+        assert resp.status == 404
+
+
+class TestItemsModelPatchItem(object):
+
+    async def test_items_patch_item(self, init_db, headers, client, headers_without_content_type):
+        client = await client
+        body = [{
+            'name': 'test',
+            'stores': [{'id': 1}],
+            'schema': {
+                'properties': {
+                    'id': {'type': 'string'},
+                    't1': {'type': 'integer'}
+                },
+                'type': 'object',
+                'id_names': ['id']
+            }
+        }]
+        await client.post('/item_types/', headers=headers, data=ujson.dumps(body))
+
+        body = [{'id': 'test', 't1': 1}]
+        resp = await client.post('/item_types/1/items?store_id=1', headers=headers, data=ujson.dumps(body))
+        assert resp.status == 201
+
+        body = {'t1': 2}
+        resp = await client.patch('/item_types/1/items/test?store_id=1', headers=headers, data=ujson.dumps(body))
+        assert resp.status == 200
+
+
+        resp = await client.get('/item_types/1/items/test?store_id=1', headers=headers_without_content_type)
+        assert resp.status == 200
+        assert await resp.json() == {'t1':2, 'id': 'test'}
+
+    async def test_items_patch_item_400(self, init_db, headers, client, headers_without_content_type):
+        client = await client
+        body = [{
+            'name': 'test',
+            'stores': [{'id': 1}],
+            'schema': {
+                'properties': {
+                    'id': {'type': 'string'},
+                    't1': {'type': 'integer'}
+                },
+                'type': 'object',
+                'id_names': ['id']
+            }
+        }]
+        await client.post('/item_types/', headers=headers, data=ujson.dumps(body))
+
+        body = [{'id': 'test', 't1': 1}]
+        resp = await client.post('/item_types/1/items?store_id=1', headers=headers, data=ujson.dumps(body))
+        assert resp.status == 201
+
+        body = [{'t1': 2}]
+        resp = await client.patch('/item_types/1/items/test?store_id=1', headers=headers, data=ujson.dumps(body))
+        assert resp.status == 400
+
+
+    async def test_items_patch_item_404(self, init_db, headers, client, headers_without_content_type):
+        client = await client
+        body = [{
+            'name': 'test',
+            'stores': [{'id': 1}],
+            'schema': {
+                'properties': {
+                    'id': {'type': 'string'}
+                },
+                'type': 'object',
+                'id_names': ['id']
+            }
+        }]
+
+        resp = await client.patch('/item_types/1/items/test?store_id=1', headers=headers, data='null')
+        assert resp.status == 404
+
+
 @pytest.fixture
 def update_filters_init_db(models, session, api, monkeypatch):
     monkeypatch.setattr('myreco.engine_objects.object_base.makedirs', mock.MagicMock())
