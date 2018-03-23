@@ -3,12 +3,11 @@ python:
   - "3.5"
 services:
   - mysql
-  - redis-server
+  - redis
   - elasticsearch
-script: py.test -c pytest-travis.ini tests/unit && py.test -c pytest-travis.ini tests/integration
-install: 
-  - pip install cython
-  - pip install -r requirements.txt -r requirements-dev.txt
-  - pip install coveralls
+script:
+  - tox -e travis
+install:
+  - pip install "setuptools>=30" tox coveralls
 after_success:
   - coveralls

@@ -28,3 +28,5 @@ services:
             - elsearch:myreco-elsearch
         volumes:
             - $MYRECO_DEV_HOME:/myreco
+        environment:
+            - TOXENV

@@ -1,10 +1,25 @@
-FROM python:3.5
+FROM ubuntu:16.04
 
 MAINTAINER Diogo Dutra <dutradda@gmail.com>
-RUN apt-get update
-RUN apt-get install -y build-essential libopenblas-dev liblapack-dev
-RUN git clone http://github.com/dutradda/myreco /tmp/myreco
-RUN pip install -r /tmp/myreco/requirements-dev.txt -r /tmp/myreco/requirements.txt --src /usr/local/src
-RUN rm -rf /tmp/myreco
+
+RUN set -x \
+ && apt-get update -qq \
+ && DEBIAN_FRONTEND=noninteractive apt-get install -yq --no-install-recommends \
+        software-properties-common \
+ && add-apt-repository -y ppa:deadsnakes/ppa \
+ && apt-get update -qq \
+ && DEBIAN_FRONTEND=noninteractive apt-get install -yq --no-install-recommends \
+        python3.5-dev \
+        python3.6-dev \
+        git \
+        apt-transport-https \
+        ca-certificates \
+        curl \
+        build-essential \
+ && rm -rf /var/lib/apt/lists/* \
+ && curl -SsL 'https://bootstrap.pypa.io/get-pip.py' | python3 \
+ && pip install tox
+
+ENV TOXENV ''
 ADD run_tests.sh /usr/bin/run-tests
-ENTRYPOINT /bin/bash
+CMD ["run-tests"]

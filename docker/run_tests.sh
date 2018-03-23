@@ -1,6 +1,5 @@
 #!/bin/bash
 
+export LANG=C.UTF-8
 cd /myreco
-pip install -r requirements-dev.txt -r requirements.txt
-py.test -c pytest-docker.ini tests/unit && \
-py.test -c pytest-docker.ini tests/integration
+tox -c tox-docker.ini
