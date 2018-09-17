@@ -48,6 +48,7 @@ class PyTest(TestCommand):
 
     user_options = [
         ('cov-html=', None, 'Generate html report'),
+        ('cov-xml=', None, 'Generate xml report'),
         ('vars=', None, 'Pytest external variables file'),
         ('filter=', None, "Pytest setence to filter (see pytest '-k' option)"),
         ('path=', None, "The path to tests")
@@ -57,6 +58,7 @@ class PyTest(TestCommand):
         TestCommand.initialize_options(self)
         self.pytest_args = ['--cov', 'myreco', '-xvv']
         self.cov_html = False
+        self.cov_xml = False
         self.filter = False
         self.skip_unit = False
         self.vars = 'pytest-vars.json'
@@ -68,6 +70,8 @@ class PyTest(TestCommand):
 
         if self.cov_html:
             self.pytest_args.extend(['--cov-report', 'html'])
+        elif self.cov_xml:
+            self.pytest_args.extend(['--cov-report', 'xml'])
         else:
             self.pytest_args.extend(['--cov-report', 'term-missing'])
 
