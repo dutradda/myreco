@@ -32,7 +32,10 @@ class MyrecoAuthorizer(object):
         self._realm = realm
 
     async def __call__(self, req, session):
-        headers = {'www-authenticate': 'basic realm="{}"'.format(self._realm)}
+        headers = {
+            'www-authenticate': 'basic realm="{}"'.format(self._realm),
+            'Content-Type': 'application/json'
+        }
         response401 = SwaggerResponse(
             401,
             body=ujson.dumps({'message': 'Invalid authorization'}),
