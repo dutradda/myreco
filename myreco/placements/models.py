@@ -21,14 +21,16 @@
 # SOFTWARE.
 
 
-from swaggerit.utils import get_swagger_json
-from swaggerit.json_builder import JsonBuilder
-from swaggerit.exceptions import SwaggerItModelError
+import hashlib
+import random as random_
+
+import sqlalchemy as sa
 from myreco.utils import get_items_model
 from sqlalchemy.ext.declarative import AbstractConcreteBase, declared_attr
-import random as random_
-import sqlalchemy as sa
-import hashlib
+from swaggerit.exceptions import SwaggerItModelError
+from swaggerit.json_builder import JsonBuilder
+from swaggerit.utils import get_swagger_json
+
 import ujson
 
 

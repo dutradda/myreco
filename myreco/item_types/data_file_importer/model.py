@@ -21,19 +21,21 @@
 # SOFTWARE.
 
 
+import asyncio
+import gc
+import os
+from collections import namedtuple
+from gzip import GzipFile
+from io import BytesIO
+from tempfile import NamedTemporaryFile
+from zipfile import ZipFile
+
+import boto3
 from myreco.item_types.model import ItemTypesModelBase, ItemValidator
 from myreco.utils import extend_swagger_json, run_coro
 from swaggerit.exceptions import SwaggerItModelError
-from tempfile import NamedTemporaryFile
-from io import BytesIO
-from collections import namedtuple
-from zipfile import ZipFile
-from gzip import GzipFile
+
 import ujson
-import boto3
-import os
-import asyncio
-import gc
 
 
 class ItemTypesDataFileImporterModelBase(ItemTypesModelBase):

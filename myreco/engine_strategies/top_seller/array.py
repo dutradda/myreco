@@ -21,9 +21,10 @@
 # SOFTWARE.
 
 
+import numpy as np
 from myreco.engine_objects.object_base import EngineObjectBase
 from myreco.exceptions import EngineError
-import numpy as np
+
 import ujson
 
 

@@ -21,14 +21,15 @@
 # SOFTWARE.
 
 
-from myreco.exceptions import ModuleObjectLoaderError
-from swaggerit.models.orm.factory import FactoryOrmModels
-from swaggerit.utils import get_model, get_swagger_json
-from importlib import import_module
-from copy import deepcopy
 import asyncio
 import os
 import re
+from copy import deepcopy
+from importlib import import_module
+
+from myreco.exceptions import ModuleObjectLoaderError
+from swaggerit.models.orm.factory import FactoryOrmModels
+from swaggerit.utils import get_model, get_swagger_json
 
 
 class ModuleObjectLoader(object):

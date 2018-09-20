@@ -21,11 +21,12 @@
 # SOFTWARE.
 
 
-from swaggerit.utils import build_validator, get_module_path
-from swaggerit.json_builder import JsonBuilder
+from abc import ABCMeta, abstractmethod
+
 from jsonschema import Draft4Validator
 from numpy import argpartition
-from abc import ABCMeta, abstractmethod
+from swaggerit.json_builder import JsonBuilder
+from swaggerit.utils import build_validator, get_module_path
 
 
 class EngineStrategyMetaBase(ABCMeta):

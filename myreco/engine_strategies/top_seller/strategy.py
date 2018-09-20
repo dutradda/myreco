@@ -21,8 +21,8 @@
 # SOFTWARE.
 
 
-from myreco.engine_strategies.top_seller.array import TopSellerArray
 from myreco.engine_strategies.strategy_base import EngineStrategyBase
+from myreco.engine_strategies.top_seller.array import TopSellerArray
 
 
 class TopSellerEngineStrategy(EngineStrategyBase):

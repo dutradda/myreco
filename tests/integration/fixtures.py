@@ -21,15 +21,18 @@
 # SOFTWARE.
 
 
-from myreco.engine_strategies.top_seller.strategy import TopSellerEngineStrategy
-from myreco.engine_strategies.top_seller.array import TopSellerArray
-from unittest import mock
-from jsonschema import ValidationError
-from os import makedirs
-import os.path
-import gzip
-import ujson
 import asyncio
+import gzip
+import os.path
+from os import makedirs
+from unittest import mock
+
+from jsonschema import ValidationError
+
+import ujson
+from myreco.engine_strategies.top_seller.array import TopSellerArray
+from myreco.engine_strategies.top_seller.strategy import \
+    TopSellerEngineStrategy
 
 
 def CoroMock():

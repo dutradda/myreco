@@ -21,14 +21,16 @@
 # SOFTWARE.
 
 
+from copy import deepcopy
+
 from myreco.authorizer import MyrecoAuthorizer
 from myreco.factory import ModelsFactory
-from swaggerit.constants import SWAGGER_VALIDATOR, SWAGGER_SCHEMA
 from swaggerit.aiohttp_api import AioHttpAPI
+from swaggerit.constants import SWAGGER_SCHEMA, SWAGGER_VALIDATOR
 from swaggerit.exceptions import SwaggerItAPIError
-from swaggerit.utils import get_swagger_json
 from swaggerit.response import SwaggerResponse
-from copy import deepcopy
+from swaggerit.utils import get_swagger_json
+
 import ujson
 
 

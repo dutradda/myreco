@@ -21,16 +21,17 @@
 # SOFTWARE.
 
 
-from swaggerit.utils import set_logger
-from myreco.utils import build_engine_object_key, makedirs, run_coro
-from myreco.exceptions import EngineError
-from abc import abstractmethod, ABCMeta
+import asyncio
+import os.path
+import zlib
+from abc import ABCMeta, abstractmethod
 from glob import glob
 from gzip import GzipFile
-import os.path
-import asyncio
-import zlib
+
 import numpy as np
+from myreco.exceptions import EngineError
+from myreco.utils import build_engine_object_key, makedirs, run_coro
+from swaggerit.utils import set_logger
 
 
 class EngineObjectBase(metaclass=ABCMeta):

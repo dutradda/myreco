@@ -21,9 +21,10 @@
 # SOFTWARE.
 
 
-from myreco.engine_strategies.filters.filters import BooleanFilterBy
 from myreco.engine_strategies.filters.factory import FiltersFactory
-from myreco.item_types.data_file_importer.model import ItemTypesDataFileImporterModelBase
+from myreco.engine_strategies.filters.filters import BooleanFilterBy
+from myreco.item_types.data_file_importer.model import \
+    ItemTypesDataFileImporterModelBase
 from myreco.utils import extend_swagger_json
 from swaggerit.exceptions import SwaggerItModelError
 

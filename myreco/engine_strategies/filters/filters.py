@@ -21,8 +21,9 @@
 # SOFTWARE.
 
 
-from zlib import decompress, compress
 from collections import defaultdict
+from zlib import compress, decompress
+
 import numpy as np
 
 

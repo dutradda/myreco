@@ -21,10 +21,11 @@
 # SOFTWARE.
 
 
-from sqlalchemy.ext.declarative import AbstractConcreteBase
-from myreco.utils import ModuleObjectLoader
-from swaggerit.utils import get_swagger_json
 import sqlalchemy as sa
+from myreco.utils import ModuleObjectLoader
+from sqlalchemy.ext.declarative import AbstractConcreteBase
+from swaggerit.utils import get_swagger_json
+
 import ujson
 
 

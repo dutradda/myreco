@@ -21,18 +21,21 @@
 # SOFTWARE.
 
 
-from tests.integration.fixtures import EngineStrategyTestWithVars, EngineStrategyTest
-from swaggerit.models._base import _all_models
+import asyncio
+import os
+import random
+import tempfile
+import zipfile
 from tempfile import TemporaryDirectory
 from time import sleep
 from unittest import mock
+
+from swaggerit.models._base import _all_models
+from tests.integration.fixtures import (EngineStrategyTest,
+                                        EngineStrategyTestWithVars)
+
 import pytest
 import ujson
-import random
-import asyncio
-import tempfile
-import zipfile
-import os
 
 
 @pytest.fixture

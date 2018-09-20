@@ -20,12 +20,13 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-from swaggerit.utils import get_swagger_json
-from swaggerit.exceptions import SwaggerItModelError
-from sqlalchemy.ext.declarative import AbstractConcreteBase, declared_attr
-import sqlalchemy as sa
-import ujson
 import jsonschema
+import sqlalchemy as sa
+from sqlalchemy.ext.declarative import AbstractConcreteBase, declared_attr
+from swaggerit.exceptions import SwaggerItModelError
+from swaggerit.utils import get_swagger_json
+
+import ujson
 
 
 class EngineObjectsModelBase(AbstractConcreteBase):

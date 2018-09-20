@@ -21,9 +21,15 @@
 # SOFTWARE.
 
 
-from myreco.engine_strategies.filters.filters import (BooleanFilterBy, SimpleFilterBy, ObjectFilterBy,
-    ArrayFilterBy, SimpleFilterOf, ObjectFilterOf,
-    ArrayFilterOf, IndexFilterOf, IndexFilterByPropertyOf)
+from myreco.engine_strategies.filters.filters import (ArrayFilterBy,
+                                                      ArrayFilterOf,
+                                                      BooleanFilterBy,
+                                                      IndexFilterByPropertyOf,
+                                                      IndexFilterOf,
+                                                      ObjectFilterBy,
+                                                      ObjectFilterOf,
+                                                      SimpleFilterBy,
+                                                      SimpleFilterOf)
 
 
 class FiltersFactory(object):

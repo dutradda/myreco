@@ -21,10 +21,11 @@
 # SOFTWARE.
 
 
-from swaggerit.utils import get_swagger_json
-from sqlalchemy.ext.declarative import AbstractConcreteBase
-from jsonschema import Draft4Validator
 import sqlalchemy as sa
+from jsonschema import Draft4Validator
+from sqlalchemy.ext.declarative import AbstractConcreteBase
+from swaggerit.utils import get_swagger_json
+
 import ujson
 
 

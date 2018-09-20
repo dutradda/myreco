@@ -21,10 +21,12 @@
 # SOFTWARE.
 
 
-from myreco.utils import extend_swagger_json, get_items_model
-from myreco.engine_objects.data_importer.model import EngineObjectsDataImporterModelBase
-from copy import deepcopy
 import asyncio
+from copy import deepcopy
+
+from myreco.engine_objects.data_importer.model import \
+    EngineObjectsDataImporterModelBase
+from myreco.utils import extend_swagger_json, get_items_model
 
 
 class EngineObjectsExporterModelBase(EngineObjectsDataImporterModelBase):

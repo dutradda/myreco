@@ -21,12 +21,13 @@
 # SOFTWARE.
 
 
-from myreco.engine_strategies.filters.factory import FiltersFactory
-from swaggerit.utils import get_swagger_json
-from swaggerit.exceptions import SwaggerItModelError
-from jsonschema import ValidationError
-from sqlalchemy.ext.declarative import AbstractConcreteBase, declared_attr
 import sqlalchemy as sa
+from jsonschema import ValidationError
+from myreco.engine_strategies.filters.factory import FiltersFactory
+from sqlalchemy.ext.declarative import AbstractConcreteBase, declared_attr
+from swaggerit.exceptions import SwaggerItModelError
+from swaggerit.utils import get_swagger_json
+
 import ujson
 
 

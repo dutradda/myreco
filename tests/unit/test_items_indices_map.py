@@ -21,10 +21,11 @@
 # SOFTWARE.
 
 
-from unittest import mock
-from types import MethodType
-from collections import OrderedDict
 import asyncio
+from collections import OrderedDict
+from types import MethodType
+from unittest import mock
+
 import pytest
 
 

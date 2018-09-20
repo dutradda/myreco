@@ -21,11 +21,13 @@
 # SOFTWARE.
 
 
-from swaggerit.utils import get_swagger_json
+import os.path
 from unittest import mock
+
+from swaggerit.utils import get_swagger_json
+
 import pytest
 import ujson
-import os.path
 
 
 @pytest.fixture

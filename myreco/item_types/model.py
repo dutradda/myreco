@@ -21,20 +21,21 @@
 # SOFTWARE.
 
 
-from myreco.item_types._store_items_model_meta import _StoreItemsModelBaseMeta
-from myreco.utils import build_item_key, build_class_name, ModuleObjectLoader
-from myreco.engine_strategies.filters.filters import BooleanFilterBy
-from swaggerit.utils import get_swagger_json, get_dir_path
-from swaggerit.method import SwaggerMethod
-from swaggerit.request import SwaggerRequest
-from swaggerit.models.orm.factory import FactoryOrmModels
-from sqlalchemy.ext.declarative import declared_attr, AbstractConcreteBase
-from jsonschema import ValidationError, validate
-from jsonschema.validators import create, Draft4Validator
 from copy import deepcopy
-import sqlalchemy as sa
-import ujson
 
+import sqlalchemy as sa
+from jsonschema import ValidationError, validate
+from jsonschema.validators import Draft4Validator, create
+from myreco.engine_strategies.filters.filters import BooleanFilterBy
+from myreco.item_types._store_items_model_meta import _StoreItemsModelBaseMeta
+from myreco.utils import ModuleObjectLoader, build_class_name, build_item_key
+from sqlalchemy.ext.declarative import AbstractConcreteBase, declared_attr
+from swaggerit.method import SwaggerMethod
+from swaggerit.models.orm.factory import FactoryOrmModels
+from swaggerit.request import SwaggerRequest
+from swaggerit.utils import get_dir_path, get_swagger_json
+
+import ujson
 
 store_items_metaschema = get_swagger_json(__file__, 'store_items_metaschema.json')
 ItemValidator = create(store_items_metaschema, Draft4Validator.VALIDATORS)

@@ -21,9 +21,9 @@
 # SOFTWARE.
 
 
-from swaggerit.utils import get_swagger_json
-from sqlalchemy.ext.declarative import AbstractConcreteBase, declared_attr
 import sqlalchemy as sa
+from sqlalchemy.ext.declarative import AbstractConcreteBase, declared_attr
+from swaggerit.utils import get_swagger_json
 
 
 class ExternalVariablesModelBase(AbstractConcreteBase):

@@ -21,13 +21,15 @@
 # SOFTWARE.
 
 
-from unittest import mock
-from time import sleep
-from datetime import datetime
-from tests.integration.fixtures import TopSellerArrayTest
-from swaggerit.models._base import _all_models
 import asyncio
 import tempfile
+from datetime import datetime
+from time import sleep
+from unittest import mock
+
+from swaggerit.models._base import _all_models
+from tests.integration.fixtures import TopSellerArrayTest
+
 import pytest
 import ujson
 

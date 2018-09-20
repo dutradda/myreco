@@ -21,22 +21,30 @@
 # SOFTWARE.
 
 
-from myreco.users.models import (GrantsModelBase, URIsModelBase, MethodsModelBase,
-    UsersModelBase, build_users_grants_table, build_users_stores_table)
-from myreco.stores.model import StoresModelBase
-from myreco.external_variables.model import ExternalVariablesModelBase
-from myreco.placements.models import (PlacementsModelBase, VariationsModelBase,
-    ABTestUsersModelBase, build_variations_slots_table)
-from myreco.slots.models import (SlotVariablesModelBase, SlotFiltersModelBase,
-    SlotsModelBase, build_slots_fallbacks_table)
-from myreco.engines.model import EnginesModelBase, build_engines_objects_table
-from myreco.engine_objects.model import EngineObjectsModelBase
-from myreco.engine_objects.data_importer.model import EngineObjectsDataImporterModelBase
+from myreco.engine_objects.data_importer.model import \
+    EngineObjectsDataImporterModelBase
 from myreco.engine_objects.exporter.model import EngineObjectsExporterModelBase
+from myreco.engine_objects.model import EngineObjectsModelBase
 from myreco.engine_strategies.model import EngineStrategiesModelBase
-from myreco.item_types.model import ItemTypesModelBase, build_item_types_stores_table
-from myreco.item_types.data_file_importer.model import ItemTypesDataFileImporterModelBase
-from myreco.item_types.filters_updater.model import ItemTypesFiltersUpdaterModelBase
+from myreco.engines.model import EnginesModelBase, build_engines_objects_table
+from myreco.external_variables.model import ExternalVariablesModelBase
+from myreco.item_types.data_file_importer.model import \
+    ItemTypesDataFileImporterModelBase
+from myreco.item_types.filters_updater.model import \
+    ItemTypesFiltersUpdaterModelBase
+from myreco.item_types.model import (ItemTypesModelBase,
+                                     build_item_types_stores_table)
+from myreco.placements.models import (ABTestUsersModelBase,
+                                      PlacementsModelBase, VariationsModelBase,
+                                      build_variations_slots_table)
+from myreco.slots.models import (SlotFiltersModelBase, SlotsModelBase,
+                                 SlotVariablesModelBase,
+                                 build_slots_fallbacks_table)
+from myreco.stores.model import StoresModelBase
+from myreco.users.models import (GrantsModelBase, MethodsModelBase,
+                                 URIsModelBase, UsersModelBase,
+                                 build_users_grants_table,
+                                 build_users_stores_table)
 from swaggerit.models.orm.factory import FactoryOrmModels
 
 

@@ -21,16 +21,18 @@
 # SOFTWARE.
 
 
-from swaggerit.models._base import _all_models
-from myreco.item_types.indices_map import ItemsIndicesMap
-from myreco.authorizer import MyrecoAuthorizer
 from base64 import b64encode
-from unittest import mock
 from datetime import datetime
 from time import sleep
+from unittest import mock
+
+import numpy as np
+from swaggerit.models._base import _all_models
+
 import pytest
 import ujson
-import numpy as np
+from myreco.authorizer import MyrecoAuthorizer
+from myreco.item_types.indices_map import ItemsIndicesMap
 
 
 @pytest.fixture

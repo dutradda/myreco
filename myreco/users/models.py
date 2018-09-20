@@ -21,12 +21,13 @@
 # SOFTWARE.
 
 
-from swaggerit.utils import get_swagger_json
-from sqlalchemy.ext.declarative import AbstractConcreteBase, declared_attr
-from base64 import b64decode
-import sqlalchemy as sa
 import binascii
 import re
+from base64 import b64decode
+
+import sqlalchemy as sa
+from sqlalchemy.ext.declarative import AbstractConcreteBase, declared_attr
+from swaggerit.utils import get_swagger_json
 
 
 class GrantsModelBase(AbstractConcreteBase):

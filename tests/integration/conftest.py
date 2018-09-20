@@ -21,19 +21,21 @@
 # SOFTWARE.
 
 
-from myreco.factory import ModelsFactory
-from myreco.api import MyrecoAPI
-from swaggerit.models.orm.session import Session
-from swaggerit.models.orm.binds import ElSearchBind
-from unittest import mock
-from sqlalchemy import create_engine
-from aioredis import create_redis
-from base64 import b64encode
-import sqlalchemy as sa
-import pytest
-import pymysql
 import asyncio
+from base64 import b64encode
+from unittest import mock
+
+import sqlalchemy as sa
 import uvloop
+from aioredis import create_redis
+from sqlalchemy import create_engine
+from swaggerit.models.orm.binds import ElSearchBind
+from swaggerit.models.orm.session import Session
+
+import pymysql
+import pytest
+from myreco.api import MyrecoAPI
+from myreco.factory import ModelsFactory
 
 
 @pytest.fixture(scope='session')
