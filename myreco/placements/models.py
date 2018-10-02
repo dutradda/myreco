@@ -30,6 +30,7 @@ from sqlalchemy.ext.declarative import AbstractConcreteBase, declared_attr
 from swaggerit.exceptions import SwaggerItModelError
 from swaggerit.json_builder import JsonBuilder
 from swaggerit.utils import get_swagger_json
+from asyncio import Task, gather as gather_coros
 
 import ujson
 
@@ -82,17 +83,15 @@ class PlacementsModelBase(AbstractConcreteBase):
         distribute_items = placement.get('distribute_items')
         recos = slots = []
         recos_key = 'slots'
+        slots_tasks = []
 
         for slot in placement['variations'][0]['slots']:
             slot_recos = {'fallbacks': []}
-            slot_recos['main'] = \
-                await cls._get_recos_by_slot(slot, input_external_variables, session, show_details)
+            coro = cls._get_slot_recos_async(slot, input_external_variables,
+                                             session, show_details, slots, slot_recos)
+            slots_tasks.append(Task(coro))
 
-            await cls._get_fallbacks_recos(slot_recos, slot, input_external_variables, session, show_details)
-
-            slot = {'name': slot['name'], 'item_type': slot['engine']['item_type']['name']}
-            slot['items'] = slot_recos
-            slots.append(slot)
+        await gather_coros(*slots_tasks)
 
         valid_slots = []
         for slot in slots:
@@ -132,6 +131,17 @@ class PlacementsModelBase(AbstractConcreteBase):
         return placements[0]
 
     @classmethod
+    async def _get_slot_recos_async(cls, slot, input_external_variables, session, show_details, slots, slot_recos):
+        slot_recos['main'] = \
+            await cls._get_recos_by_slot(slot, input_external_variables, session, show_details)
+
+        await cls._get_fallbacks_recos(slot_recos, slot, input_external_variables, session, show_details)
+
+        slot = {'name': slot['name'], 'item_type': slot['engine']['item_type']['name']}
+        slot['items'] = slot_recos
+        slots.append(slot)
+
+    @classmethod
     async def _get_recos_by_slot(cls, slot, input_external_variables, session, show_details, max_items=None):
         try:
             engine = slot['engine']
@@ -146,9 +156,9 @@ class PlacementsModelBase(AbstractConcreteBase):
                 session, filters, max_items, show_details, items_model, **engine_vars)
 
         except Exception as error:
-            cls._logger.debug('Slot:\n' + ujson.dumps(slot, indent=4))
             cls._logger.debug('Input Variables:\n' + ujson.dumps(input_external_variables, indent=4))
-            raise error
+            cls._logger.exception('Slot:\n' + ujson.dumps(slot, indent=4))
+            return []
 
     @classmethod
     def _get_slot_variables(cls, slot, input_external_variables):
