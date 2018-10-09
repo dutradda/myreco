@@ -25,7 +25,7 @@ with open('README.md') as readme:
 install_requires = [
     'swaggerit',
     'numpy==1.*',
-    'scipy==0.18.*',
+    'scipy==1.*',
     'boto3==1.*'
 ]
 
