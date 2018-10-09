@@ -23,6 +23,7 @@
 
 import hashlib
 import random as random_
+from asyncio import gather as gather_coros
 
 import sqlalchemy as sa
 from myreco.utils import get_items_model
@@ -30,7 +31,6 @@ from sqlalchemy.ext.declarative import AbstractConcreteBase, declared_attr
 from swaggerit.exceptions import SwaggerItModelError
 from swaggerit.json_builder import JsonBuilder
 from swaggerit.utils import get_swagger_json
-from asyncio import Task, gather as gather_coros
 
 import ujson
 
@@ -83,15 +83,15 @@ class PlacementsModelBase(AbstractConcreteBase):
         distribute_items = placement.get('distribute_items')
         recos = slots = []
         recos_key = 'slots'
-        slots_tasks = []
+        slots_coros = []
 
         for slot in placement['variations'][0]['slots']:
             slot_recos = {'fallbacks': []}
             coro = cls._get_slot_recos_async(slot, input_external_variables,
                                              session, show_details, slots, slot_recos)
-            slots_tasks.append(Task(coro))
+            slots_coros.append(coro)
 
-        await gather_coros(*slots_tasks)
+        await gather_coros(*slots_coros)
 
         valid_slots = []
         for slot in slots:
