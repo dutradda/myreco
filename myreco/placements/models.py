@@ -23,6 +23,7 @@
 
 import hashlib
 import random as random_
+from asyncio import Task
 from asyncio import gather as gather_coros
 
 import sqlalchemy as sa
@@ -86,15 +87,16 @@ class PlacementsModelBase(AbstractConcreteBase):
         slots_coros = []
 
         for slot in placement['variations'][0]['slots']:
-            slot_recos = {'fallbacks': []}
             coro = cls._get_slot_recos_async(slot, input_external_variables,
-                                             session, show_details, slots, slot_recos)
-            slots_coros.append(coro)
+                                             session, show_details)
+            slots_coros.append(Task(coro))
 
-        await gather_coros(*slots_coros)
+        for coro in slots_coros:
+            slots.append(await coro)
 
         valid_slots = []
         for slot in slots:
+            slot_recos = slot['items']
             has_fallback = [True for fallback in slot_recos['fallbacks'] if fallback]
             if slot_recos['main'] or has_fallback:
                 valid_slots.append(slot)
@@ -131,7 +133,8 @@ class PlacementsModelBase(AbstractConcreteBase):
         return placements[0]
 
     @classmethod
-    async def _get_slot_recos_async(cls, slot, input_external_variables, session, show_details, slots, slot_recos):
+    async def _get_slot_recos_async(cls, slot, input_external_variables, session, show_details):
+        slot_recos = {'fallbacks': []}
         slot_recos['main'] = \
             await cls._get_recos_by_slot(slot, input_external_variables, session, show_details)
 
@@ -139,7 +142,8 @@ class PlacementsModelBase(AbstractConcreteBase):
 
         slot = {'name': slot['name'], 'item_type': slot['engine']['item_type']['name']}
         slot['items'] = slot_recos
-        slots.append(slot)
+
+        return slot
 
     @classmethod
     async def _get_recos_by_slot(cls, slot, input_external_variables, session, show_details, max_items=None):
